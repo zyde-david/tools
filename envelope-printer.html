@@ -306,10 +306,30 @@
 <body class="expert-mode-active">
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
 
-    <div style="background: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-        <span style="font-weight: bold; font-size: 14px;">✉️ เครื่องมือพิมพ์ซองจดหมาย</span>
-        <a href="index.html" style="color: white; background: #0f766e; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">🏠 กลับหน้าหลัก</a>
-    </div>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">✉️ Envelope Printer</span>
+</div>
 
     <div class="no-print container">
         <div class="main-header">

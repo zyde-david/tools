@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 Zyde's Tools</title>
+    <title>🔐 Zyde's Toolbox</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -26,153 +26,101 @@
             max-width: 90vw;
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
-        #loginScreen h1 {
-            text-align: center;
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            color: #f1f5f9;
-        }
-        #loginScreen p {
-            text-align: center;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
-        .logo-icon {
-            font-size: 3rem;
-            text-align: center;
-            display: block;
-            margin-bottom: 16px;
-        }
-        .input-group {
-            margin-bottom: 16px;
-        }
-        .input-group label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #94a3b8;
-            margin-bottom: 6px;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 12px 16px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #e2e8f0;
-            font-size: 1rem;
-            outline: none;
-            transition: border 0.2s;
-        }
-        .input-group input:focus {
-            border-color: #6366f1;
-        }
-        .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+        #loginScreen h1 { text-align: center; font-size: 1.8rem; margin-bottom: 4px; color: #f1f5f9; }
+        #loginScreen p.sub { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-bottom: 24px; }
+        .logo-icon { font-size: 3rem; text-align: center; display: block; margin-bottom: 12px; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        .input-group input { width: 100%; padding: 12px 16px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 1rem; outline: none; transition: border 0.2s; }
+        .input-group input:focus { border-color: #6366f1; }
+        .btn-login { width: 100%; padding: 12px; background: #6366f1; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .btn-login:hover { background: #4f46e5; }
-        .error-msg {
-            color: #ef4444;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: 12px;
-            display: none;
-        }
-        
+        .error-msg { color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 12px; display: none; }
+
         /* === Dashboard === */
-        #dashboard {
-            display: none;
-            width: 100%;
-            max-width: 900px;
-            padding: 20px;
+        #dashboard { display: none; width: 100%; max-width: 1000px; padding: 20px; }
+        
+        .dash-topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(30,41,59,0.8); backdrop-filter: blur(12px);
+            border: 1px solid #334155; border-radius: 12px;
+            padding: 14px 20px; margin-bottom: 24px;
         }
-        .dash-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
+        .dash-topbar h1 { font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+        .dash-topbar .right { display: flex; gap: 8px; align-items: center; }
+        .dash-topbar .tool-count { background: #312e81; color: #a5b4fc; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+        .btn-logout { padding: 8px 16px; background: #334155; color: #94a3b8; border: 1px solid #475569; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-logout:hover { background: #ef4444; color: white; border-color: #ef4444; }
+
+        /* Search + filter bar */
+        .search-bar {
+            background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+            padding: 12px 16px; margin-bottom: 20px;
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
         }
-        .dash-header h1 {
-            font-size: 1.5rem;
+        .search-bar input {
+            flex: 1; min-width: 150px;
+            padding: 10px 14px; background: #0f172a; border: 1px solid #334155;
+            border-radius: 6px; color: #e2e8f0; font-size: 0.9rem; outline: none;
         }
-        .btn-logout {
-            padding: 8px 16px;
-            background: #334155;
-            color: #94a3b8;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+        .search-bar input:focus { border-color: #6366f1; }
+        .search-bar input::placeholder { color: #475569; }
+
+        /* Category tabs */
+        .cat-tabs {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
         }
-        .btn-logout:hover {
-            background: #ef4444;
-            color: white;
-            border-color: #ef4444;
+        .cat-tab {
+            padding: 6px 14px; background: #1e293b; border: 1px solid #334155;
+            border-radius: 999px; font-size: 0.8rem; cursor: pointer;
+            color: #94a3b8; transition: all 0.2s; font-weight: 600;
         }
+        .cat-tab:hover { border-color: #6366f1; color: #e2e8f0; }
+        .cat-tab.active { background: #312e81; border-color: #6366f1; color: #a5b4fc; }
+
+        /* Tool Grid */
         .tool-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
         }
         .tool-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 24px;
-            text-decoration: none;
-            color: #e2e8f0;
-            transition: all 0.25s;
-            display: block;
+            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            padding: 18px; text-decoration: none; color: #e2e8f0;
+            transition: all 0.2s; display: block; cursor: pointer;
         }
         .tool-card:hover {
-            transform: translateY(-4px);
             border-color: #6366f1;
-            box-shadow: 0 12px 24px rgba(99,102,241,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99,102,241,0.12);
         }
-        .tool-icon {
-            font-size: 2.5rem;
-            margin-bottom: 12px;
-            display: block;
-        }
-        .tool-card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-        }
-        .tool-card p {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
+        .tool-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+        .tool-card h2 { font-size: 0.95rem; margin-bottom: 4px; line-height: 1.3; }
+        .tool-card p { color: #94a3b8; font-size: 0.78rem; line-height: 1.4; }
         .tool-tag {
-            display: inline-block;
-            padding: 4px 10px;
-            background: #312e81;
-            color: #a5b4fc;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 12px;
+            display: inline-block; padding: 3px 8px; background: #312e81;
+            color: #a5b4fc; border-radius: 999px; font-size: 0.65rem;
+            font-weight: 600; margin-top: 8px;
+        }
+        .tool-hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            #dashboard { padding: 12px; }
+            .tool-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .tool-card { padding: 14px; }
+            .tool-card h2 { font-size: 0.85rem; }
+            .dash-topbar { flex-wrap: wrap; gap: 8px; }
+            .dash-topbar h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- ===== LOGIN SCREEN ===== -->
+<!-- ===== LOGIN ===== -->
 <div id="loginScreen">
     <span class="logo-icon">🔐</span>
-    <h1>Zyde's Tools</h1>
-    <p>กรุณาใส่รหัสผ่านเพื่อเข้าใช้เครื่องมือ</p>
+    <h1>Zyde's Toolbox</h1>
+    <p class="sub">กรุณาใส่รหัสผ่านเพื่อเข้าใช้เครื่องมือทั้งหมด</p>
     <div class="input-group">
         <label>รหัสผ่าน</label>
         <input type="password" id="passwordInput" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkPassword()">
@@ -183,60 +131,101 @@
 
 <!-- ===== DASHBOARD ===== -->
 <div id="dashboard">
-    <div class="dash-header">
-        <h1>🛠️ Zyde's Tools</h1>
-        <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+
+    <!-- Top Bar -->
+    <div class="dash-topbar">
+        <h1>🛠️ Zyde's Toolbox <span class="tool-count" id="toolCount">7</span></h1>
+        <div class="right">
+            <button onclick="logout()" class="btn-logout">🚪 ออกจากระบบ</button>
+        </div>
     </div>
-    <div class="tool-grid">
-        <a class="tool-card" href="envelope-printer.html">
-            <span class="tool-icon">✉️</span>
-            <h2>ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ</h2>
-            <p>พิมพ์ซอง DL (220×110mm) + TSP route optimizer + Google Maps export</p>
-            <span class="tool-tag">Envelope Printer V12</span>
-        </a>
-        <a class="tool-card" href="autocorrect.html">
-            <span class="tool-icon">⌨️</span>
-            <h2>เครื่องมือสร้างสคริปต์ AHK AutoCorrect Pro</h2>
-            <p>AutoHotkey script generator สำหรับคีย์ข้อมูล รพ. แผงปุ่มลัด + สุ่มเลข</p>
-            <span class="tool-tag">AHK Generator</span>
-        </a>
-        <a class="tool-card" href="map-epidemic.html">
-            <span class="tool-icon">📊</span>
-            <h2>ศูนย์จัดการทะเบียนพิกัดระบาดวิทยา</h2>
-            <p>GPS analyzer + Cluster detection + Multipin/Heatmap + CSV export</p>
-            <span class="tool-tag">Epidemiology Map</span>
-        </a>
-        <a class="tool-card" href="base64-decoder.html">
-            <span class="tool-icon">🦫</span>
-            <h2>MyPCU Hyper Bulk Decoder</h2>
-            <p>ถอดรหัส Base64 คอลัมน์ต่างดาวจาก MyPCU รองรับ 20k+ แถว</p>
-            <span class="tool-tag">Base64 Decoder</span>
-        </a>
-        <a class="tool-card" href="thai-recovery.html">
-            <span class="tool-icon">🔤</span>
-            <h2>โปรแกรมกู้คืนภาษาไทยต่างดาว</h2>
-            <p>Mojibake Recovery - แก้ไข UTF-8 หลุด Windows-1252 / TIS-620</p>
-            <span class="tool-tag">Thai Recovery</span>
-        </a>
-        <a class="tool-card" href="ink-planner.html">
-            <span class="tool-icon">🖨️</span>
-            <h2>ระบบวางแผนจัดซื้อน้ำหมึก</h2>
-            <p>บริหารฝูงเครื่องพิมพ์ IRL yield + เกลี่ยภาระ + สั่งซื้ออัจฉริยะ</p>
-            <span class="tool-tag">Ink Planner</span>
-        </a>
-        <a class="tool-card" href="inventory-analytics.html">
-            <span class="tool-icon">📦</span>
-            <h2>ระบบวิเคราะห์พัสดุคงคลัง</h2>
-            <p>นำเข้า Excel + คำนวณมูลค่า + สถานะพัสดุราชการไทย</p>
-            <span class="tool-tag">Inventory Analytics</span>
-        </a>
+
+    <!-- Search -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 ค้นหาเครื่องมือ..." oninput="filterTools()">
+        <span style="color:#475569; font-size:0.75rem;" id="searchResultCount">7 รายการ</span>
     </div>
+
+    <!-- Category Tabs -->
+    <div class="cat-tabs" id="categoryTabs">
+        <span class="cat-tab active" data-cat="all" onclick="setCategory('all')">🔧 ทั้งหมด</span>
+    </div>
+
+    <!-- Tool Grid -->
+    <div class="tool-grid" id="toolGrid"></div>
 </div>
 
 <script>
-    // SHA-256 hash of "zyde2026"
     const PASSWORD_HASH = '88077ce624e416d49dde93dbd5e8babee964f30a6f76fef2e0482a3969316526';
-    
+    let currentCategory = 'all';
+
+    const tools = [
+        { icon: '✉️', name: 'ระบบพิมพ์ซองจดหมาย', desc: 'พิมพ์ซอง DL + TSP route + Google Maps', tag: 'Envelope Printer', file: 'envelope-printer.html', cat: 'พิมพ์' },
+        { icon: '⌨️', name: 'เครื่องมือสร้างสคริปต์ AHK', desc: 'AutoHotkey generator สำหรับคีย์ข้อมูล รพ.', tag: 'AHK Generator', file: 'autocorrect.html', cat: 'คีย์ข้อมูล' },
+        { icon: '📊', name: 'ศูนย์จัดการทะเบียนพิกัดระบาดวิทยา', desc: 'GPS cluster + Multipin/Heatmap + CSV', tag: 'Epidemiology Map', file: 'map-epidemic.html', cat: 'แผนที่' },
+        { icon: '🦫', name: 'MyPCU Hyper Bulk Decoder', desc: 'ถอดรหัส Base64 คอลัมน์ต่างดาว รองรับ 20k+ แถว', tag: 'Base64 Decoder', file: 'base64-decoder.html', cat: 'ถอดรหัส' },
+        { icon: '🔤', name: 'โปรแกรมกู้คืนภาษาไทยต่างดาว', desc: 'Mojibake Recovery - แก้ UTF-8 หลุด Windows-1252', tag: 'Thai Recovery', file: 'thai-recovery.html', cat: 'ถอดรหัส' },
+        { icon: '🖨️', name: 'ระบบวางแผนจัดซื้อน้ำหมึก', desc: 'บริหารฝูงเครื่องพิมพ์ IRL yield + สั่งซื้ออัจฉริยะ', tag: 'Ink Planner', file: 'ink-planner.html', cat: 'พิมพ์' },
+        { icon: '📦', name: 'ระบบวิเคราะห์พัสดุคงคลัง', desc: 'นำเข้า Excel + คำนวณมูลค่า + สถานะพัสดุราชการ', tag: 'Inventory Analytics', file: 'inventory-analytics.html', cat: 'พัสดุ' },
+    ];
+
+    function renderCategories() {
+        const cats = ['all', ...new Set(tools.map(t => t.cat))];
+        const container = document.getElementById('categoryTabs');
+        container.innerHTML = cats.map(c => 
+            `<span class="cat-tab ${c === currentCategory ? 'active' : ''}" data-cat="${c}" onclick="setCategory('${c}')">${
+                c === 'all' ? '🔧 ทั้งหมด' : 
+                c === 'พิมพ์' ? '🖨️ พิมพ์' :
+                c === 'แผนที่' ? '🗺️ แผนที่' :
+                c === 'คีย์ข้อมูล' ? '⌨️ คีย์ข้อมูล' :
+                c === 'ถอดรหัส' ? '🔓 ถอดรหัส' :
+                c === 'พัสดุ' ? '📦 พัสดุ' : c
+            }</span>`
+        ).join('');
+    }
+
+    function setCategory(cat) {
+        currentCategory = cat;
+        document.querySelectorAll('.cat-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.cat === cat);
+        });
+        filterTools();
+    }
+
+    function filterTools() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = tools.filter(t => {
+            const matchCat = currentCategory === 'all' || t.cat === currentCategory;
+            const matchSearch = !search || 
+                t.name.toLowerCase().includes(search) || 
+                t.desc.toLowerCase().includes(search) || 
+                t.tag.toLowerCase().includes(search) ||
+                t.cat.toLowerCase().includes(search);
+            return matchCat && matchSearch;
+        });
+        document.getElementById('searchResultCount').textContent = filtered.length + ' รายการ';
+        renderGrid(filtered);
+    }
+
+    function renderGrid(items) {
+        const grid = document.getElementById('toolGrid');
+        grid.innerHTML = items.map(t => `
+            <a class="tool-card" href="${t.file}">
+                <span class="tool-icon">${t.icon}</span>
+                <h2>${t.name}</h2>
+                <p>${t.desc}</p>
+                <span class="tool-tag">${t.tag}</span>
+            </a>
+        `).join('');
+    }
+
+    function logout() {
+        sessionStorage.removeItem('zyde_auth');
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+    }
+
     async function sha256(str) {
         const buf = new TextEncoder().encode(str);
         const hash = await crypto.subtle.digest('SHA-256', buf);
@@ -256,19 +245,14 @@
         }
     }
 
-    function logout() {
-        sessionStorage.removeItem('zyde_auth');
-        document.getElementById('loginScreen').style.display = 'block';
-        document.getElementById('dashboard').style.display = 'none';
-        document.getElementById('passwordInput').value = '';
-    }
-
-    // Auto-login if session exists
     if (sessionStorage.getItem('zyde_auth') === '1') {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
     }
-</script>
 
+    renderCategories();
+    filterTools();
+    document.getElementById('toolCount').textContent = tools.length;
+</script>
 </body>
 </html>
