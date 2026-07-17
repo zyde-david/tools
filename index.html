@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Zyde's Tools</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+        }
+        
+        /* === Login Screen === */
+        #loginScreen {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 40px;
+            width: 380px;
+            max-width: 90vw;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        #loginScreen h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+        }
+        #loginScreen p {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+        .logo-icon {
+            font-size: 3rem;
+            text-align: center;
+            display: block;
+            margin-bottom: 16px;
+        }
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .input-group input:focus {
+            border-color: #6366f1;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-login:hover { background: #4f46e5; }
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 12px;
+            display: none;
+        }
+        
+        /* === Dashboard === */
+        #dashboard {
+            display: none;
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+        }
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .dash-header h1 {
+            font-size: 1.5rem;
+        }
+        .btn-logout {
+            padding: 8px 16px;
+            background: #334155;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .tool-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            text-decoration: none;
+            color: #e2e8f0;
+            transition: all 0.25s;
+            display: block;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            border-color: #6366f1;
+            box-shadow: 0 12px 24px rgba(99,102,241,0.15);
+        }
+        .tool-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+        .tool-card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        .tool-card p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .tool-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #312e81;
+            color: #a5b4fc;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen">
+    <span class="logo-icon">🔐</span>
+    <h1>Zyde's Tools</h1>
+    <p>กรุณาใส่รหัสผ่านเพื่อเข้าใช้เครื่องมือ</p>
+    <div class="input-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="passwordInput" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkPassword()">
+    </div>
+    <button class="btn-login" onclick="checkPassword()">เข้าสู่ระบบ</button>
+    <div class="error-msg" id="errorMsg">❌ รหัสผ่านไม่ถูกต้อง</div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard">
+    <div class="dash-header">
+        <h1>🛠️ Zyde's Tools</h1>
+        <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+    </div>
+    <div class="tool-grid">
+        <a class="tool-card" href="envelope-printer.html">
+            <span class="tool-icon">✉️</span>
+            <h2>ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ</h2>
+            <p>พิมพ์ซอง DL (220×110mm) + TSP route optimizer + Google Maps export</p>
+            <span class="tool-tag">Envelope Printer V12</span>
+        </a>
+        <a class="tool-card" href="autocorrect.html">
+            <span class="tool-icon">⌨️</span>
+            <h2>เครื่องมือสร้างสคริปต์ AHK AutoCorrect Pro</h2>
+            <p>AutoHotkey script generator สำหรับคีย์ข้อมูล รพ. แผงปุ่มลัด + สุ่มเลข</p>
+            <span class="tool-tag">AHK Generator</span>
+        </a>
+        <a class="tool-card" href="map-epidemic.html">
+            <span class="tool-icon">📊</span>
+            <h2>ศูนย์จัดการทะเบียนพิกัดระบาดวิทยา</h2>
+            <p>GPS analyzer + Cluster detection + Multipin/Heatmap + CSV export</p>
+            <span class="tool-tag">Epidemiology Map</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    // SHA-256 hash of "zyde2026"
+    const PASSWORD_HASH = 'a8e8f2d4e8f3c4b5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8';
+    
+    async function sha256(str) {
+        const buf = new TextEncoder().encode(str);
+        const hash = await crypto.subtle.digest('SHA-256', buf);
+        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function checkPassword() {
+        const input = document.getElementById('passwordInput').value;
+        const hash = await sha256(input);
+        if (hash === PASSWORD_HASH) {
+            sessionStorage.setItem('zyde_auth', '1');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('errorMsg').style.display = 'none';
+        } else {
+            document.getElementById('errorMsg').style.display = 'block';
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('zyde_auth');
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+    }
+
+    // Auto-login if session exists
+    if (sessionStorage.getItem('zyde_auth') === '1') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

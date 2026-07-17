@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ (Ultimate V12 Mobile-Friendly)</title>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        
+        @page {
+            size: 220mm 110mm landscape; 
+            margin: 0 !important;
+        }
+        
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+            margin: 0; padding: 0;
+        }
+        
+        body { 
+            font-family: "Sarabun", sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            -webkit-print-color-adjust: exact;
+        }
+        
+        /* CRITICAL PRINT SYSTEM OVERHAUL: Fixes overlapping pages shown in image_2e593e.png */
+        @media print {
+            .no-print, .fab-container, .modal-overlay, #customToastContainer, #customConfirmModal { 
+                display: none !important; 
+            }
+            body, html { 
+                background: none !important; 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                width: 220mm !important; 
+                height: 110mm !important; 
+                overflow: visible !important;
+            }
+            #printArea { 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                display: block !important; 
+                width: 220mm !important; 
+                height: 110mm !important;
+            }
+            
+            /* Reset envelope wrappers to absolute page boundaries for the physical browser printer */
+            .envelope-preview-wrapper {
+                display: block !important;
+                width: 220mm !important;
+                height: 110mm !important;
+                background: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                transform: none !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-after: always !important;
+                break-after: page !important;
+            }
+            
+            .envelope-preview-wrapper:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+
+            .envelope {
+                box-shadow: none !important; 
+                border: none !important; 
+                margin: 0 !important; 
+                display: block !important;
+                width: 220mm !important; 
+                height: 110mm !important; 
+                transform: none !important;
+                position: relative !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+        
+        /* สไตล์โครงสร้างซองจดหมายมาตรฐานกระดาษ DL */
+        .envelope {
+            width: 220mm; height: 110mm; box-sizing: border-box;
+            background: white; position: relative; overflow: hidden;
+            page-break-inside: avoid; flex-shrink: 0;
+        }
+        
+        .envelope-main-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%; text-align: center; font-weight: bold;
+            line-height: 1.4; word-wrap: break-word;
+        }
+        
+        /* ตำแหน่งโน้ตกำกับย่อย 4 มุมซองจดหมาย */
+        .mini-note {
+            position: absolute; font-weight: normal; max-width: 40%;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: #475569; line-height: 1.2;
+        }
+        .note-tl { top: 8mm; left: 12mm; text-align: left; }
+        .note-tr { top: 8mm; right: 12mm; text-align: right; }
+        .note-bl { bottom: 8mm; left: 12mm; text-align: left; }
+        .note-br { bottom: 8mm; right: 12mm; text-align: right; }
+        
+        .envelope.overrun-warning { border: 3px dashed #ef4444 !important; background: #fef2f2 !important; }
+        .overrun-badge {
+            position: absolute; top: 8px; right: 8px; background: #ef4444; color: white;
+            font-size: 11px; padding: 2px 6px; border-radius: 4px; display: none; z-index: 10;
+            font-weight: bold;
+        }
+        .envelope.overrun-warning .overrun-badge { display: block; }
+
+        @media screen {
+            .container { 
+                width: 100%; 
+                max-width: 1440px; 
+                margin: 0 auto; 
+                padding: 16px;
+                box-sizing: border-box;
+            }
+            
+            .main-header {
+                background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white;
+                padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }
+            .main-header h2 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+            .main-header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
+
+            /* โหมด Responsive บังคับแผงจัดพิมพ์ซองอยู่ด้านบน และตารางเลือกอยู่ด้านล่าง ป้องกันการล้นขอบ */
+            .main-grid { display: flex; flex-direction: column; gap: 16px; }
+            @media (min-width: 1150px) {
+                .main-grid { display: grid; grid-template-columns: 460px 1fr; }
+            }
+            
+            .panel { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+            .panel-title { font-size: 15px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 5px; flex-wrap: wrap; }
+            
+            textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
+            textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+            .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+            .input-group { display: flex; align-items: center; gap: 6px; }
+            
+            .select-style, .input-style {
+                padding: 8px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: white; color: #334155; transition: all 0.2s;
+            }
+            .select-style:focus, .input-style:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+            
+            .btn {
+                padding: 8px 16px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer;
+                display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; transition: all 0.2s;
+                user-select: none;
+            }
+            .btn-main { background: #3b82f6; color: white; width: 100%; padding: 12px; font-size: 15px; box-shadow: 0 2px 4px rgba(59,130,246,0.2); }
+            .btn-main:hover { background: #2563eb; transform: translateY(-1px); }
+            .btn-secondary { background: #64748b; color: white; }
+            .btn-secondary:hover { background: #475569; }
+            .btn-success { background: #10b981; color: white; }
+            .btn-success:hover { background: #059669; }
+            .btn-danger { background: #ef4444; color: white; padding: 4px 8px; font-size: 11px; }
+            .btn-danger:hover { background: #dc2626; }
+            .btn-edit { background: #f59e0b; color: white; padding: 4px 8px; font-size: 11px; }
+            .btn-edit:hover { background: #d97706; }
+            .btn-mode-toggle { background: #6d28d9; color: white; font-size: 12px; border: 1px solid #5b21b6; }
+            .btn-mode-toggle:hover { background: #5b21b6; }
+            .btn-wizard { background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; font-size: 11px; padding: 5px 10px; }
+            .btn-wizard:hover { background: #e2e8f0; }
+
+            /* โซนจัดพรีวิวและการย่อขนาดแบบไหลลื่น */
+            .preview-container-box { max-height: 400px; overflow-y: auto; background: #cbd5e1; padding: 12px; border-radius: 8px; border: 1px solid #94a3b8; display: flex; flex-direction: column; gap: 12px; }
+            
+            .envelope-preview-wrapper {
+                width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #94a3b8; border-radius: 8px; border: 1px dashed #64748b; padding: 8px; transition: height 0.2s; position: relative;
+            }
+            .envelope-preview-wrapper .envelope {
+                transform-origin: center center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 4px;
+            }
+
+            /* การสลับตารางให้ไถด้านข้างได้บนมือถือ โดยไม่ดันหน้าจอหลักจนเบี้ยว */
+            .table-container { 
+                width: 100%; 
+                overflow-x: auto; 
+                margin-top: 5px; 
+                border: 1px solid #cbd5e1; 
+                border-radius: 8px; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.01); 
+                -webkit-overflow-scrolling: touch;
+            }
+            .school-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; min-width: 1100px; background: white; }
+            .school-table th, .school-table td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+            .school-table th { background-color: #f8fafc; color: #475569; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+            
+            .nested-header-cell { text-align: center; background-color: #f1f5f9 !important; border-bottom: 2px solid #cbd5e1 !important; }
+            .sub-header-cell { text-align: center; background-color: #f8fafc !important; font-size: 11px; font-weight: normal; color: #64748b; }
+            
+            .radio-cell { text-align: center; width: 35px; }
+            .radio-cell input { cursor: pointer; width: 16px; height: 16px; margin: 0; vertical-align: middle; }
+            
+            .row-warning { background-color: #fef3c7 !important; }
+            .row-warning:hover { background-color: #fde68a !important; }
+            .school-table tr:hover { background-color: #f8fafc; }
+            
+            .expert-col { display: none; }
+            body.expert-mode-active .expert-col { display: table-cell; }
+            
+            .q-badge { background: #1e3a8a; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+            .q-empty { color: #94a3b8; font-style: italic; }
+            
+            .map-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; margin-top: 12px; }
+            
+            .form-tab-container { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+            .tab-btn-headers { display: flex; gap: 5px; margin-bottom: 10px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; }
+            .tab-link { font-size: 12px; font-weight: bold; padding: 4px 10px; cursor: pointer; border-radius: 4px; border: 1px solid transparent; background: none; color: #64748b; transition: all 0.2s; }
+            .tab-link.active { background: #3b82f6; color: white; }
+            
+            .add-form-single { display: grid; grid-template-columns: 1fr; gap: 8px; }
+            @media (min-width: 640px) {
+                .add-form-single { grid-template-columns: 2fr 2fr 1fr; }
+            }
+            
+            .fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+            .fab-btn { width: 56px; height: 56px; border-radius: 50%; background: #1e293b; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: none; transition: transform 0.2s; }
+            .fab-btn:hover { transform: scale(1.05); background: #0f172a; }
+            
+            .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 15px; }
+            .modal-overlay.active { display: flex; }
+            .modal-content { background: white; border-radius: 12px; max-width: 550px; width: 100%; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; max-height: 85vh; overflow-y: auto; }
+            .modal-close { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; border: none; background: none; color: #64748b; }
+            .modal-close:hover { color: #1e293b; }
+            
+            #printArea { display: none; }
+        }
+
+        #customToastContainer {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast-item {
+            background: #1e293b;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .toast-item.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-success { background: #10b981; }
+        .toast-warning { background: #f59e0b; }
+        .toast-error { background: #ef4444; }
+
+        #customConfirmModal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #customConfirmModal.active { display: flex; }
+        .confirm-box {
+            background: white;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+        }
+        .confirm-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="expert-mode-active">
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+
+    <div class="no-print container">
+        <div class="main-header">
+            <h2>✉️ ระบบจัดพิมพ์ซองและระบุคิวส่งอัตโนมัติ (V12 Responsive Expert)</h2>
+            <p>สลับและผสมคำนำหน้าได้อิสระ ย่อขนาดพรีวิวอัตโนมัติบนมือถือเพื่อความคล่องตัวและพิกัดที่แม่นยำที่สุด</p>
+        </div>
+        
+        <div class="main-grid">
+            <!-- ================= แผงที่ 1 (ด้านบนมือถือ / ฝั่งซ้ายคอมพ์): พรีวิวซองและการพิมพ์ ================= -->
+            <div class="panel">
+                <div class="panel-title">✍️ รายชื่อซองจดหมายอิสระ (1 บรรทัด = 1 ซอง)</div>
+                <div class="control-row">
+                    <div class="input-group">
+                        <span style="font-size:12px; font-weight:bold;">ฟอนต์หลัก:</span>
+                        <select id="mainFontSelect" class="select-style" onchange="renderSystemAll()">
+                            <option value="TH Sarabun IT ๙">TH Sarabun IT ๙ (เลขไทย)</option>
+                            <option value="TH Sarabun New">TH Sarabun New</option>
+                            <option value="TH Sarabun PSK" selected>TH Sarabun PSK</option>
+                            <option value="Angsana New">Angsana New</option>
+                            <option value="Sarabun">Sarabun (Online)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px;" onclick="adjustMainFontSize(1)">➕</button>
+                        <span id="mainFontSizeDisplay" style="font-weight:bold; font-size:13px; width:60px; text-align:center;">24pt</span>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px;" onclick="adjustMainFontSize(-1)">➖</button>
+                    </div>
+                </div>
+                
+                <textarea id="freeTextNamesInput" rows="3" placeholder="พิมพ์ชื่อหน่วยงานอิสระที่นี่ตามจริงได้เลย เช่น สาธารณสุขอำเภอยะรัง" oninput="renderSystemAll()"></textarea>
+                <br><br>
+                
+                <button class="btn btn-main" onclick="executePrintJob()">สั่งพิมพ์หน้าซองทั้งหมดทันที 🖨️</button>
+                
+                <div class="map-box">
+                    <div style="font-size:13px; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span>📍 ข้อมูลฐานเดินรถเริ่มต้น:</span>
+                        <label style="cursor:pointer; font-weight:normal; font-size:12px; color:#2563eb;">
+                            <input type="checkbox" id="returnToBaseToggle" checked onchange="renderSystemAll()"> 🔄 วนกลับฐานเมื่อเสร็จ (Round-Trip)
+                        </label>
+                    </div>
+                    <select id="startPointHubSelect" class="select-style" style="width:100%; font-weight:bold; margin-bottom:8px;" onchange="toggleManualHubInput()">
+                        <option value="รพ.สต.ยะรัง">🏢 รพ.สต.ยะรัง (พิกัดภูมิศาสตร์จริง 6.760930)</option>
+                        <option value="ที่ว่าการอำเภอยะรัง">🏛️ ที่ว่าการอำเภอยะรัง</option>
+                        <option value="CUSTOM_GPS">📌 ระบุพิกัดละติจูด/ลองจิจูดจุดเริ่มเอง...</option>
+                    </select>
+                    <div id="customHubGpsWrapper" style="display:none; margin-bottom:8px;">
+                        <input type="text" id="customHubGpsInput" class="input-style" placeholder="วางพิกัดจากกูเกิลแมพ เช่น 6.760930, 101.294492" style="width:100%;" oninput="renderSystemAll()">
+                    </div>
+                    <button type="button" class="btn btn-success" style="width:100%; padding:8px;" onclick="launchGoogleMapsMobile()">📱 ส่งออกทริปจัดคิวสั้นสุดไปเปิดบนมือถือ</button>
+                </div>
+                
+                <div class="panel-title" style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:12px;" id="totalQueueCountLabel">📄 รายการคิวเตรียมพิมพ์: 0 ซอง</div>
+                <div id="livePreviewScreenArea" class="preview-container-box"></div>
+            </div>
+            
+            <!-- ================= แผงที่ 2 (ด้านล่างมือถือ / ฝั่งขวาคอมพ์): จัดการข้อมูลพิกัดและตำแหน่งโน้ตย่อยประจำจุด ================= -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>🏫 จัดการบัญชีปลายทางและตำแหน่งโน้ตย่อย</span>
+                    <button type="button" id="modeToggleBtn" class="btn btn-mode-toggle" onclick="toggleScreenDisplayMode()">🔄 โหมดหน้าจอ: ขั้นสูง (Expert)</button>
+                </div>
+                
+                <!-- แท็บรับข้อมูลปลายทางแบบเดี่ยว / แบบกลุ่ม Bulk -->
+                <div class="form-tab-container">
+                    <div class="tab-btn-headers">
+                        <button type="button" id="tabLinkSingle" class="tab-link active" onclick="switchFormPanelTab('SINGLE')">✏️ เพิ่มปลายทางเดี่ยว</button>
+                        <button type="button" id="tabLinkBulk" class="tab-link" onclick="switchFormPanelTab('BULK')">📥 นำเข้ากลุ่มใหญ่ด่วน (Bulk Import)</button>
+                    </div>
+                    
+                    <div id="panelFormSingle" class="add-form-single">
+                        <input type="text" id="formLocationName" class="input-style" placeholder="พิมพ์ชื่อปลายทาง เช่น สาธารณสุขอำเภอยะรัง">
+                        <input type="text" id="formLocationGps" class="input-style" placeholder="วางพิกัดจากกูเกิลแมพ Lat, Lng">
+                        <div style="display:flex; gap:4px;">
+                            <button type="button" id="formSubmitBtn" class="btn btn-success" style="flex:1;" onclick="submitLocationForm()">💾 บันทึก</button>
+                            <button type="button" id="formCancelBtn" class="btn btn-secondary" style="display:none;" onclick="resetLocationForm()">❌</button>
+                        </div>
+                    </div>
+                    
+                    <div id="panelFormBulk" style="display:none;">
+                        <textarea id="bulkDataImportInput" rows="4" style="font-size:12px; margin-bottom:6px;" placeholder="วางรายชื่อและพิกัดที่คัดลอกมา (รูปแบบ: ชื่อสถานที่ | Lat, Lng) ตัวอย่างเช่น:
+โรงเรียนบ้านกรือเซะ | 6.769512, 101.276315
+โรงเรียนประสานวิทยามูลนิธิ | 6.784830, 101.295019"></textarea>
+                        <button type="button" class="btn btn-main" style="padding:6px; font-size:12px;" onclick="executeBulkImportProcessing()">📥 เริ่มโหลดข้อมูลเข้าตารางทั้งหมด</button>
+                    </div>
+                </div>
+                
+                <!-- แถบจัดการสลับคำนำหน้าเรียน/ผู้อำนวยการแบบไดนามิกส์ 2 ปุ่มแยกอิสระ -->
+                <div class="control-row" style="background:#f8fafc; padding:8px; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:5px; gap:6px;">
+                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="checkAllTableLocations(true)">☑️ เลือกทั้งหมด</button>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="checkAllTableLocations(false)">⬜ ยกเลิกทั้งหมด</button>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#475569;" onclick="changeTableSortingMode('Q')">🔢 เรียงตามคิว Q</button>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#475569;" onclick="changeTableSortingMode('NAME')">🔤 เรียงตามชื่อ</button>
+                    </div>
+                    
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; border-left:2px solid #cbd5e1; padding-left:8px;">
+                        <button type="button" class="btn btn-wizard" style="background:#eff6ff; border-color:#bfdbfe;" onclick="splitSalutationWizardEngine('LEARN')">➕ พ่วงคำว่า "เรียน"</button>
+                        <button type="button" class="btn btn-wizard" style="background:#f5f3ff; border-color:#ddd6fe;" onclick="splitSalutationWizardEngine('DIRECTOR')">🏫 พ่วงคำว่า "ผู้อำนวยการ"</button>
+                        <button type="button" class="btn btn-wizard" style="background:#fff5f5; border-color:#fed7d7; color:#c53030;" onclick="splitSalutationWizardEngine('CLEAR')">🗑️ ลบคำนำหน้า</button>
+                    </div>
+                </div>
+
+                <div class="control-row" style="margin-bottom:5px; justify-content: flex-end;">
+                    <div style="display:flex; gap:4px;">
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#64748b;" onclick="triggerExportDatabaseBackupFile()">💾 โหลดไฟล์สำรอง</button>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#0284c7;" onclick="document.getElementById('hiddenBackupFileInput').click()">📤 กู้คืนไฟล์สำรอง</button>
+                        <input type="file" id="hiddenBackupFileInput" style="display:none;" accept=".txt,.json" onchange="executeImportDatabaseBackupFile(event)">
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="school-table" id="masterLocationsTable">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width:40px; text-align:center;">Q</th>
+                                <th rowspan="2" style="width:45px; text-align:center;">พิมพ์</th>
+                                <th rowspan="2" style="min-width:180px;">รายชื่อหน่วยงานปลายทาง / ระยะทางจริง</th>
+                                
+                                <th colspan="2" class="nested-header-cell expert-col">Note Top (บน) <br><button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('tl')">ซ้าย</button> <button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('tr')">ขวา</button></th>
+                                <th colspan="2" class="nested-header-cell expert-col">Note Bottom (ล่าง) <br><button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('bl')">ซ้าย</button> <button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('br')">ขวา</button></th>
+                                <th rowspan="2" class="expert-col" style="min-width:110px;">📋 โน้ตย่อยหัวซอง</th>
+                                <th rowspan="2" class="expert-col" style="width:90px;">🔤 แบบฟอนต์</th>
+                                <th rowspan="2" class="expert-col" style="width:65px;">📏 ขนาด</th>
+                                
+                                <th rowspan="2" style="width:75px; text-align:center;">จัดการ</th>
+                            </tr>
+                            <tr>
+                                <th class="sub-header-cell expert-col">Left (ซ้าย)</th>
+                                <th class="sub-header-cell expert-col">Right (ขวา)</th>
+                                <th class="sub-header-cell expert-col">Left (ซ้าย)</th>
+                                <th class="sub-header-cell expert-col">Right (ขวา)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="masterTableBody">
+                            <!-- แถวถูกเจนด้วยจาวาสคริปต์ -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom UI Dialog containers replacing alert() and confirm() -->
+    <div id="customToastContainer" class="no-print"></div>
+
+    <div id="customConfirmModal" class="no-print">
+        <div class="confirm-box">
+            <h3 id="confirmTitle" style="margin-top:0; color:#1e293b;">ยืนยันการดำเนินการ</h3>
+            <p id="confirmMessage" style="color:#64748b; font-size:14px; margin-bottom:20px;">คุณแน่ใจหรือไม่ที่จะลบรายการนี้?</p>
+            <div class="confirm-actions">
+                <button type="button" id="confirmBtnYes" class="btn btn-success" style="background:#ef4444;">ตกลง</button>
+                <button type="button" id="confirmBtnNo" class="btn btn-secondary" style="background:#64748b;">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fab-container no-print">
+        <button class="fab-btn" onclick="openInstructionModal()" title="คู่มือเครื่องพิมพ์">💡</button>
+    </div>
+
+    <!-- โมดอลแนะนําเครื่องพิมพ์และการตั้งค่าหน้ากระดาษพ่วงภาพ SVG อธิบายทิศทางการป้อนซอง -->
+    <div class="modal-overlay no-print" id="instructionModalOverlay" onclick="closeInstructionModalOutside(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeInstructionModal()">❌</button>
+            <h3 style="margin-top:0; color:#1e3a8a; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">📋 คู่มือแนะนำเครื่องพิมพ์และการตั้งค่าหน้ากระดาษ</h3>
+            <div style="font-size:13px; line-height:1.6; color:#334155;">
+                <p><strong>1. การป้อนซองจดหมายกับเครื่องพิมพ์ Brother:</strong><br>
+                ให้คว่ำหน้าซองจดหมายลงด้านล่างเสมอ และหันส่วนฝาพับซองไปทางซ้ายมือของผู้ใช้งานเสมอ เพื่อล็อกตำแหน่งจดหมายไม่ให้เบี้ยวเอียงขณะวิ่งผ่านลูกกลิ้ง</p>
+                
+                <div style="text-align: center; margin: 15px 0; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <svg viewBox="0 0 400 200" width="100%" height="auto" style="max-width: 320px; display: block; margin: 0 auto;">
+                        <rect x="10" y="40" width="380" height="150" rx="10" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="4"/>
+                        <rect x="50" y="30" width="300" height="20" rx="4" fill="#94a3b8" />
+                        <line x1="80" y1="20" x2="320" y2="20" stroke="#64748b" stroke-width="8" stroke-dasharray="10 5" />
+                        
+                        <g transform="translate(110, 70)">
+                            <rect x="0" y="0" width="180" height="90" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="3" />
+                            <path d="M 0,0 L 40,45 L 0,90 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="2" />
+                            <rect x="150" y="65" width="20" height="20" rx="1" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="2 2" />
+                            <path d="M 90,45 L 90,15 M 90,15 L 85,25 M 90,15 L 95,25" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        </g>
+                        
+                        <text x="200" y="180" font-family="Sarabun, sans-serif" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle">ทิศทางป้อนกระดาษ (Feed Direction)</text>
+                        <text x="65" y="112" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">ฝาพับอยู่ซ้าย</text>
+                        <text x="65" y="127" font-family="Sarabun, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">(Flap Left)</text>
+                        <text x="200" y="108" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">คว่ำหน้าซองลง</text>
+                        <text x="200" y="123" font-family="Sarabun, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">(Face Down)</text>
+                    </svg>
+                </div>
+                
+                <p><strong>2. การตั้งค่าก่อนกดพิมพ์:</strong><br>
+                - เลือกขนาดกระดาษเป็น <code>Envelope DL</code> หรือ <code>220 x 110 mm</code><br>
+                - ตั้งทิศทางเป็น <code>แนวนอน (Landscape)</code> และระยะขอบเลือกเป็น <code>ไม่มี (None)</code> เสมอ</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+        let currentMainFontSize = 24;
+        let activeEditIndex = null;
+        let currentSortMode = 'Q'; 
+        
+        let isExpertModeActive = true; 
+        
+        // ฐานข้อมูลพิกัดภูมิศาสตร์สากล 11 สถานที่ประวัติศาสตร์ของโรงเรียนในอำเภอยะรัง
+        const fallbackDatabaseDefaults = [
+            { name: "โรงเรียนบ้านกรือเซะ", lat: 6.769512473363572, lng: 101.27631527193304, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนประสานวิทยามูลนิธิ", lat: 6.784830839568106, lng: 101.29501946643627, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนอนุบาลยะรัง", lat: 6.762490485523719, lng: 101.30061170946043, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "นายกองค์การบริหารส่วนตำบลยะรัง", lat: 6.781904879101377, lng: 101.29963874793019, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนอนุสรณ์ศาสนวิทยา", lat: 6.765308926063986, lng: 101.30841746438752, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนผดุงศาสน์วิทยา", lat: 6.782876326950165, lng: 101.30920062991102, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนบ้านต้นทุเรียน", lat: 6.780716815265365, lng: 101.30971235363647, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนพิทักษ์ศาสน์วิทยามูลนิธิ", lat: 6.755367069478378, lng: 101.30951696713073, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนมูลนิธิสันติวิทยา", lat: 6.788461358378737, lng: 101.30098747671308, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "โรงเรียนชุมชนบ้านพงสตา", lat: 6.78547556695123, lng: 101.30076559596614, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" },
+            { name: "สำนักศิลปากรที่ ๑๑ สงขลา", lat: 6.760902732062015, lng: 101.30762058247164, noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12, checked: true, qNum: null, distStr: "" }
+        ];
+
+        let targetLocationsArray = [];
+
+        const baseHubsDatabase = {
+            "รพ.สต.ยะรัง": { lat: 6.760930192384781, lng: 101.29449279007311 },
+            "ที่ว่าการอำเภอยะรัง": { lat: 6.7611, lng: 101.2939 }
+        };
+
+        // Custom UI Alert System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('customToastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-item toast-${type}`;
+            toast.innerText = message;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('active'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('active');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Custom Confirm modal replacement for confirm()
+        function askConfirmation(message, onYes, onNo = null) {
+            const modal = document.getElementById('customConfirmModal');
+            document.getElementById('confirmMessage').innerText = message;
+            modal.classList.add('active');
+            
+            const btnYes = document.getElementById('confirmBtnYes');
+            const btnNo = document.getElementById('confirmBtnNo');
+            
+            const cleanUp = () => {
+                modal.classList.remove('active');
+                btnYes.onclick = null;
+                btnNo.onclick = null;
+            };
+            
+            btnYes.onclick = () => {
+                cleanUp();
+                if (onYes) onYes();
+            };
+            
+            btnNo.onclick = () => {
+                cleanUp();
+                if (onNo) onNo();
+            };
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem('savedLocationsV12')) {
+                targetLocationsArray = JSON.parse(localStorage.getItem('savedLocationsV12'));
+            } else {
+                targetLocationsArray = [...fallbackDatabaseDefaults];
+                localStorage.setItem('savedLocationsV12', JSON.stringify(targetLocationsArray));
+            }
+
+            if (localStorage.getItem('savedMainFontSize')) currentMainFontSize = parseInt(localStorage.getItem('savedMainFontSize'));
+            if (localStorage.getItem('savedMainFontFamily')) document.getElementById('mainFontSelect').value = localStorage.getItem('savedMainFontFamily');
+            if (localStorage.getItem('savedFreeText')) document.getElementById('freeTextNamesInput').value = localStorage.getItem('savedFreeText');
+            if (localStorage.getItem('savedHubSelect')) document.getElementById('startPointHubSelect').value = localStorage.getItem('savedHubSelect');
+            if (localStorage.getItem('savedManualHubGps')) document.getElementById('customHubGpsInput').value = localStorage.getItem('savedManualHubGps');
+            if (localStorage.getItem('savedReturnToggle')) document.getElementById('returnToBaseToggle').checked = localStorage.getItem('savedReturnToggle') === 'true';
+            
+            if (localStorage.getItem('savedExpertModeActive')) {
+                isExpertModeActive = localStorage.getItem('savedExpertModeActive') === 'true';
+            }
+            
+            applyScreenDisplayModeStyles();
+            toggleManualHubInput();
+            renderSystemAll();
+            
+            window.addEventListener('resize', scaleEnvelopes);
+        };
+
+        function toggleScreenDisplayMode() {
+            isExpertModeActive = !isExpertModeActive;
+            localStorage.setItem('savedExpertModeActive', isExpertModeActive);
+            applyScreenDisplayModeStyles();
+        }
+
+        function applyScreenDisplayModeStyles() {
+            const btn = document.getElementById('modeToggleBtn');
+            if (isExpertModeActive) {
+                document.body.classList.add('expert-mode-active');
+                btn.innerText = "🔄 โหมดหน้าจอ: ขั้นสูง (Expert)";
+                btn.style.background = "#6d28d9"; 
+            } else {
+                document.body.classList.remove('expert-mode-active');
+                btn.innerText = "🔄 โหมดหน้าจอ: ทั่วไป (Simple)";
+                btn.style.background = "#1d4ed8";
+            }
+        }
+
+        function setAllNotePositions(posString) {
+            targetLocationsArray.forEach(item => {
+                if (item.checked) item.notePos = posString;
+            });
+            renderSystemAll();
+        }
+
+        function splitSalutationWizardEngine(mode) {
+            targetLocationsArray.forEach(item => {
+                if (!item.checked) return;
+                
+                let txt = item.name.trim();
+                
+                if (mode === 'LEARN') {
+                    if (!txt.startsWith("เรียน")) {
+                        txt = "เรียน " + txt;
+                    }
+                } else if (mode === 'DIRECTOR') {
+                    if (txt.startsWith("เรียน")) {
+                        let inner = txt.replace(/^เรียน\s*/, '').trim();
+                        if (!inner.startsWith("ผู้อำนวยการ")) {
+                            txt = "เรียน ผู้อำนวยการ" + inner;
+                        }
+                    } else {
+                        if (!txt.startsWith("ผู้อำนวยการ")) {
+                            txt = "ผู้อำนวยการ" + txt;
+                        }
+                    }
+                } else if (mode === 'CLEAR') {
+                    txt = txt.replace(/^(เรียน\s*ผู้อำนวยการโรงเรียน|เรียน\s*ผู้อำนวยการ|ผู้อำนวยการโรงเรียน|ผู้อำนวยการ|เรียน\s*)/g, '').trim();
+                }
+                
+                item.name = txt;
+            });
+            renderSystemAll();
+        }
+
+        function switchFormPanelTab(tabMode) {
+            document.getElementById('tabLinkSingle').classList.toggle('active', tabMode === 'SINGLE');
+            document.getElementById('tabLinkBulk').classList.toggle('active', tabMode === 'BULK');
+            document.getElementById('panelFormSingle').style.display = (tabMode === 'SINGLE') ? 'grid' : 'none';
+            document.getElementById('panelFormBulk').style.display = (tabMode === 'BULK') ? 'block' : 'none';
+        }
+
+        function toggleManualHubInput() {
+            const selectVal = document.getElementById('startPointHubSelect').value;
+            document.getElementById('customHubGpsWrapper').style.display = (selectVal === "CUSTOM_GPS") ? "block" : "none";
+            renderSystemAll();
+        }
+
+        function adjustMainFontSize(amt) {
+            currentMainFontSize += amt;
+            if (currentMainFontSize < 16) currentMainFontSize = 16;
+            if (currentMainFontSize > 40) currentMainFontSize = 40;
+            document.getElementById('mainFontSizeDisplay').innerText = currentMainFontSize + 'pt';
+            localStorage.setItem('savedMainFontSize', currentMainFontSize);
+            renderSystemAll();
+        }
+
+        function checkAllTableLocations(status) {
+            targetLocationsArray.forEach(item => item.checked = status);
+            renderSystemAll();
+        }
+
+        function changeTableSortingMode(mode) {
+            currentSortMode = mode;
+            rebuildTableInterface();
+        }
+
+        function calcHaversineKm(lat1, lon1, lat2, lon2) {
+            if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) return 0;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function reCalculateAutoOptimization() {
+            let hubLat = 6.760930192384781;
+            let hubLng = 101.29449279007311;
+            
+            const selectedHub = document.getElementById('startPointHubSelect').value;
+            if (selectedHub === "CUSTOM_GPS") {
+                const rawGps = document.getElementById('customHubGpsInput').value.trim();
+                if (rawGps.includes(",")) {
+                    const tokens = rawGps.split(",");
+                    const pLat = parseFloat(tokens[0].trim());
+                    const pLng = parseFloat(tokens[1].trim());
+                    if (!isNaN(pLat) && !isNaN(pLng)) { hubLat = pLat; hubLng = pLng; }
+                }
+            } else {
+                hubLat = baseHubsDatabase[selectedHub].lat;
+                hubLng = baseHubsDatabase[selectedHub].lng;
+            }
+
+            targetLocationsArray.forEach(item => {
+                item.qNum = null;
+                item.distStr = "";
+            });
+
+            let validIndices = [];
+            targetLocationsArray.forEach((item, index) => {
+                if (item.checked && item.lat !== null && item.lng !== null) {
+                    validIndices.push(index);
+                }
+            });
+
+            if (validIndices.length === 0) return;
+
+            let unvisited = [...validIndices];
+            let currentLat = hubLat;
+            let currentLng = hubLng;
+            let tourOrder = [];
+
+            while (unvisited.length > 0) {
+                let bestIdxInUnvisited = 0;
+                let minDistance = Infinity;
+                
+                for (let i = 0; i < unvisited.length; i++) {
+                    let item = targetLocationsArray[unvisited[i]];
+                    let d = calcHaversineKm(currentLat, currentLng, item.lat, item.lng);
+                    if (d < minDistance) { minDistance = d; bestIdxInUnvisited = i; }
+                }
+                
+                let chosenRealIdx = unvisited.splice(bestIdxInUnvisited, 1)[0];
+                tourOrder.push(chosenRealIdx);
+                currentLat = targetLocationsArray[chosenRealIdx].lat;
+                currentLng = targetLocationsArray[chosenRealIdx].lng;
+            }
+
+            let isPathImproved = true;
+            let loopCounter = 0;
+
+            function calcTotalTourDistance(currentTour) {
+                if (currentTour.length === 0) return 0;
+                let dist = calcHaversineKm(hubLat, hubLng, targetLocationsArray[currentTour[0]].lat, targetLocationsArray[currentTour[0]].lng);
+                for (let i = 0; i < currentTour.length - 1; i++) {
+                    dist += calcHaversineKm(targetLocationsArray[currentTour[i]].lat, targetLocationsArray[currentTour[i]].lng,
+                                            targetLocationsArray[currentTour[i+1]].lat, targetLocationsArray[currentTour[i+1]].lng);
+                }
+                if (document.getElementById('returnToBaseToggle').checked) {
+                    dist += calcHaversineKm(targetLocationsArray[currentTour[currentTour.length - 1]].lat, targetLocationsArray[currentTour[currentTour.length - 1]].lng, hubLat, hubLng);
+                }
+                return dist;
+            }
+
+            while (isPathImproved && loopCounter < 150) {
+                isPathImproved = false;
+                loopCounter++;
+                let currentBestDistance = calcTotalTourDistance(tourOrder);
+
+                for (let i = 0; i < tourOrder.length - 1; i++) {
+                    for (let j = i + 1; j < tourOrder.length; j++) {
+                        let candidateTour = [...tourOrder];
+                        let subSegment = candidateTour.slice(i, j + 1).reverse();
+                        candidateTour.splice(i, j - i + 1, ...subSegment);
+
+                        let candidateDistance = calcTotalTourDistance(candidateTour);
+                        if (candidateDistance < currentBestDistance) {
+                            tourOrder = candidateTour;
+                            currentBestDistance = candidateDistance;
+                            isPathImproved = true;
+                        }
+                    }
+                }
+            }
+
+            let lastLat = hubLat;
+            let lastLng = hubLng;
+            tourOrder.forEach((realIdx, qSequence) => {
+                let node = targetLocationsArray[realIdx];
+                let stepDist = calcHaversineKm(lastLat, lastLng, node.lat, node.lng);
+                node.qNum = qSequence + 1;
+                node.distStr = stepDist.toFixed(1) + " กม.";
+                lastLat = node.lat;
+                lastLng = node.lng;
+            });
+        }
+
+        function rebuildTableInterface() {
+            const tbody = document.getElementById('masterTableBody');
+            tbody.innerHTML = '';
+
+            let displayList = targetLocationsArray.map((item, index) => ({ ...item, originalIndex: index }));
+
+            if (currentSortMode === 'Q') {
+                displayList.sort((a, b) => {
+                    if (a.qNum === null && b.qNum === null) return a.name.localeCompare(b.name, 'th');
+                    if (a.qNum === null) return 1;
+                    if (b.qNum === null) return -1;
+                    return a.qNum - b.qNum;
+                });
+            } else {
+                displayList.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            }
+
+            displayList.forEach(item => {
+                const tr = document.createElement('tr');
+                if (item.lat === null || item.lng === null) tr.className = "row-warning";
+
+                const qContent = item.qNum ? `<span class="q-badge">${item.qNum}</span>` : `<span class="q-empty">-</span>`;
+                const distanceLabel = item.distStr ? `<br><span style="color:#2563eb; font-weight:bold;">↳ ห่างจากจุดเดิม: ${item.distStr}</span>` : '';
+
+                tr.innerHTML = `
+                    <td style="text-align:center;">${qContent}</td>
+                    <td style="text-align:center;"><input type="checkbox" class="location-row-cb" data-idx="${item.originalIndex}" ${item.checked ? 'checked' : ''} onchange="toggleRowCheckbox(${item.originalIndex})"></td>
+                    <td>
+                        <strong>${item.name}</strong><br>
+                        <span style="color:#64748b; font-size:11px;">📍 ${item.lat ? item.lat + ', ' + item.lng : 'ไม่มีข้อมูลพิกัดในระบบ'}</span>
+                        ${distanceLabel}
+                    </td>
+                    
+                    <td class="radio-cell expert-col"><input type="radio" name="pos_${item.originalIndex}" ${item.notePos === 'tl' ? 'checked' : ''} onchange="changeRowNotePosition(${item.originalIndex}, 'tl')"></td>
+                    <td class="radio-cell expert-col"><input type="radio" name="pos_${item.originalIndex}" ${item.notePos === 'tr' ? 'checked' : ''} onchange="changeRowNotePosition(${item.originalIndex}, 'tr')"></td>
+                    <td class="radio-cell expert-col"><input type="radio" name="pos_${item.originalIndex}" ${item.notePos === 'bl' ? 'checked' : ''} onchange="changeRowNotePosition(${item.originalIndex}, 'bl')"></td>
+                    <td class="radio-cell expert-col"><input type="radio" name="pos_${item.originalIndex}" ${item.notePos === 'br' ? 'checked' : ''} onchange="changeRowNotePosition(${item.originalIndex}, 'br')"></td>
+                    <td class="expert-col">
+                        <input type="text" class="input-style" style="width:100%; padding:4px;" placeholder="โน้ตมุมซอง..." value="${item.noteText}" oninput="updateRowNoteText(${item.originalIndex}, this.value)">
+                    </td>
+                    <td class="expert-col">
+                        <select class="select-style" style="width:100%; padding:3px; font-size:11px;" onchange="updateRowFont(${item.originalIndex}, this.value)">
+                            <option value="TH Sarabun PSK" ${item.font === 'TH Sarabun PSK' ? 'selected' : ''}>Sarabun PSK</option>
+                            <option value="TH Sarabun IT ๙" ${item.font === 'TH Sarabun IT ๙' ? 'selected' : ''}>Sarabun ๙</option>
+                            <option value="Angsana New" ${item.font === 'Angsana New' ? 'selected' : ''}>Angsana</option>
+                        </select>
+                    </td>
+                    <td class="expert-col">
+                        <input type="number" class="input-style" style="width:100%; padding:3px; text-align:center;" min="9" max="22" value="${item.size}" onchange="updateRowFontSize(${item.originalIndex}, this.value)">
+                    </td>
+                    
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button type="button" class="btn btn-edit" onclick="triggerEditLocationForm(${item.originalIndex})">✏️</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteLocationRow(${item.originalIndex})">❌</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleRowCheckbox(idx) {
+            targetLocationsArray[idx].checked = !targetLocationsArray[idx].checked;
+            renderSystemAll();
+        }
+
+        function changeRowNotePosition(idx, pos) {
+            targetLocationsArray[idx].notePos = pos;
+            renderSystemAll();
+        }
+
+        function updateRowNoteText(idx, text) {
+            targetLocationsArray[idx].noteText = text;
+            saveAndRefreshPreviewsOnly();
+        }
+
+        function updateRowFont(idx, font) {
+            targetLocationsArray[idx].font = font;
+            renderSystemAll();
+        }
+
+        function updateRowFontSize(idx, size) {
+            targetLocationsArray[idx].size = parseInt(size) || 12;
+            renderSystemAll();
+        }
+
+        function saveAndRefreshPreviewsOnly() {
+            localStorage.setItem('savedLocationsV12', JSON.stringify(targetLocationsArray));
+            generateEnvelopesPreview();
+        }
+
+        function renderSystemAll() {
+            localStorage.setItem('savedMainFontFamily', document.getElementById('mainFontSelect').value);
+            localStorage.setItem('savedFreeText', document.getElementById('freeTextNamesInput').value);
+            localStorage.setItem('savedHubSelect', document.getElementById('startPointHubSelect').value);
+            localStorage.setItem('savedManualHubGps', document.getElementById('customHubGpsInput').value);
+            localStorage.setItem('savedReturnToggle', document.getElementById('returnToBaseToggle').checked ? 'true' : 'false');
+            
+            reCalculateAutoOptimization();
+            rebuildTableInterface();
+            generateEnvelopesPreview();
+            localStorage.setItem('savedLocationsV12', JSON.stringify(targetLocationsArray));
+        }
+
+        function scaleEnvelopes() {
+            const wrappers = document.querySelectorAll('.envelope-preview-wrapper');
+            wrappers.forEach(wrapper => {
+                const envelope = wrapper.querySelector('.envelope');
+                if (!envelope) return;
+                
+                const wrapperWidth = wrapper.clientWidth - 16; 
+                const baseWidth = 831.5; 
+                const baseHeight = 415.7; 
+                
+                if (wrapperWidth < baseWidth) {
+                    const scaleFactor = wrapperWidth / baseWidth;
+                    envelope.style.transform = `scale(${scaleFactor})`;
+                    wrapper.style.height = `${baseHeight * scaleFactor + 16}px`;
+                } else {
+                    envelope.style.transform = 'none';
+                    wrapper.style.height = 'auto';
+                }
+            });
+        }
+
+        function generateEnvelopesPreview() {
+            const previewArea = document.getElementById('livePreviewScreenArea');
+            previewArea.innerHTML = '';
+
+            let combinedList = [];
+            const globalFont = document.getElementById('mainFontSelect').value;
+
+            const freeLines = document.getElementById('freeTextNamesInput').value.split('\n');
+            freeLines.forEach(line => {
+                if (line.trim() !== "") {
+                    let mainName = line.trim();
+                    let embeddedNote = "";
+                    if (line.includes("|")) {
+                        let parts = line.split("|");
+                        mainName = parts[0].trim();
+                        embeddedNote = parts[1].trim();
+                    }
+                    combinedList.push({ name: mainName, note: embeddedNote, pos: "tl", font: globalFont, size: 12 });
+                }
+            });
+
+            let tableActiveQueue = targetLocationsArray.filter(item => item.checked);
+            tableActiveQueue.sort((a, b) => {
+                if (a.qNum === null) return 1;
+                if (b.qNum === null) return -1;
+                return a.qNum - b.qNum;
+            });
+
+            tableActiveQueue.forEach(item => {
+                combinedList.push({ name: item.name.trim(), note: item.noteText.trim(), pos: item.notePos, font: item.font, size: item.size });
+            });
+
+            document.getElementById('totalQueueCountLabel').innerText = `📄 รายการคิวเตรียมพิมพ์: ${combinedList.length} ซอง`;
+
+            if (combinedList.length === 0) {
+                previewArea.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#64748b; padding:20px; font-size:13px;">ไม่มีรายการจดหมายจัดเตรียมพิมพ์ในขณะนี้</div>`;
+                return;
+            }
+
+            combinedList.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'envelope-preview-wrapper';
+
+                const env = document.createElement('div');
+                env.className = 'envelope';
+                
+                const mainSpan = document.createElement('div');
+                mainSpan.className = 'envelope-main-text';
+                mainSpan.style.fontFamily = `"${globalFont}", sans-serif`;
+                mainSpan.style.fontSize = currentMainFontSize + 'pt';
+                mainSpan.innerText = item.name;
+                env.appendChild(mainSpan);
+
+                if (item.note !== "") {
+                    const noteSpan = document.createElement('div');
+                    noteSpan.className = `mini-note note-${item.pos}`;
+                    noteSpan.style.fontFamily = `"${item.font}", sans-serif`;
+                    noteSpan.style.fontSize = item.size + 'pt';
+                    noteSpan.innerText = item.note;
+                    env.appendChild(noteSpan);
+                }
+
+                const alertBadge = document.createElement('div');
+                alertBadge.className = 'overrun-badge';
+                alertBadge.innerText = '⚠️ ข้อความยาวล้นขอบซอง DL!';
+                env.appendChild(alertBadge);
+
+                wrapper.appendChild(env);
+                previewArea.appendChild(wrapper);
+
+                if (mainSpan.scrollWidth > mainSpan.clientWidth || mainSpan.scrollHeight > mainSpan.clientHeight) {
+                    env.classList.add('overrun-warning');
+                }
+            });
+
+            setTimeout(scaleEnvelopes, 50);
+        }
+
+        function executeBulkImportProcessing() {
+            const rawBulkText = document.getElementById('bulkDataImportInput').value.trim();
+            if (rawBulkText === "") return;
+
+            const lines = rawBulkText.split('\n');
+            let successCounter = 0;
+
+            lines.forEach(line => {
+                if (line.trim() === "") return;
+                let locationName = line.trim();
+                let gpsPart = "";
+
+                if (line.includes("|")) {
+                    const fragments = line.split("|");
+                    locationName = fragments[0].trim();
+                    gpsPart = fragments[1].trim();
+                } else if (line.includes("\t")) {
+                    const fragments = line.split("\t");
+                    locationName = fragments[0].trim();
+                    gpsPart = fragments[1].trim();
+                }
+
+                let parsedLat = null; let parsedLng = null;
+                if (gpsPart.includes(",")) {
+                    const coords = gpsPart.split(",");
+                    const pLat = parseFloat(coords[0].trim());
+                    const pLng = parseFloat(coords[1].trim());
+                    if (!isNaN(pLat) && !isNaN(pLng)) { parsedLat = pLat; parsedLng = pLng; }
+                }
+
+                if (!targetLocationsArray.some(item => item.name.toLowerCase() === locationName.toLowerCase())) {
+                    targetLocationsArray.push({
+                        name: locationName, lat: parsedLat, lng: parsedLng,
+                        noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12,
+                        checked: true, qNum: null, distStr: ""
+                    });
+                    successCounter++;
+                }
+            });
+
+            document.getElementById('bulkDataImportInput').value = "";
+            switchFormPanelTab('SINGLE');
+            renderSystemAll();
+            showToast(`📥 นำเข้าสถานที่สำเร็จเพิ่มจำนวน ${successCounter} รายการ เรียบร้อยแล้ว!`, 'success');
+        }
+
+        function triggerExportDatabaseBackupFile() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetLocationsArray, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `schools_gps_backup_2026.txt`);
+            dlAnchorElem.click();
+            showToast(`💾 ดาวน์โหลดไฟล์สำรองข้อมูลพิกัดสำเร็จ!`, 'success');
+        }
+
+        function executeImportDatabaseBackupFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].hasOwnProperty('name')) {
+                        targetLocationsArray = parsedData;
+                        renderSystemAll();
+                        showToast("📤 กู้คืนฐานข้อมูลพิกัดและโน้ตย่อยทั้งหมดสำเร็จ!", 'success');
+                    } else {
+                        showToast("รูปแบบโครงสร้างไฟล์สำรองไม่ถูกต้อง!", 'error');
+                    }
+                } catch (err) { 
+                    showToast("ไม่สามารถเปิดอ่านไฟล์สำรองได้: " + err, 'error'); 
+                }
+            };
+            reader.readAsText(file);
+            document.getElementById('hiddenBackupFileInput').value = "";
+        }
+
+        function triggerEditLocationForm(idx) {
+            switchFormPanelTab('SINGLE');
+            const target = targetLocationsArray[idx];
+            document.getElementById('formLocationName').value = target.name;
+            document.getElementById('formLocationGps').value = (target.lat !== null) ? `${target.lat}, ${target.lng}` : '';
+            
+            document.getElementById('formSubmitBtn').innerText = "💾 บันทึก";
+            document.getElementById('formCancelBtn').style.display = "inline-block";
+            activeEditIndex = idx;
+            document.getElementById('formLocationName').focus();
+        }
+
+        function resetLocationForm() {
+            document.getElementById('formLocationName').value = '';
+            document.getElementById('formLocationGps').value = '';
+            document.getElementById('formSubmitBtn').innerText = "💾 บันทึก";
+            document.getElementById('formCancelBtn').style.display = "none";
+            activeEditIndex = null;
+        }
+
+        function submitLocationForm() {
+            const name = document.getElementById('formLocationName').value.trim();
+            const gps = document.getElementById('formLocationGps').value.trim();
+            if (name === "") return;
+
+            let lat = null; let lng = null;
+            if (gps.includes(",")) {
+                const tokens = gps.split(",");
+                const pLat = parseFloat(tokens[0].trim());
+                const pLng = parseFloat(tokens[1].trim());
+                if (!isNaN(pLat) && !isNaN(pLng)) { lat = pLat; lng = pLng; }
+            }
+
+            if (activeEditIndex !== null) {
+                targetLocationsArray[activeEditIndex].name = name;
+                targetLocationsArray[activeEditIndex].lat = lat;
+                targetLocationsArray[activeEditIndex].lng = lng;
+                resetLocationForm();
+                showToast("💾 แก้ไขข้อมูลสถานที่เรียบร้อยแล้ว!", 'success');
+            } else {
+                targetLocationsArray.push({
+                    name: name, lat: lat, lng: lng,
+                    noteText: "", notePos: "tr", font: "TH Sarabun PSK", size: 12,
+                    checked: true, qNum: null, distStr: ""
+                });
+                document.getElementById('formLocationName').value = '';
+                document.getElementById('formLocationGps').value = '';
+                showToast("➕ เพิ่มสถานที่ใหม่สำเร็จ!", 'success');
+            }
+            renderSystemAll();
+        }
+
+        function deleteLocationRow(idx) {
+            const name = targetLocationsArray[idx].name;
+            askConfirmation(`คุณต้องการลบ "${name}" ออกจากระบบใช่หรือไม่?`, () => {
+                if (activeEditIndex === idx) resetLocationForm();
+                targetLocationsArray.splice(idx, 1);
+                renderSystemAll();
+                showToast(`ลบ "${name}" ออกจากระบบสำเร็จ`, 'warning');
+            });
+        }
+
+        function launchGoogleMapsMobile() {
+            let hubLat = 6.760930192384781;
+            let hubLng = 101.29449279007311;
+            
+            const selectedHub = document.getElementById('startPointHubSelect').value;
+            if (selectedHub === "CUSTOM_GPS") {
+                const rawGps = document.getElementById('customHubGpsInput').value.trim();
+                if (rawGps.includes(",")) {
+                    const tokens = rawGps.split(",");
+                    const pLat = parseFloat(tokens[0].trim());
+                    const pLng = parseFloat(tokens[1].trim());
+                    if (!isNaN(pLat) && !isNaN(pLng)) { hubLat = pLat; hubLng = pLng; }
+                }
+            } else {
+                hubLat = baseHubsDatabase[selectedHub].lat;
+                hubLng = baseHubsDatabase[selectedHub].lng;
+            }
+
+            let sortedActiveNodes = targetLocationsArray.filter(item => item.checked && item.lat !== null && item.lng !== null);
+            sortedActiveNodes.sort((a, b) => (a.qNum || 999) - (b.qNum || 999));
+
+            if (sortedActiveNodes.length === 0) {
+                showToast("กรุณาเลือกสถานที่ที่มีพิกัดละติจูดในตารางอย่างน้อย 1 จุดเพื่อนำทาง!", 'warning');
+                return;
+            }
+
+            let origin = `${hubLat},${hubLng}`;
+            let destination = "";
+            let waypoints = [];
+
+            if (document.getElementById('returnToBaseToggle').checked) {
+                destination = `${hubLat},${hubLng}`;
+                sortedActiveNodes.forEach(item => waypoints.push(`${item.lat},${item.lng}`));
+            } else {
+                let lastNode = sortedActiveNodes[sortedActiveNodes.length - 1];
+                destination = `${lastNode.lat},${lastNode.lng}`;
+                for (let i = 0; i < sortedActiveNodes.length - 1; i++) {
+                    waypoints.push(`${sortedActiveNodes[i].lat},${sortedActiveNodes[i].lng}`);
+                }
+            }
+
+            let mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+            if (waypoints.length > 0) mapsUrl += `&waypoints=${waypoints.join('|')}`;
+            window.open(mapsUrl, '_blank');
+        }
+
+        function openInstructionModal() { document.getElementById('instructionModalOverlay').classList.add('active'); }
+        function closeInstructionModal() { document.getElementById('instructionModalOverlay').classList.remove('active'); }
+        function closeInstructionModalOutside(e) { if (e.target.id === 'instructionModalOverlay') closeInstructionModal(); }
+
+        function executePrintJob() {
+            const previewArea = document.getElementById('livePreviewScreenArea');
+            const printArea = document.getElementById('printArea');
+            if (previewArea.innerText.includes("ไม่มีรายการจดหมาย")) {
+                showToast("กรุณาป้อนข้อมูลหรือติ๊กเลือกสถานที่เพื่อจัดพิมพ์การ์ดซองก่อน!", 'warning');
+                return;
+            }
+            printArea.innerHTML = previewArea.innerHTML;
+            setTimeout(() => { window.print(); }, 300);
+        }
+    </script>
+</body>
+</html>

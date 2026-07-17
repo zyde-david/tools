@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHK Script Manager & Dashboard Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+        .container {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 { font-size: 20px; border-bottom: 2px solid #cbd5e1; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        .help-text { font-size: 12px; color: #64748b; margin-top: -2px; margin-bottom: 5px; }
+        input[type="text"], select {
+            width: 100%; padding: 10px; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 15px; box-sizing: border-box;
+        }
+        input[type="text"]:focus, select:focus { border-color: #3498db; outline: none; }
+        
+        /* Keyboard Panel */
+        .btn-panel {
+            margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e2e8f0;
+        }
+        .section-title { font-size: 11px; color: #475569; font-weight: bold; margin: 10px 0 5px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        button.key-btn {
+            border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.15s;
+        }
+        button.key-btn:hover { transform: translateY(-1px); }
+        .btn-action { background-color: #e2e8f0; color: #0f172a; font-weight: bold; }
+        .btn-sleep { background-color: #f97316; color: white; font-weight: bold; border-color: #ea580c; }
+        .btn-rand { background-color: #ec4899; color: white; font-weight: bold; border-color: #db2777; } /* สีชมพูสำหรับปุ่มสุ่ม */
+        .btn-nav { background-color: #fef08a; color: #713f12; }
+        .btn-macro { background-color: #bbf7d0; color: #14532d; font-weight: bold; }
+        
+        /* Control Buttons */
+        .main-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-primary { background-color: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #475569; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-secondary:hover { background-color: #334155; }
+        .btn-danger { background-color: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-edit { background-color: #eab308; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; margin-right: 4px; }
+        .btn-edit:hover { background-color: #ca8a04; }
+        
+        /* Filter Controls */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f1f5f9; padding: 12px; border-radius: 6px; }
+        .filter-bar input, .filter-bar select { width: auto; flex: 1; min-width: 200px; padding: 8px; font-size: 14px; }
+        
+        /* Table Style */
+        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 14px; margin-top: 10px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        th { background-color: #f8fafc; color: #334155; cursor: pointer; user-select: none; }
+        th:hover { background-color: #e2e8f0; }
+        tr.selected { background-color: #f0fdf4; }
+        .center { text-align: center; }
+        
+        /* Edit Row Styles */
+        .edit-input { width: 100%; padding: 5px; border: 1px solid #3498db; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+
+
+<div class="container">
+    <h1>1. เครื่องมือสร้างและแก้ไขสคริปต์คีย์ข้อมูล (AHK Generator)</h1>
+    
+    <div class="form-group">
+        <label for="triggerInput">คำย่อภาษาอังกฤษ (Trigger):</label>
+        <input type="text" id="triggerInput" placeholder="ตัวอย่าง: iop">
+    </div>
+
+    <div class="form-group">
+        <label for="actionInput">ปุ่มกดเลื่อนช่อง / ข้อความที่จะพิมพ์:</label>
+        <input type="text" id="actionInput" placeholder="พิมพ์ข้อความปกติ หรือเลือกคลิกปุ่มลัดด้านล่าง">
+    </div>
+
+    <div class="btn-panel">
+        <div class="section-title">🛑 ฟังก์ชันควบคุมและช่วยหยุดรอระบบค้าง</div>
+        <div class="btn-row">
+            <button class="key-btn btn-sleep" onclick="insertKey('[Sleep400]')">⚠️ แทรกจุดหยุดรอ 400ms</button>
+            <button class="key-btn btn-sleep" onclick="insertKey('[Sleep600]')">⚠️ แทรกจุดหยุดรอ 600ms</button>
+            <button class="key-btn btn-rand" onclick="insertKey('[Random90-100]')">🎲 แทรกจุดสุ่มตัวเลข (90-100)</button>
+        </div>
+        
+        <div class="section-title">ปุ่มสั่งการคีย์บอร์ดหลัก</div>
+        <div class="btn-row">
+            <button class="key-btn btn-action" onclick="insertKey('{Enter}')">Enter</button>
+            <button class="key-btn btn-action" onclick="insertKey('{Tab}')">Tab</button>
+            <button class="key-btn btn-action" onclick="insertKey('{Space}')">Spacebar</button>
+            <button class="key-btn btn-action" onclick="insertKey('{Backspace}')">Backspace</button>
+        </div>
+
+        <div class="section-title">ปุ่มลูกศรควบคุมทิศทาง</div>
+        <div class="btn-row">
+            <button class="key-btn btn-nav" onclick="insertKey('{Up}')">ขึ้น ↑</button>
+            <button class="key-btn btn-nav" onclick="insertKey('{Down}')">ลง ↓</button>
+            <button class="key-btn btn-nav" onclick="insertKey('{Left}')">ซ้าย ←</button>
+            <button class="key-btn btn-nav" onclick="insertKey('{Right}')">ขวา →</button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="descInput">บันทึกช่วยจำ (Description):</label>
+        <input type="text" id="descInput" placeholder="ตัวอย่าง: ใช้รันสุ่มค่าชีพจรและกรอกตารางข้ามช่อง">
+    </div>
+
+    <div class="main-actions">
+        <button class="btn-primary" onclick="addScript()">➕ บันทึกสคริปต์ลงฐานข้อมูลตาราง</button>
+    </div>
+</div>
+
+<div class="container">
+    <h2>2. แผงควบคุมสคริปต์และประวัติข้อมูล (Script Dashboard)</h2>
+    <div class="help-text">💡 <b>แก้ไขข้อมูล (Inline Edit):</b> คุณสามารถกดปุ่มสีเหลืองเพื่อแก้ไขข้อความคำย่อ ปุ่มกด หรือรายละเอียดโน้ตในตารางได้โดยตรงแบบไม่ต้องสร้างใหม่</div>
+    
+    <div class="filter-bar">
+        <input type="text" id="searchBox" placeholder="🔍 พิมพ์คำค้นหา (Trigger หรือ รายละเอียดช่วยจำ)..." oninput="renderTable()">
+        <select id="typeFilter" onchange="renderTable()">
+            <option value="all">แสดงสคริปต์ทั้งหมด (All)</option>
+            <option value="random">เฉพาะสคริปต์ที่มีการสุ่มเลข (Random)</option>
+            <option value="sleep">เฉพาะสคริปต์ที่มีระบบหยุดรอ (Sleep)</option>
+        </select>
+        <button class="btn-secondary" onclick="exportBulkAHK()">💾 มัดรวมส่งออกไฟล์สคริปต์ที่เลือก (.ahk)</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="4%" class="center"><input type="checkbox" id="selectAll" checked onclick="toggleSelectAll()"></th>
+                <th width="16%" onclick="sortData('trigger')">คำย่อ (Trigger) ↕</th>
+                <th width="40%">ปุ่มสั่งการ (Actions)</th>
+                <th width="28%" onclick="sortData('desc')">บันทึกช่วยจำ (Description) ↕</th>
+                <th width="12%" class="center">การจัดการ</th>
+            </tr>
+        </thead>
+        <tbody id="scriptTableBody">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // ฐานข้อมูลเริ่มต้น รวบรวมจากโค้ดปัจจุบันของคุณทั้งหมด
+    let savedScripts = [
+        { id: 1, trigger: 'qq', action: '36{tab 3}[Random90-100]{tab}22{tab}', desc: 'Quick Fix: กรอกตัวเลขและสุ่มค่าสัญญาณชีพ 90-100', checked: true, isEditing: false },
+        { id: 2, trigger: 'p1', action: 'z001{Enter}[Sleep400]z011[Sleep600]{Enter}4{Enter 2}z010[Sleep600]{Enter}4{Enter 2}z108[Sleep600]{Enter}4{Enter 2}', desc: 'P1 Code Sequence: ชุดตรวจสุขภาพนักเรียนชั้นป.1', checked: true, isEditing: false },
+        { id: 3, trigger: 'fff', action: 'FERROUS FUMARATE 200 mg{Down}{Enter}12{Down}{Enter}5{Enter 3}', desc: 'Medicine Input: กรอกรายการจ่ายยาธาตุเหล็ก', checked: true, isEditing: false },
+        { id: 4, trigger: 'aaa', action: 'อนามัยโรงเรียนป.1 ตรวจสุขภาพ+จ่ายยาเม็ดเสริมธาตุเหล็ก+ตวรวจสาตา+เจาะซีดHCT{Down}{Enter}อนามัยโรงเรียนป.1 ตรวจสุขภาพ+จ่ายยาเม็ดเสริมธาตุเหล็ก+ตวรวจสาตา+เจาะซีดHCT', desc: 'School Health Check: บันทึกกิจกรรมอนามัยโรงเรียนตรวจสุขภาพ', checked: true, isEditing: false },
+        { id: 5, trigger: 'iop', action: '{tab 31}1{Enter}0004{Enter}099{Enter}099{Enter}02{Enter}02{Enter}2{Enter}4', desc: 'Hospital Data Entry: ชุดคีย์เลขรหัสมาตรฐานของโรงพยาบาล', checked: true, isEditing: false },
+        { id: 6, trigger: '943', action: '{tab}94{tab}10{tab}[Sleep400]03{tab}', desc: 'Tab Code 943: คีย์เลขแท็บสลับข้อมูลด่วน', checked: true, isEditing: false },
+        { id: 7, trigger: '04', action: '0004{Enter}099{Enter}099{Enter}02{Enter}02{Enter}2{Enter}4', desc: 'Hospital Entry 04: รหัสย่อคีย์ลัดสำหรับขึ้นฟอร์มใหม่', checked: true, isEditing: false },
+        { id: 8, trigger: 'previ', action: 'previous', desc: 'AutoFix: คำผิดยอดฮิต แก้คำพิมพ์ผิดเป็นคำว่า previous', checked: true, isEditing: false }
+    ];
+
+    let currentSortKey = '';
+    let sortAscending = true;
+
+    // ระบบ Mapping สลับแป้น ไทย-อังกฤษ มาตรฐานคีย์บอร์ดเกษมณี
+    const enToThMap = {
+        'q':'ๆ', 'w':'ไ', 'e':'ำ', 'r':'พ', 't':'ะ', 'y':'ั', 'u':'ี', 'i':'ร', 'o':'น', 'p':'ย', '[':'บ', ']':'ล', '\\':'ฃ',
+        'a':'ฟ', 's':'ห', 'd':'ก', 'f':'ด', 'g':'เ', 'h':'้', 'j':'่', 'k':'า', 'l':'ส', ';':'ว', "'":'ง',
+        'z':'ผ', 'x':'ป', 'c':'แ', 'v':'อ', 'b':'ิ', 'n':'ื', 'm':'ท', ',':'ม', '.':'ใ', '/':'ฝ',
+        '1':'ๅ', '2':'/', '3':'_-', '4':'ภ', '5':'ถ', '6':'ุ', '7':'ึ', '8':'ค', '9':'ต', '0':'จ', '-':'ข', '=':'ช', '`':'_ภ'
+    };
+
+    function convertToThai(enText) {
+        return enText.split('').map(char => enToThMap[char] || char).join('');
+    }
+
+    function insertKey(key) {
+        const actionInput = document.getElementById('actionInput');
+        actionInput.value += key;
+        actionInput.focus();
+    }
+
+    function addScript() {
+        const trigger = document.getElementById('triggerInput').value.trim();
+        let action = document.getElementById('actionInput').value;
+        const desc = document.getElementById('descInput').value.trim() || 'ไม่ได้ระบุคำอธิบายช่วยจำ';
+
+        if (!trigger || !action) {
+            alert("กรุณาระบุข้อมูลช่องคำย่อและปุ่มส่งการก่อนกดบันทึกครับ");
+            return;
+        }
+
+        // ยุบปุ่มกดซ้ำก่อนเข้าตาราง
+        const keysToCompress = ['Enter', 'Tab', 'Down', 'Up', 'Left', 'Right', 'Space', 'Backspace', 'Delete', 'tab', 'enter'];
+        keysToCompress.forEach(key => {
+            const regex = new RegExp(`(\\{${key}\\})+`, 'g');
+            action = action.replace(regex, (match) => {
+                const count = match.match(new RegExp(`\\{${key}\\}`, 'i')).length;
+                return count > 1 ? `{${key} ${count}}` : `{${key}}`;
+            });
+        });
+
+        savedScripts.push({
+            id: Date.now(),
+            trigger: trigger.toLowerCase(),
+            action: action,
+            desc: desc,
+            checked: true,
+            isEditing: false
+        });
+
+        renderTable();
+        document.getElementById('triggerInput').value = '';
+        document.getElementById('actionInput').value = '';
+        document.getElementById('descInput').value = '';
+    }
+
+    // เริ่มระบบเปิดโหมดแก้ไขข้อมูล Inline Edit
+    function startEdit(id) {
+        savedScripts.forEach(item => {
+            if (item.id === id) item.isEditing = true;
+        });
+        renderTable();
+    }
+
+    // เซฟการแก้ไขข้อมูล Inline Edit กลับลงตาราง
+    function saveEdit(id) {
+        const rowTrigger = document.getElementById(`edit-trigger-${id}`).value.trim().toLowerCase();
+        const rowAction = document.getElementById(`edit-action-${id}`).value;
+        const rowDesc = document.getElementById(`edit-desc-${id}`).value.trim();
+
+        if (!rowTrigger || !rowAction) {
+            alert("ช่องคำย่อและช่องปุ่มสั่งการห้ามปล่อยว่างครับ");
+            return;
+        }
+
+        savedScripts.forEach(item => {
+            if (item.id === id) {
+                item.trigger = rowTrigger;
+                item.action = rowAction;
+                item.desc = rowDesc;
+                item.isEditing = false;
+            }
+        });
+        renderTable();
+    }
+
+    function deleteScript(id) {
+        savedScripts = savedScripts.filter(item => item.id !== id);
+        renderTable();
+    }
+
+    function toggleCheck(id) {
+        const item = savedScripts.find(s => s.id === id);
+        if (item) item.checked = !item.checked;
+        renderTable();
+    }
+
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAll').checked;
+        savedScripts.forEach(item => item.checked = isChecked);
+        renderTable();
+    }
+
+    function sortData(key) {
+        if (currentSortKey === key) {
+            sortAscending = !sortAscending;
+        } else {
+            currentSortKey = key;
+            sortAscending = true;
+        }
+        savedScripts.sort((a, b) => {
+            let valA = a[key].toLowerCase();
+            let valB = b[key].toLowerCase();
+            if (valA < valB) return sortAscending ? -1 : 1;
+            if (valA > valB) return sortAscending ? 1 : -1;
+            return 0;
+        });
+        renderTable();
+    }
+
+    // ฟังก์ชันเรนเดอร์ตารางประวัติอัจฉริยะ รองรับการแก้ไขข้อมูลสดๆ
+    function renderTable() {
+        const searchWord = document.getElementById('searchBox').value.toLowerCase();
+        const typeFilter = document.getElementById('typeFilter').value;
+        const tbody = document.getElementById('scriptTableBody');
+        tbody.innerHTML = '';
+
+        savedScripts.forEach(item => {
+            const matchSearch = item.trigger.includes(searchWord) || item.desc.toLowerCase().includes(searchWord);
+            
+            let matchFilter = true;
+            if (typeFilter === 'random' && !item.action.includes('[Random')) matchFilter = false;
+            if (typeFilter === 'sleep' && !item.action.includes('[Sleep')) matchFilter = false;
+
+            if (matchSearch && matchFilter) {
+                const tr = document.createElement('tr');
+                if (item.checked) tr.className = 'selected';
+
+                // กรณีแถวนั้นเปิดโหมดแก้ไขข้อมูลอยู่ (Inline Editing Mode)
+                if (item.isEditing) {
+                    tr.innerHTML = `
+                        <td class="center"><input type="checkbox" checked disabled></td>
+                        <td><input type="text" id="edit-trigger-${item.id}" class="edit-input" value="${item.trigger}"></td>
+                        <td><input type="text" id="edit-action-${item.id}" class="edit-input" value="${item.action}"></td>
+                        <td><input type="text" id="edit-desc-${item.id}" class="edit-input" value="${item.desc}"></td>
+                        <td class="center">
+                            <button class="btn-edit" style="background-color:#22c55e;" onclick="saveEdit(${item.id})">💾 เซฟ</button>
+                        </td>
+                    `;
+                } else {
+                    // แถวปกติแสดงโหมดอ่านทั่วไป
+                    tr.innerHTML = `
+                        <td class="center"><input type="checkbox" ${item.checked ? 'checked' : ''} onclick="toggleCheck(${item.id})"></td>
+                        <td><strong>::${item.trigger}::</strong><br><small style="color:#64748b;">ไทย: ::${convertToThai(item.trigger)}::</small></td>
+                        <td style="font-family:monospace; color:#0f172a;">${item.action.replace(/</g, "&lt;")}</td>
+                        <td>${item.desc}</td>
+                        <td class="center">
+                            <button class="btn-edit" onclick="startEdit(${item.id})">✏️ แก้ไข</button><button class="btn-danger" onclick="deleteScript(${item.id})">ลบ</button>
+                        </td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            }
+        });
+    }
+
+    // ระบบมัดรวมส่งออกโค้ด .ahk อัตโนมัติ (แปลงเครื่องหมาย Random และ Sleep ไปเป็นระบบ AHK v2 เต็มรูปแบบ)
+// ฟังก์ชันรวบรวมและส่งออกเป็นไฟล์สคริปต์ .ahk (เวอร์ชันอัปเกรดอุดรอยรั่วภาษาไทยเพี้ยน 100%)
+    function exportBulkAHK() {
+        const exportItems = savedScripts.filter(item => item.checked);
+        if (exportItems.length === 0) {
+            alert("กรุณาเลือกติ๊กถูกหน้าคำสั่งในตารางอย่างน้อย 1 รายการเพื่อส่งออกครับ");
+            return;
+        }
+
+        let fileContent = "; ==================================================\n";
+        fileContent += "; 🤖 ไฟล์สคริปต์ AutoHotkey มัดรวมอัตโนมัติ (v2 พร้อมระบบสุ่มและวางข้อความไทย)\n";
+        fileContent += `; 📅 วันที่ส่งออก: ${new Date().toLocaleDateString('th-TH')}\n`;
+        fileContent += "; ==================================================\n\n";
+
+        exportItems.forEach(item => {
+            fileContent += `; 💡 บันทึกช่วยจำ: ${item.desc}\n`;
+            fileContent += `::${item.trigger}::\n`;
+            fileContent += `::${convertToThai(item.trigger)}::\n`;
+            fileContent += `{\n`;
+
+            let currentStr = item.action;
+            let tempMarker = "||SPLIT_HERE||";
+            
+            // แปลงรหัส Token เพื่อแยกแยะคำสั่ง
+            let processedStr = currentStr
+                .replace(/\[Sleep400\]/g, tempMarker + "SLEEP400" + tempMarker)
+                .replace(/\[Sleep600\]/g, tempMarker + "SLEEP600" + tempMarker)
+                .replace(/\[Random90-100\]/g, tempMarker + "RAND90-100" + tempMarker)
+                .replace(/\[PasteText\]/g, tempMarker + "PASTETEXT" + tempMarker);
+
+            let tokens = processedStr.split(tempMarker);
+            let hasComplexCommands = currentStr.includes('{') || currentStr.includes('[');
+            
+            if (hasComplexCommands) {
+                fileContent += `    SetKeyDelay(60)\n`;
+            }
+
+            let nextIsPaste = false;
+
+            tokens.forEach(token => {
+                if (!token) return;
+                
+                if (token === "SLEEP400") {
+                    fileContent += `    Sleep(400) ; หยุดรอระบบโหลด 400ms\n`;
+                } else if (token === "SLEEP600") {
+                    fileContent += `    Sleep(600) ; หยุดรอระบบโหลด 600ms\n`;
+                } else if (token === "RAND90-100") {
+                    fileContent += `    SendEvent(Random(90, 100)) ; สุ่มตัวเลข 90-100\n`;
+                } else if (token === "PASTETEXT") {
+                    nextIsPaste = true; // ทำเครื่องหมายว่าข้อความถัดไปต้องใช้วิธีก๊อปปี้วาง
+                } else {
+                    if (nextIsPaste) {
+                        // ใช้เทคนิคเคลียร์คลิปบอร์ดแล้วส่งค่าผ่าน Clipboard เพื่อป้องกันภาษาไทยเพี้ยน
+                        fileContent += `    OldClip := A_Clipboard\n`;
+                        fileContent += `    A_Clipboard := "${token}"\n`;
+                        fileContent += `    if ClipWait(1)\n`;
+                        fileContent += `        Send("^v")\n`;
+                        fileContent += `    Sleep(100)\n`;
+                        fileContent += `    A_Clipboard := OldClip\n`;
+                        nextIsPaste = false;
+                    } else {
+                        if (hasComplexCommands) {
+                            fileContent += `    SendEvent("${token}")\n`;
+                        } else {
+                            fileContent += `    SendInput("${token}")\n`;
+                        }
+                    }
+                }
+            });
+
+            fileContent += `}\n\n`;
+        });
+
+        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "hospital_autocorrect_v2.ahk";
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    renderTable();
+</script>
+
+</body>
+</html>
