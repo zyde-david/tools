@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวางแผนจัดซื้อน้ำหมึกและบริหารฝูงเครื่องพิมพ์สำนักงาน (Hermes Host 2569)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .excel-table th {
+            background-color: #f3f4f6;
+            border: 1px solid #c0c0c0;
+            color: #222;
+            font-weight: 700;
+            padding: 10px 12px;
+            font-size: 0.825rem;
+            text-align: center;
+        }
+        .excel-table td {
+            border: 1px solid #dcdcdc;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #333;
+        }
+        .excel-table tr:hover {
+            background-color: #f0fdf4;
+        }
+        .excel-input {
+            background-color: #f9fafb;
+            border: 1px solid #b5b5b5;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-weight: bold;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+        .excel-input:focus {
+            background-color: #fff;
+            border-color: #107c41;
+            box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen py-6 px-4">
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+
+<div style="background: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 16px; max-width: 1152px; margin-left: auto; margin-right: auto;">
+    <span style="font-weight: bold; font-size: 14px;">🖨️ ระบบวางแผนจัดซื้อน้ำหมึก</span>
+    <a href="index.html" style="color: white; background: #0f766e; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">🏠 กลับหน้าหลัก</a>
+</div>
+
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">📊 แผนคำนวณคลังพัสดุน้ำหมึกสำนักงานความปลอดภัยสูง (รอบจัดซื้อ 2569 - 2570)</h1>
+                <p class="text-xs text-slate-500 mt-1">เกลี่ยภาระพิมพ์อัตโนมัติ คำนวณความจุใช้จริงในชีวิตประจำวัน (IRL) และวางแผนสั่งยกแพ็คกล่องละ 5 ขวดประหยัดงบ</p>
+            </div>
+            <button onclick="exportToCSV()" class="bg-[#107c41] hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition-all">
+                📥 ส่งออกฐานข้อมูลรายงาน Excel (.CSV)
+            </button>
+        </div>
+
+        <div class="bg-gradient-to-r from-emerald-800 to-green-700 text-white p-5 rounded-xl shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📅</span>
+                    <div>
+                        <h4 class="font-bold text-sm sm:text-base">ระบบวิเคราะห์ความคุ้มค่ารอบจัดหาพัสดุระยะยาว 1 ปี</h4>
+                        <p class="text-xs text-emerald-100">รอบกำหนดเวลาเตรียมสั่งการ: ตุลาคม 2569 – กันยายน 2570 (แผนการผลิต 1 ปีเต็ม)</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-950/50 px-3 py-1.5 rounded-lg border border-emerald-600/50 text-xs text-center font-mono tracking-wider font-bold">
+                    กรกฎาคม 2569 - กันยายน 2570
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-800 pt-2">
+                <div class="bg-white/95 p-3 rounded-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ความต้องการใช้งานกระดาษสะสมจนถึงรอบจัดซื้อหลัก (อีก 78 วันที่เหลือ)</p>
+                        <p class="text-lg font-bold text-slate-800 mt-0.5" id="val-survival-needs">~10,684 หน้า</p>
+                    </div>
+                    <span class="text-xl">🏃‍♂️</span>
+                </div>
+                <div id="survival-status-card" class="bg-emerald-100 p-3 rounded-lg border border-emerald-300 flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">สถานภาพสต็อกน้ำหมึกก้นคลังบนชั้นสารบรรณขณะนี้</p>
+                        <p class="text-base font-black text-emerald-800 mt-0.5" id="val-survival-status">สต็อกปลอดภัยอยู่รอดแน่นอน (SAFE)</p>
+                    </div>
+                    <span class="text-xl">✅</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📋</span>
+                    <h2 class="text-lg font-bold text-slate-800">โควตากระดาษหลักและระบบเฉลี่ยภาระพิมพ์อัจฉริยะ</h2>
+                </div>
+                <div class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                    ⚖️ ระบบเฉลี่ยโควตาหน้าพิมพ์ลงเครื่องที่เปิดใช้งานเท่ากัน (Auto-Balanced)
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">จำนวนเป้าหมายกระดาษต่อปี:</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="input-boxes" value="20" min="1" oninput="onGlobalPaperChange()" class="excel-input w-24 text-center text-lg text-slate-800">
+                        <span class="text-sm text-slate-500">กล่องต่อปี</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">จำนวนรีมต่อกล่อง:</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="input-reams" value="5" min="1" oninput="onGlobalPaperChange()" class="excel-input w-24 text-center text-lg text-slate-800">
+                        <span class="text-sm text-slate-500">รีม (รีมละ 500 แผ่น)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-center">
+                <div class="bg-slate-50 p-3 rounded-lg">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">เป้าหมายหน้ากระดาษพิมพ์สะสมทั้งหมด</p>
+                    <p class="text-xl font-extrabold text-slate-800 mt-1" id="val-total-pages">50,000 หน้า</p>
+                </div>
+                <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                    <p class="text-[11px] font-bold text-green-600 uppercase tracking-wider">เกลี่ยเฉลี่ยลงเครื่องปริ้นที่เปิดอยู่แล้ว</p>
+                    <p class="text-xl font-extrabold text-green-800 mt-1" id="val-distributed-pages">0 หน้า</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                    <p class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">โควตาหน้างานคงเหลือรอมอบหมาย</p>
+                    <p class="text-xl font-extrabold text-amber-800 mt-1" id="val-unallocated-pages">0 หน้า</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ภาระพิมพ์กำหนดส่งรวมแมนนวล</p>
+                <p class="text-2xl font-extrabold text-slate-800 mt-1" id="stat-val-load">0 หน้า</p>
+                <p class="text-[10px] text-slate-400 mt-1">หน้าพิมพ์สะสมรวมทุกเครื่อง Active</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ความจุหน้าพิมพ์จริงบนคลังชั้น (IRL)</p>
+                <p class="text-2xl font-extrabold text-emerald-600 mt-1" id="stat-val-external">0 หน้า</p>
+                <p class="text-[10px] text-slate-400 mt-1">นับรวมเฉพาะเครื่องปริ้นสถานะ Active</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ระยะเวลาความอยู่รอดของคลัง</p>
+                <p class="text-2xl font-extrabold text-blue-600 mt-1" id="stat-val-duration">0 วัน</p>
+                <p class="text-[10px] text-slate-400 mt-1">จำนวนวันก่อนที่สต็อกหมึกเครื่องหลักจะหมดลง</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">เครื่องพิมพ์สารบรรณที่เปิดอยู่</p>
+                <p class="text-2xl font-extrabold text-indigo-600 mt-1" id="stat-val-devices">0 / 7 เครื่อง</p>
+                <p class="text-[10px] text-slate-400 mt-1">สัดส่วนเครื่องสถานะ Active ทั้งหมด</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-xs tracking-wide uppercase">รายชื่อเครื่องพิมพ์สารบรรณในสำนักงาน (Printers Fleet)</h3>
+                        <span class="text-[11px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold uppercase">แบ่งงานเท่ากัน</span>
+                    </div>
+                    <div class="p-4 bg-amber-50 border-b border-amber-100 text-xs text-amber-900 flex items-center gap-2">
+                        <span>💡</span>
+                        <span>ภาระงานพิมพ์สะสมจะเกลี่ยแบ่งเฉลี่ยเท่าๆ กันให้แก่เครื่องพิมพ์ที่มีสถานะ "เปิดใช้งาน (Active)" ทั้งหมด เพื่อให้เป็นธรรมตามปริมาณหน้างานจริง</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full excel-table text-left border-collapse">
+                            <thead>
+                                <tr>
+                                    <th>รุ่นเครื่องพิมพ์</th>
+                                    <th class="text-center w-28">สถานะเครื่อง</th>
+                                    <th class="text-center">ตระกูลกลุ่มน้ำหมึกที่ใช้งาน</th>
+                                    <th class="text-center w-32">ภาระที่ได้รับเฉลี่ย (หน้า)</th>
+                                    <th class="text-center">พิมพ์ต่อได้กี่หน้า (คำนวณจากคลังกลุ่ม)</th>
+                                    <th class="text-center w-12">ลบ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="printers-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="bg-slate-50 p-4 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-600 uppercase mb-3">➕ เพิ่มเครื่องพิมพ์ตัวใหม่เข้าสู่ตารางทำงาน</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <input type="text" id="add-printer-model" placeholder="เช่น Brother DCP-T510" class="excel-input text-xs w-full">
+                            <select id="add-printer-family" class="bg-white border border-gray-200 text-xs rounded px-2 py-1.5 focus:outline-none">
+                                <option value="brother-ink">กลุ่มอิงค์แทงค์ Brother</option>
+                                <option value="epson-ink">กลุ่มอิงค์แทงค์ Epson</option>
+                                <option value="brother-laser-tn">กลุ่มเลเซอร์ Brother</option>
+                                <option value="hp-laser-79">กลุ่มเลเซอร์ HP (79A)</option>
+                            </select>
+                            <button onclick="addNewPrinter()" class="bg-[#107c41] hover:bg-emerald-800 text-white text-xs font-bold py-2 px-3 rounded shadow transition-all">
+                                ยืนยันเพิ่มอุปกรณ์
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🛒</span>
+                                <h3 class="font-bold text-slate-800 text-base">แผนสรุปคำสั่งซื้อพัสดุเพิ่มเติม</h3>
+                            </div>
+                            <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                                <button onclick="setProcureMode('individual')" id="btn-procure-individual" class="px-2 py-1 rounded-md text-[11px] font-bold transition-all text-slate-500">ขวดเดี่ยว</button>
+                                <button onclick="setProcureMode('pack')" id="btn-procure-pack" class="px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white text-slate-800 shadow-sm">ยกกล่อง 5</button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">คำนวณจากภาระกระดาษสะสมที่ขาดแคลนจริง หักลบสต็อกบนชั้น และปัดเศษสั่งซื้อให้เหมาะสมเป็นแพ็คกล่องละ 5 ขวดเพื่อการประหยัดงบพัสดุสูงสุด</p>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">⚫ หมึกสีดำ / โทนเนอร์ขาวดำ (Black First)</h4>
+                                <div class="space-y-2 text-xs" id="shopping-list-black"></div>
+                            </div>
+                            <div class="pt-3 border-t border-slate-100">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🎨 หมึกสีสันเติมแทงค์สะสม (C/M/Y Colors)</h4>
+                                <div class="space-y-2 text-xs" id="shopping-list-color"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-400">ประมาณการรายจ่ายจัดหาพัสดุรวม</span>
+                            <span class="text-sm font-black text-[#107c41]" id="val-total-price">฿0.00</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400">*หมายเหตุ: คำนวณราคาประเมินจากราคากลางพัสดุสารบรรณเทียบเท่าคุณสมบัติสูงในประเทศ</p>
+                    </div>
+                </div>
+                <div class="bg-indigo-950 text-indigo-100 p-6 rounded-xl shadow-sm space-y-3">
+                    <div class="flex items-center gap-2 border-b border-indigo-800 pb-2">
+                        <span class="text-lg">⚙️</span>
+                        <h4 class="font-bold text-xs uppercase text-white">คำแนะนำการบำรุงรักษาหัวพ่นหมึกเลเซอร์</h4>
+                    </div>
+                    <p class="text-xs leading-relaxed text-indigo-200">*หากเครื่องพิมพ์ HP M26a (ซึ่งตั้งสถานะ "ตรวจสอบ") เกิดริ้วเส้นดำ ให้เลี่ยงการเช็ดผ้าเปียกที่ผิวทองแดงลูกกลิ้ง OPC เพื่อป้องกันกลไกภายในชำรุดเสียหายถาวร</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 px-4 py-3.5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-xs tracking-wide uppercase">ตารางประเมินคลังน้ำหมึก (เรียงหมวดสีดำขึ้นก่อน / ปริมาณพิมพ์ในออฟฟิศจริง IRL Yield)</h3>
+                    <p class="text-[11px] text-slate-500 mt-1">คํานวณสัดส่วนหน้าพิมพ์ที่ทำได้จริงในชีวิตประจำวัน (ไม่ใช่ตัวเลขทดสอบห้องแล็บ)</p>
+                </div>
+                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-extrabold uppercase">IRL CAPACITY ENGINE</span>
+            </div>
+            <div class="p-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <span>⚫</span> รายละเอียดพัสดุน้ำหมึกสีดำและโทนเนอร์สารบรรณหลัก (Monochrome / Black Supplies)
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full excel-table text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="w-1/3">ชื่อรุ่นรายการหมึกขาวดำ</th>
+                            <th class="text-center w-28">สต็อกบนชั้น (ขวด/ตลับ)</th>
+                            <th class="text-center w-40">พิมพ์ได้จริง / หน่วย (ชีวิตจริง)</th>
+                            <th class="text-center font-bold text-emerald-800 w-48">หน้าพิมพ์ก้นคลังรวมสะสม</th>
+                            <th class="text-center">ตระกูลกลุ่มอุปกรณ์ที่จับแชร์ใช้งาน</th>
+                            <th class="text-center w-44">จำนวนเครื่องที่เปิดแชร์ใช้อยู่</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplies-tbody-black"></tbody>
+                </table>
+            </div>
+            <div class="p-4 bg-slate-50 border-t-2 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <span>🎨</span> รายละเอียดน้ำหมึกสีสันและตลับผงสีตกค้าง (Color Supplies)
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full excel-table text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="w-1/3">ชื่อรุ่นรายการหมึกเติมตระกูลสี</th>
+                            <th class="text-center w-28">สต็อกบนชั้น (ขวด/ตลับ)</th>
+                            <th class="text-center w-40">พิมพ์ได้จริง / หน่วย (ชีวิตจริง)</th>
+                            <th class="text-center font-bold text-emerald-800 w-48">หน้าพิมพ์ก้นคลังรวมสะสม</th>
+                            <th class="text-center">ตระกูลกลุ่มอุปกรณ์ที่จับแชร์ใช้งาน</th>
+                            <th class="text-center w-44">จำนวนเครื่องที่เปิดแชร์ใช้อยู่</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplies-tbody-color"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-slate-100 border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">© 2569 สารสนเทศระบบพิมพ์กองคลังสำนักงาน จัดทำและประมวลผลระบบเพื่อความโปร่งใส ปลอดภัยสูงสุด ณ ตลุโบะ ปัตตานี</div>
+    </footer>
+
+    <script>
+        let procurementMode = 'pack';
+        let printers = [
+            { id: "epson-l360", model: "Epson L360", type: "อิงค์แทงค์", status: "unused", load: 0, inkFamily: "epson-ink" },
+            { id: "epson-l3210", model: "Epson L3210", type: "อิงค์แทงค์", status: "active", load: 0, inkFamily: "epson-ink" },
+            { id: "epson-l3150", model: "Epson L3150", type: "อิงค์แทงค์", status: "active", load: 0, inkFamily: "epson-ink" },
+            { id: "brother-hl5210dn", model: "Brother HL-5210DN", type: "เลเซอร์ขาวดำ", status: "active", load: 0, inkFamily: "brother-laser-tn" },
+            { id: "brother-t520w", model: "Brother DCP-T520W", type: "อิงค์แทงค์สี", status: "active", load: 0, inkFamily: "brother-ink" },
+            { id: "brother-t420w", model: "Brother DCP-T420W", type: "อิงค์แทงค์สี", status: "active", load: 0, inkFamily: "brother-ink" },
+            { id: "hp-m26a", model: "HP LaserJet Pro MFP M26a", type: "เลเซอร์โมโน", status: "unused", load: 0, inkFamily: "hp-laser-79" }
+        ];
+
+        let supplies = [
+            { id: "brother-black", name: "Brother BTD60 Black Ink (สีดำหลัก)", stock: 5, yield: 4000, price: 250, active: true, brand: "Brother", isColor: false },
+            { id: "epson-black", name: "Epson 664 Black Ink (สีดำพร้อมใช้)", stock: 1, yield: 3000, price: 250, active: true, brand: "Epson", isColor: false },
+            { id: "brother-tn3170", name: "Brother TN-3170 Black Toner (ผงเลเซอร์ดำ)", stock: 0, yield: 5000, price: 1250, active: true, brand: "Brother", isColor: false },
+            { id: "hp-79a", name: "HP CF279A (79A) Laser Toner (ผงหมึกหลัก)", stock: 5, yield: 1000, price: 790, active: true, brand: "HP", isColor: false },
+            { id: "epson-expired", name: "Epson 664 Black (เสี่ยงเสีย/หมดอายุปี 2021)", stock: 1, yield: 0, price: 0, active: false, brand: "Epson", isColor: false },
+            { id: "brother-colors", name: "Brother BT5000 Colors (C/M/Y สีสันรวม)", stock: 15, yield: 1500, price: 220, active: true, brand: "Brother", isColor: true },
+            { id: "legacy-toners", name: "HP 85A/78A/35A/325 (ตลับพัสดุเครื่องพิมพ์เก่า)", stock: 6, yield: 0, price: 0, active: false, brand: "Legacy", isColor: true }
+        ];
+
+        let supplyAssignment = {
+            "brother-black": "brother-ink", "brother-colors": "brother-ink", "epson-black": "epson-ink",
+            "epson-expired": "none", "hp-79a": "hp-laser-79", "brother-tn3170": "brother-laser-tn", "legacy-toners": "none"
+        };
+
+        const inkFamilyLabels = {
+            "epson-ink": "กลุ่มอิงค์แทงค์ Epson", "brother-ink": "กลุ่มอิงค์แทงค์ Brother",
+            "hp-laser-79": "กลุ่มเลเซอร์ HP (79A)", "brother-laser-tn": "กลุ่มเลเซอร์ Brother (TN-3170)", "none": "ไม่ระบุกลุ่ม / ของรุ่นเก่าพังแล้ว"
+        };
+
+        function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+
+        function setProcureMode(mode) {
+            procurementMode = mode;
+            const btnIndiv = document.getElementById('btn-procure-individual');
+            const btnPack = document.getElementById('btn-procure-pack');
+            if (btnIndiv && btnPack) {
+                if (mode === 'pack') {
+                    btnPack.className = "px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white text-slate-800 shadow-sm";
+                    btnIndiv.className = "px-2 py-1 rounded-md text-[11px] font-bold transition-all text-slate-500";
+                } else {
+                    btnIndiv.className = "px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white text-slate-800 shadow-sm";
+                    btnPack.className = "px-2 py-1 rounded-md text-[11px] font-bold transition-all text-slate-500";
+                }
+            }
+            calculateAndRenderProcurement();
+        }
+
+        function autoBalanceWorkloads() {
+            const boxes = parseInt(document.getElementById('input-boxes').value) || 0;
+            const reams = parseInt(document.getElementById('input-reams').value) || 0;
+            const totalTargetPages = boxes * reams * 500;
+            const activePrinters = printers.filter(p => p.status === 'active');
+            const activeCount = activePrinters.length;
+            printers.forEach(p => {
+                p.load = p.status === 'active' && activeCount > 0 ? Math.round(totalTargetPages / activeCount) : 0;
+            });
+        }
+
+        function onGlobalPaperChange() {
+            const boxes = parseInt(document.getElementById('input-boxes').value) || 0;
+            const reams = parseInt(document.getElementById('input-reams').value) || 0;
+            const totalTargetPages = boxes * reams * 500;
+            setText('val-total-pages', `${totalTargetPages.toLocaleString()} หน้า`);
+            calculateAndRenderProcurement();
+            renderPrintersTable();
+        }
+
+        function addNewPrinter() {
+            const modelInput = document.getElementById('add-printer-model');
+            const familySelect = document.getElementById('add-printer-family');
+            if (!modelInput || !familySelect) return;
+            const model = modelInput.value.trim();
+            const family = familySelect.value;
+            if (model === '') { showToast("⚠️ กรุณากรอกรุ่นเครื่องพิมพ์"); return; }
+            printers.push({ id: "custom-" + Date.now(), model: model, type: "เครื่องพิมพ์เพิ่มเติม", status: "active", load: 0, inkFamily: family });
+            modelInput.value = '';
+            renderAll();
+            showToast("✅ เพิ่มเครื่องพิมพ์ " + model + " แล้ว");
+        }
+
+        function removePrinter(id) {
+            const index = printers.findIndex(p => p.id === id);
+            if (index !== -1) { const name = printers[index].model; printers.splice(index, 1); renderAll(); showToast("🗑️ ลบ " + name + " แล้ว"); }
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement("div");
+            toast.className = "fixed bottom-5 right-5 bg-slate-800 text-white text-xs px-4 py-3 rounded-lg shadow-lg z-50";
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function updatePrinterStatus(id, value) { const idx = printers.findIndex(p => p.id === id); if (idx !== -1) { printers[idx].status = value; renderAll(); } }
+        function updatePrinterInkFamily(pid, val) { const idx = printers.findIndex(p => p.id === pid); if (idx !== -1) { printers[idx].inkFamily = val; renderAll(); } }
+        function updateSupplyStock(id, val) { const sv = parseInt(val); if (isNaN(sv) || sv < 0) return; const idx = supplies.findIndex(s => s.id === id); if (idx !== -1) { supplies[idx].stock = sv; renderAll(); } }
+        function updateSupplyAssignment(sid, gn) { supplyAssignment[sid] = gn; renderAll(); }
+
+        function calculateAndRenderProcurement() {
+            autoBalanceWorkloads();
+            let totalLoad = 0, totalExternalCapacity = 0, activePrintersCount = 0;
+            printers.forEach(p => { if (p.status === 'active') { totalLoad += p.load; activePrintersCount++; } });
+            const boxes = parseInt(document.getElementById('input-boxes').value) || 0;
+            const reams = parseInt(document.getElementById('input-reams').value) || 0;
+            const totalTargetPages = boxes * reams * 500;
+            setText('val-distributed-pages', `${totalLoad.toLocaleString()} หน้า`);
+            setText('val-unallocated-pages', `${Math.max(0, totalTargetPages - totalLoad).toLocaleString()} หน้า`);
+
+            let groupUsableCapacity = { "epson-ink": 0, "brother-ink": 0, "hp-laser-79": 0, "brother-laser-tn": 0, "none": 0 };
+            supplies.forEach(supply => {
+                if (supply.active) {
+                    const ag = supplyAssignment[supply.id];
+                    if (ag && ag !== 'none') {
+                        let cy = supply.stock * supply.yield;
+                        if (supply.id === "brother-colors") cy = Math.floor(supply.stock / 3) * supply.yield;
+                        groupUsableCapacity[ag] += cy;
+                    }
+                }
+            });
+            Object.keys(groupUsableCapacity).forEach(gid => {
+                if (gid !== 'none') { const agp = printers.filter(p => p.inkFamily === gid && p.status === 'active'); if (agp.length > 0) totalExternalCapacity += groupUsableCapacity[gid]; }
+            });
+
+            let lifespanDays = totalLoad > 0 ? Math.round((totalExternalCapacity / totalLoad) * 365) : 0;
+            setText('stat-val-load', `${totalLoad.toLocaleString()} หน้า`);
+            setText('stat-val-external', `${totalExternalCapacity.toLocaleString()} หน้า`);
+            setText('stat-val-duration', `${lifespanDays} วัน`);
+            setText('stat-val-devices', `${activePrintersCount} / 7 เครื่อง`);
+
+            const dailyDemand = totalLoad / 365;
+            const pagesNeeded = Math.round(dailyDemand * 78);
+            setText('val-survival-needs', `~${pagesNeeded.toLocaleString()} หน้า`);
+            const sst = document.getElementById('val-survival-status');
+            const ssc = document.getElementById('survival-status-card');
+            if (totalExternalCapacity >= pagesNeeded) { sst.textContent = "สต็อกเพียงพอใช้ผ่านถึงเดือนตุลาคมชัวร์! (SAFE)"; if(ssc) ssc.className = "bg-emerald-100 p-3.5 rounded-lg border border-emerald-300 flex items-center justify-between text-emerald-900"; }
+            else { sst.textContent = "วิกฤต! สต็อกจะแห้งก่อนตุลาคมนี้ แนะนำสั่งพัสดุด่วน"; if(ssc) ssc.className = "bg-red-100 p-3.5 rounded-lg border border-red-300 flex items-center justify-between text-red-950 font-bold"; }
+
+            const lb = document.getElementById('shopping-list-black');
+            const lc = document.getElementById('shopping-list-color');
+            if (lb && lc) {
+                lb.innerHTML = ''; lc.innerHTML = '';
+                let totalCost = 0;
+                let blackList = [], colorList = [];
+                supplies.forEach(supply => {
+                    if (supply.active && supply.yield > 0) {
+                        const ag = supplyAssignment[supply.id];
+                        let allocatedDemand = 0;
+                        if (ag && ag !== 'none') { printers.filter(p => p.inkFamily === ag && p.status === 'active').forEach(p => allocatedDemand += p.load); }
+                        let cc = supply.stock * supply.yield;
+                        if (supply.id === "brother-colors") cc = Math.floor(supply.stock / 3) * supply.yield;
+                        const deficit = allocatedDemand - cc;
+                        if (deficit > 0) {
+                            let idq = Math.ceil(deficit / supply.yield);
+                            if (supply.id === "brother-colors") idq *= 3;
+                            let oqty = idq, label = "";
+                            if (procurementMode === 'pack') { oqty = Math.ceil(idq / 5); label = `สั่งเป็นกล่องใหญ่แพ็ค 5`; totalCost += oqty * supply.price * 5 * 0.9; }
+                            else { label = `ชิ้น/ขวดเดี่ยว`; totalCost += idq * supply.price; }
+                            const item = { name: supply.name, qty: oqty, label, brand: supply.brand };
+                            if (supply.isColor) colorList.push(item); else blackList.push(item);
+                        }
+                    }
+                });
+                if (blackList.length === 0) lb.innerHTML = `<div class="text-xs text-emerald-700 font-bold italic">✔ สต็อกหมึกสีดำเพียงพอแล้ว</div>`;
+                else blackList.forEach(item => { const d = document.createElement('div'); d.className = "flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs"; d.innerHTML = `<div><span class="font-bold text-slate-800">${item.name}</span><p class="text-[9px] text-slate-400">${item.brand} | ${item.label}</p></div><span class="bg-red-100 text-red-800 text-xs font-black px-2.5 py-0.5 rounded">+${item.qty} ${procurementMode === 'pack' ? 'กล่อง' : 'ชิ้น'}</span>`; lb.appendChild(d); });
+                if (colorList.length === 0) lc.innerHTML = `<div class="text-xs text-emerald-700 font-bold italic">✔ สต็อกหมึกสีเพียงพอแล้ว</div>`;
+                else colorList.forEach(item => { const d = document.createElement('div'); d.className = "flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs"; d.innerHTML = `<div><span class="font-bold text-slate-800">${item.name}</span><p class="text-[9px] text-slate-400">${item.brand} | ${item.label}</p></div><span class="bg-red-100 text-red-800 text-xs font-black px-2.5 py-0.5 rounded">+${item.qty} ${procurementMode === 'pack' ? 'กล่อง' : 'ชิ้น'}</span>`; lc.appendChild(d); });
+                setText('val-total-price', `฿${totalCost.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            }
+        }
+
+        function renderPrintersTable() {
+            const tbody = document.getElementById('printers-tbody'); if (!tbody) return; tbody.innerHTML = '';
+            let groupLoad = {}, groupCap = {};
+            ["epson-ink","brother-ink","hp-laser-79","brother-laser-tn","none"].forEach(g => { groupLoad[g]=0; groupCap[g]=0; });
+            printers.forEach(p => { if (p.status === 'active') groupLoad[p.inkFamily] += p.load; });
+            supplies.forEach(s => { if (s.active) { const ag = supplyAssignment[s.id]; if (ag) { let cy = s.stock * s.yield; if (s.id === "brother-colors") cy = Math.floor(s.stock / 3) * s.yield; groupCap[ag] += cy; } } });
+            printers.forEach(printer => {
+                let onwardCap = 0;
+                if (printer.status === 'active') {
+                    const fg = printer.inkFamily; const gl = groupLoad[fg]; const gc = groupCap[fg];
+                    if (gl > 0) onwardCap = Math.round((printer.load / gl) * gc);
+                    else if (gc > 0) { const ac = printers.filter(p => p.inkFamily === fg && p.status === 'active').length; onwardCap = Math.round(gc / ac); }
+                }
+                const isDry = printer.status === 'active' && onwardCap < printer.load;
+                let fd = ""; Object.keys(inkFamilyLabels).forEach(gid => { fd += `<option value="${gid}" ${printer.inkFamily === gid ? 'selected' : ''}>${inkFamilyLabels[gid]}</option>`; });
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="font-bold text-slate-800 text-xs">${printer.model} <p class="text-[9px] font-normal text-slate-400">(${printer.type})</p></td>
+                    <td class="text-center"><select onchange="updatePrinterStatus('${printer.id}',this.value)" class="bg-slate-50 border border-gray-200 text-xs rounded px-1 py-0.5 font-semibold"><option value="active" ${printer.status==='active'?'selected':''}>เปิดใช้งาน</option><option value="unused" ${printer.status==='unused'?'selected':''}>ตรวจสอบ</option><option value="inactive" ${printer.status==='inactive'?'selected':''}>หัวตัน/เสีย</option></select></td>
+                    <td class="text-center"><select onchange="updatePrinterInkFamily('${printer.id}',this.value)" class="bg-white border border-gray-200 text-[11px] rounded px-1.5 py-1">${fd}</select></td>
+                    <td class="bg-blue-50/20 text-center font-bold text-slate-700 text-xs">${printer.load.toLocaleString()} หน้า</td>
+                    <td class="text-xs"><div class="${isDry ? 'text-red-600 font-extrabold' : 'text-emerald-700 font-bold'}">${onwardCap.toLocaleString()} หน้า</div></td>
+                    <td class="text-center"><button onclick="removePrinter('${printer.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1">🗑️</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderSuppliesTable() {
+            const tbb = document.getElementById('supplies-tbody-black'), tbc = document.getElementById('supplies-tbody-color');
+            if (!tbb || !tbc) return; tbb.innerHTML = ''; tbc.innerHTML = '';
+            supplies.forEach(supply => {
+                let ao = ""; Object.keys(inkFamilyLabels).forEach(gid => { ao += `<option value="${gid}" ${supplyAssignment[supply.id]===gid?'selected':''}>${inkFamilyLabels[gid]}</option>`; });
+                let asdc = 0; const ag = supplyAssignment[supply.id]; if (ag && ag !== 'none') asdc = printers.filter(p => p.inkFamily === ag && p.status === 'active').length;
+                let rt = asdc > 0 ? `ใช้ร่วมกัน ${asdc} เครื่องที่เปิดอยู่` : "ไม่ได้ใช้งาน";
+                let tc = supply.stock * supply.yield; if (supply.id === "brother-colors") tc = Math.floor(supply.stock / 3) * supply.yield;
+                const tr = document.createElement('tr');
+                tr.className = !supply.active ? "bg-red-50/50 text-slate-400" : "";
+                tr.innerHTML = `<td class="font-bold text-slate-700 text-xs">${supply.name}</td>
+                    <td class="bg-blue-50/20 text-center"><input type="number" value="${supply.stock}" min="0" oninput="updateSupplyStock('${supply.id}',this.value)" class="excel-input w-14 text-center text-xs font-bold text-blue-800" ${!supply.active?'disabled':''}></td>
+                    <td class="text-center font-mono text-xs text-slate-500">${supply.yield > 0 ? `${supply.yield.toLocaleString()} หน้า / หน่วย` : '-'}</td>
+                    <td class="text-center font-mono text-xs font-bold text-emerald-800">~${tc.toLocaleString()} หน้า</td>
+                    <td class="text-center"><select onchange="updateSupplyAssignment('${supply.id}',this.value)" class="bg-white border border-gray-200 text-[11px] rounded px-1.5 py-0.5 w-full" ${!supply.active?'disabled':''}>${ao}</select></td>
+                    <td class="text-center font-bold text-xs text-indigo-700">${rt}</td>`;
+                if (supply.isColor) tbc.appendChild(tr); else tbb.appendChild(tr);
+            });
+        }
+
+        function renderAll() { renderPrintersTable(); renderSuppliesTable(); calculateAndRenderProcurement(); }
+
+        function exportToCSV() {
+            let csv = "\uFEFFรุ่นเครื่องพิมพ์,สถานะ,ภาระพิมพ์เฉลี่ย (หน้า),หน้าที่เกลี่ยได้จริง\n";
+            printers.forEach(p => {
+                let oc = 0; const fg = p.inkFamily; let gl = 0, gc = 0;
+                printers.forEach(pr => { if(pr.status==='active' && pr.inkFamily===fg) gl+=pr.load; });
+                supplies.forEach(s => { if(s.active && supplyAssignment[s.id]===fg) { let cy=s.stock*s.yield; if(s.id==="brother-colors") cy=Math.floor(s.stock/3)*s.yield; gc+=cy; } });
+                if(p.status==='active' && gl>0) oc=Math.round((p.load/gl)*gc);
+                csv += `"${p.model}","${p.status}",${p.load},${oc}\n`;
+            });
+            const b = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a');
+            a.href = URL.createObjectURL(b); a.setAttribute("download", "แผนบริหารจัดการฝูงเครื่องพิมพ์_2569.csv"); document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        window.onload = function() { renderAll(); onGlobalPaperChange(); };
+    </script>
+</body>
+</html>

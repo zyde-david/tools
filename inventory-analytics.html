@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Thai Gov Inventory Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .gov-table th { background-color: #1e40af; color: white; padding: 10px 12px; font-size: 0.8rem; text-align: center; }
+        .gov-table td { border: 1px solid #dcdcdc; padding: 8px 12px; font-size: 0.85rem; }
+        .gov-table tr:hover { background-color: #eff6ff; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+
+<div style="background: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-weight: bold; font-size: 14px;">📦 ระบบวิเคราะห์พัสดุคงคลังหน่วยงานราชการ</span>
+    <a href="index.html" style="color: white; background: #0f766e; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">🏠 กลับหน้าหลัก</a>
+</div>
+
+<div class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+
+    <!-- Header -->
+    <div class="stat-card flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">📦 Universal Thai Gov Inventory Analytics</h1>
+            <p class="text-sm text-slate-500 mt-1">ระบบวิเคราะห์พัสดุคงคลังหน่วยงานราชการไทย — รองรับการนำเข้า Excel, คำนวณมูลค่า, แนวโน้ม, และจัดกลุ่ม</p>
+        </div>
+        <button onclick="exportInventoryCSV()" class="bg-[#1e40af] hover:bg-blue-800 text-white text-sm font-bold px-5 py-2.5 rounded-lg shadow transition-all">
+            📥 ส่งออกรายงาน Excel
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="stat-card text-center"><p class="text-xs text-slate-400 uppercase font-bold">รายการพัสดุทั้งหมด</p><p class="text-2xl font-black text-slate-800 mt-1" id="stat-total-items">0</p></div>
+        <div class="stat-card text-center"><p class="text-xs text-slate-400 uppercase font-bold">มูลค่ารวมทั้งคลัง</p><p class="text-2xl font-black text-emerald-600 mt-1" id="stat-total-value">฿0</p></div>
+        <div class="stat-card text-center"><p class="text-xs text-slate-400 uppercase font-bold">พัสดุเหลือน้อย</p><p class="text-2xl font-black text-amber-600 mt-1" id="stat-low-stock">0</p></div>
+        <div class="stat-card text-center"><p class="text-xs text-slate-400 uppercase font-bold">พัสดุหมดอายุใกล้</p><p class="text-2xl font-black text-red-600 mt-1" id="stat-expiring">0</p></div>
+        <div class="stat-card text-center"><p class="text-xs text-slate-400 uppercase font-bold">ประเภทพัสดุ</p><p class="text-2xl font-black text-indigo-600 mt-1" id="stat-categories">0</p></div>
+    </div>
+
+    <!-- Import Section -->
+    <div class="stat-card">
+        <div class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1">
+                <label class="block text-sm font-bold text-slate-600 mb-2">📁 นำเข้าไฟล์ Excel พัสดุคงคลัง (.xlsx / .xls):</label>
+                <input type="file" id="excelInput" accept=".xlsx,.xls" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="loadSampleData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold px-4 py-2.5 rounded-lg transition-all">📋 โหลดข้อมูลตัวอย่าง</button>
+                <button onclick="clearAllData()" class="bg-red-100 hover:bg-red-200 text-red-700 text-sm font-bold px-4 py-2.5 rounded-lg transition-all">🗑️ ล้างข้อมูล</button>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3" id="import-status">ยังไม่มีการนำเข้าข้อมูล</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="stat-card">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">🔍 ค้นหา</label>
+                <input type="text" id="searchInput" placeholder="ชื่อพัสดุ, หมวดหมู่..." oninput="applyFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">📂 หมวดหมู่</label>
+                <select id="categoryFilter" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+                    <option value="all">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">⚠️ สถานะ</label>
+                <select id="statusFilter" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+                    <option value="all">ทั้งหมด</option>
+                    <option value="normal">ปกติ</option>
+                    <option value="low">เหลือน้อย (≤ 5)</option>
+                    <option value="expired">หมดอายุ</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">📄 แถวต่อหน้า</label>
+                <select id="rowsPerPage" onchange="applyFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+                    <option value="10">10 แถว</option>
+                    <option value="25" selected>25 แถว</option>
+                    <option value="50">50 แถว</option>
+                    <option value="all">ทั้งหมด</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="stat-card p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full gov-table border-collapse">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ชื่อพัสดุ / รายการ</th>
+                        <th>หมวดหมู่</th>
+                        <th>จำนวนคงคลัง</th>
+                        <th>หน่วยนับ</th>
+                        <th>ราคาต่อหน่วย</th>
+                        <th>มูลค่ารวม</th>
+                        <th>วันที่เบิกครั้งล่าสุด</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="9" class="text-center text-slate-400 py-12">📂 กรุณานำเข้าไฟล์ Excel หรือกด "โหลดข้อมูลตัวอย่าง"</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-between items-center px-4 py-3 border-t border-slate-100 bg-slate-50">
+            <button onclick="changePage(-1)" class="text-sm bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100">◀ ก่อนหน้า</button>
+            <span id="pageInfo" class="text-sm text-slate-500 font-bold">หน้าที่ 1 / 1</span>
+            <button onclick="changePage(1)" class="text-sm bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100">ถัดไป ▶</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let inventoryData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    let rowsPerPage = 25;
+
+    // ========== FILE IMPORT ==========
+    document.getElementById('excelInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (typeof XLSX === 'undefined') {
+            document.getElementById('import-status').textContent = '⏳ กำลังโหลด XLSX library...';
+            const check = setInterval(() => {
+                if (typeof XLSX !== 'undefined') {
+                    clearInterval(check);
+                    processExcel(file);
+                }
+            }, 300);
+            return;
+        }
+        processExcel(file);
+    });
+
+    function processExcel(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws);
+                if (!rows || rows.length === 0) {
+                    document.getElementById('import-status').textContent = '❌ ไม่พบข้อมูลในไฟล์';
+                    return;
+                }
+                inventoryData = rows.map((row, i) => {
+                    const keys = Object.keys(row);
+                    const getVal = (aliases) => {
+                        for (let a of aliases) {
+                            const found = keys.find(k => k.toLowerCase().trim() === a.toLowerCase());
+                            if (found) return row[found];
+                        }
+                        return null;
+                    };
+                    const name = getVal(["ชื่อพัสดุ","รายการ","ชื่อวัสดุ","name","item_name"]) || "ไม่ระบุ";
+                    const category = getVal(["หมวดหมู่","ประเภท","category","type"]) || "ทั่วไป";
+                    const qty = parseFloat(getVal(["จำนวนคงคลัง","จำนวน","quantity","qty","stock"])) || 0;
+                    const unit = getVal(["หน่วยนับ","หน่วย","unit"]) || "ชิ้น";
+                    const price = parseFloat(getVal(["ราคาต่อหน่วย","ราคา","unit_price","price","cost"])) || 0;
+                    const lastUsed = getVal(["วันที่เบิกครั้งล่าสุด","เบิกครั้งล่าสุด","last_used","last_issue_date"]) || "-";
+                    const expDate = getVal(["วันหมดอายุ","หมดอายุ","expire","expiry_date"]) || null;
+                    return {
+                        id: i,
+                        name: String(name),
+                        category: String(category),
+                        quantity: qty,
+                        unit: String(unit),
+                        price: price,
+                        totalValue: qty * price,
+                        lastUsed: String(lastUsed),
+                        expiryDate: expDate ? String(expDate) : null
+                    };
+                });
+                document.getElementById('import-status').textContent = `✅ นำเข้าสำเร็จ! ${inventoryData.length} รายการ`;
+                applyFilters();
+            } catch(err) {
+                document.getElementById('import-status').textContent = '❌ เกิดข้อผิดพลาด: ' + err.message;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // ========== SAMPLE DATA ==========
+    function loadSampleData() {
+        inventoryData = [
+            { id: 0, name: "น้ำยาล้างจาน ขนาด 1 แกลลอน", category: "วัสดุทำความสะอาด", quantity: 12, unit: "แกลลอน", price: 85, totalValue: 1020, lastUsed: "15/06/2569", expiryDate: null },
+            { id: 1, name: "ถุงขยะดำ 30x40 นิ้ว", category: "วัสดุทำความสะอาด", quantity: 50, unit: "ม้วน", price: 45, totalValue: 2250, lastUsed: "12/06/2569", expiryDate: null },
+            { id: 2, name: "กระดาษ A4 Double A 80 แกรม", category: "วัสดุสำนักงาน", quantity: 150, unit: "รีม", price: 105, totalValue: 15750, lastUsed: "10/06/2569", expiryDate: null },
+            { id: 3, name: "แฟ้มสันกว้าง 2 นิ้ว", category: "วัสดุสำนักงาน", quantity: 30, unit: "แฟ้ม", price: 35, totalValue: 1050, lastUsed: "08/06/2569", expiryDate: null },
+            { id: 4, name: "ปากกาเจลสีน้ำเงิน 0.5 มม.", category: "วัสดุสำนักงาน", quantity: 100, unit: "ด้าม", price: 12, totalValue: 1200, lastUsed: "05/06/2569", expiryDate: null },
+            { id: 5, name: "หน้ากากอนามัย surgical mask 3 ชั้น", category: "เวชภัณฑ์", quantity: 500, unit: "ชิ้น", price: 2.5, totalValue: 1250, lastUsed: "01/06/2569", expiryDate: "31/12/2569" },
+            { id: 6, name: "เจลแอลกอฮอล์ล้างมือ 500 มล.", category: "เวชภัณฑ์", quantity: 4, unit: "ขวด", price: 65, totalValue: 260, lastUsed: "20/05/2569", expiryDate: "30/06/2569" },
+            { id: 7, name: "น้ำดื่มบรรจุขวด 600 มล.", category: "ทั่วไป", quantity: 240, unit: "ขวด", price: 7, totalValue: 1680, lastUsed: "15/05/2569", expiryDate: null },
+            { id: 8, name: "หลอดไฟฟ้า LED 18W", category: "วัสดุไฟฟ้า", quantity: 2, unit: "หลอด", price: 89, totalValue: 178, lastUsed: "10/05/2569", expiryDate: null },
+            { id: 9, name: "ถังดับเพลิง CO2 ขนาด 5 กก.", category: "วัสดุความปลอดภัย", quantity: 1, unit: "ถัง", price: 1200, totalValue: 1200, lastUsed: "01/05/2569", expiryDate: "01/05/2570" },
+            { id: 10, name: "เทปกาว 2 หน้า กว้าง 1 นิ้ว", category: "วัสดุสำนักงาน", quantity: 8, unit: "ม้วน", price: 25, totalValue: 200, lastUsed: "25/04/2569", expiryDate: null },
+            { id: 11, name: "คลิปหนีบกระดาษ เบอร์ 111", category: "วัสดุสำนักงาน", quantity: 20, unit: "กล่อง", price: 8, totalValue: 160, lastUsed: "20/04/2569", expiryDate: null },
+            { id: 12, name: "ไม้กวาดทางมะพร้าว", category: "วัสดุทำความสะอาด", quantity: 3, unit: "อัน", price: 55, totalValue: 165, lastUsed: "15/04/2569", expiryDate: null },
+            { id: 13, name: "สบู่เหลวล้างมือ เฮดแอนด์โชว์เดอร์ส 400 มล.", category: "เวชภัณฑ์", quantity: 0, unit: "ขวด", price: 89, totalValue: 0, lastUsed: "10/04/2569", expiryDate: "30/09/2569" },
+            { id: 14, name: "น้ำยาปรับสภาพน้ำเสีย", category: "วัสดุทำความสะอาด", quantity: 5, unit: "แกลลอน", price: 120, totalValue: 600, lastUsed: "05/04/2569", expiryDate: null },
+            { id: 15, name: "คาร์บอนสำรองสำหรับเครื่องกรองน้ำ", category: "วัสดุประปา", quantity: 0, unit: "ชิ้น", price: 350, totalValue: 0, lastUsed: "01/03/2569", expiryDate: null },
+            { id: 16, name: "ธูปเทียนชนวน", category: "วัสดุศาสนพิธี", quantity: 10, unit: "ชุด", price: 15, totalValue: 150, lastUsed: "01/03/2569", expiryDate: null },
+            { id: 17, name: "ใบมีดโกนหนวด", category: "ทั่วไป", quantity: 6, unit: "ชิ้น", price: 10, totalValue: 60, lastUsed: "20/02/2569", expiryDate: null }
+        ];
+        document.getElementById('import-status').textContent = `✅ โหลดข้อมูลตัวอย่าง ${inventoryData.length} รายการ`;
+        applyFilters();
+    }
+
+    function clearAllData() {
+        inventoryData = [];
+        document.getElementById('import-status').textContent = '🗑️ ล้างข้อมูลแล้ว';
+        applyFilters();
+    }
+
+    // ========== FILTERS ==========
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const catFilter = document.getElementById('categoryFilter').value;
+        const statusF = document.getElementById('statusFilter').value;
+        const rpp = document.getElementById('rowsPerPage').value;
+        rowsPerPage = rpp === 'all' ? Infinity : parseInt(rpp);
+        currentPage = 1;
+
+        // Build category filter
+        const cats = [...new Set(inventoryData.map(d => d.category))];
+        const catSelect = document.getElementById('categoryFilter');
+        const currentCat = catSelect.value;
+        catSelect.innerHTML = '<option value="all">ทั้งหมด</option>' + cats.map(c => `<option value="${c}" ${c === currentCat ? 'selected' : ''}>${c}</option>`).join('');
+
+        filteredData = inventoryData.filter(d => {
+            if (search && !d.name.toLowerCase().includes(search) && !d.category.toLowerCase().includes(search)) return false;
+            if (catFilter !== 'all' && d.category !== catFilter) return false;
+            if (statusF === 'low' && d.quantity > 5) return false;
+            if (statusF === 'low' && d.quantity === 0) return false;
+            if (statusF === 'expired' && !d.expiryDate) return false;
+            return true;
+        });
+
+        updateStats();
+        renderTable();
+    }
+
+    // ========== STATS ==========
+    function updateStats() {
+        const total = inventoryData.length;
+        const totalVal = inventoryData.reduce((s, d) => s + d.totalValue, 0);
+        const lowStock = inventoryData.filter(d => d.quantity > 0 && d.quantity <= 5).length;
+        const expiring = inventoryData.filter(d => d.expiryDate).length;
+        const cats = new Set(inventoryData.map(d => d.category)).size;
+        document.getElementById('stat-total-items').textContent = total;
+        document.getElementById('stat-total-value').textContent = '฿' + totalVal.toLocaleString('th-TH', {minimumFractionDigits:2});
+        document.getElementById('stat-low-stock').textContent = lowStock;
+        document.getElementById('stat-expiring').textContent = expiring;
+        document.getElementById('stat-categories').textContent = cats;
+    }
+
+    // ========== TABLE ==========
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (filteredData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-slate-400 py-12">📂 ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>';
+            document.getElementById('pageInfo').textContent = 'หน้าที่ 0 / 0';
+            return;
+        }
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = Math.min(start + rowsPerPage, filteredData.length);
+        const pageData = filteredData.slice(start, end);
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+        document.getElementById('pageInfo').textContent = `หน้าที่ ${currentPage} / ${totalPages}`;
+
+        pageData.forEach((d, idx) => {
+            let statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">ปกติ</span>';
+            if (d.quantity === 0) statusBadge = '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">หมด</span>';
+            else if (d.quantity <= 5) statusBadge = '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-bold">เหลือน้อย</span>';
+            if (d.expiryDate) statusBadge += ' <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-bold ml-1">มีอายุ</span>';
+
+            const tr = document.createElement('tr');
+            tr.className = d.quantity === 0 ? 'bg-red-50' : (d.quantity <= 5 ? 'bg-amber-50' : '');
+            tr.innerHTML = `
+                <td class="text-center text-xs text-slate-400">${start + idx + 1}</td>
+                <td class="font-bold text-slate-800 text-sm">${d.name}</td>
+                <td><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">${d.category}</span></td>
+                <td class="text-center font-bold text-lg ${d.quantity === 0 ? 'text-red-600' : (d.quantity <= 5 ? 'text-amber-600' : 'text-slate-800')}">${d.quantity}</td>
+                <td class="text-center text-xs text-slate-500">${d.unit}</td>
+                <td class="text-right font-mono text-sm">฿${d.price.toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
+                <td class="text-right font-mono text-sm font-bold text-emerald-700">฿${d.totalValue.toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
+                <td class="text-center text-xs text-slate-500">${d.lastUsed}</td>
+                <td class="text-center">${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function changePage(dir) {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+        const next = currentPage + dir;
+        if (next >= 1 && next <= totalPages) { currentPage = next; renderTable(); }
+    }
+
+    // ========== EXPORT ==========
+    function exportInventoryCSV() {
+        if (inventoryData.length === 0) { alert('ไม่มีข้อมูลสำหรับส่งออก'); return; }
+        let csv = "\uFEFFชื่อพัสดุ,หมวดหมู่,จำนวนคงคลัง,หน่วยนับ,ราคาต่อหน่วย,มูลค่ารวม,วันที่เบิกครั้งล่าสุด,วันหมดอายุ\n";
+        inventoryData.forEach(d => {
+            csv += `"${d.name}","${d.category}",${d.quantity},"${d.unit}",${d.price},${d.totalValue},"${d.lastUsed}","${d.expiryDate || ''}"\n`;
+        });
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.setAttribute("download", `รายงานพัสดุคงคลัง_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // Check XLSX
+    if (typeof XLSX === 'undefined') {
+        document.getElementById('import-status').textContent = '⏳ กำลังโหลด XLSX library...';
+        const chk = setInterval(() => {
+            if (typeof XLSX !== 'undefined') { clearInterval(chk); document.getElementById('import-status').textContent = '✅ พร้อมใช้งาน'; }
+        }, 300);
+    } else {
+        document.getElementById('import-status').textContent = '✅ พร้อมใช้งาน';
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</body>
+</html>
