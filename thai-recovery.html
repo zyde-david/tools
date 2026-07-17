@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        h2 {
+            text-align: center;
+            color: #1e293b;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: white;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        .control-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .output-box {
+            background: #f0fdf4;
+            border: 2px solid #bbf7d0;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 60px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<div class="container">
+    <h2>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</h2>
+    
+    <div class="form-group">
+        <label for="input">1. วางข้อความต่างดาวที่นี่ (Input):</label>
+        <textarea id="input" placeholder="วางข้อความต่างดาวที่นี่..." oninput="decodeMojibake()"></textarea>
+    </div>
+
+    <div class="control-panel">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="mode">2. เลือกโหมดการแปลง (หากยังอ่านไม่ออก ลองสลับโหมดดูครับ):</label>
+            <select id="mode" onchange="decodeMojibake()">
+                <option value="utf8-to-thai">โหมดหลัก: ข้อความแบบ UTF-8 หลุดเข้า Windows-1252 / ISO-8859-1</option>
+                <option value="tis620-raw">โหมดสำรอง: ข้อความรหัสไทยเดิม (TIS-620/Windows-874)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>✨ ผลลัพธ์ภาษาไทย (Output):</label>
+        <div id="output" class="output-box">วางข้อความต่างดาวด้านบน ระบบจะแปลงให้อัตโนมัติ...</div>
+    </div>
+</div>
+
+<script>
+// ตารางแมปตัวอักษรเพื่อกู้คืน Byte ดิบที่ถูกต้องสำหรับกลุ่มสัญลักษณ์พิเศษ
+const cp1252Map = {
+    0x80: 0x20AC, 0x82: 0x201A, 0x83: 0x0192, 0x84: 0x201E, 0x85: 0x2026, 0x86: 0x2020, 0x87: 0x2021,
+    0x88: 0x02C6, 0x89: 0x2030, 0x8A: 0x0160, 0x8B: 0x2039, 0x8C: 0x0152, 0x8E: 0x017D, 0x91: 0x2018,
+    0x92: 0x2019, 0x93: 0x201C, 0x94: 0x201D, 0x95: 0x2022, 0x96: 0x2013, 0x97: 0x2014, 0x98: 0x02DC,
+    0x99: 0x2122, 0x9A: 0x0161, 0x9B: 0x203A, 0x9C: 0x0153, 0x9E: 0x017E, 0x9F: 0x0178
+};
+
+// สร้าง Lookup Table สำหรับแปลงอักษร Unicode กลับมาเป็น Byte ค่าดั้งเดิม
+const charToByte = {};
+for (let i = 0; i < 256; i++) {
+    charToByte[String.fromCharCode(i)] = i;
+}
+for (let b in cp1252Map) {
+    charToByte[String.fromCharCode(cp1252Map[b])] = parseInt(b);
+}
+
+function decodeMojibake() {
+    const input = document.getElementById('input').value;
+    const outputDiv = document.getElementById('output');
+    const mode = document.getElementById('mode').value;
+    
+    if (!input.trim()) {
+        outputDiv.innerText = "วางข้อความต่างดาวด้านบน ระบบจะแปลงให้อัตโนมัติ...";
+        return;
+    }
+
+    if (mode === 'utf8-to-thai') {
+        try {
+            let bytes = [];
+            for (let i = 0; i < input.length; i++) {
+                let char = input[i];
+                if (charToByte[char] !== undefined) {
+                    bytes.push(charToByte[char]);
+                } else {
+                    // หากเป็นตัวอักษรไทยที่ปนมาอยู่แล้ว ให้ดึงรหัส 8-bit ด้านท้ายมาใช้
+                    let code = char.charCodeAt(0);
+                    if (code >= 0x0E00 && code <= 0x0E7F) {
+                        bytes.push((code - 0x0E00 + 0xA0) & 0xFF);
+                    } else {
+                        bytes.push(code & 0xFF);
+                    }
+                }
+            }
+            
+            // ถอดรหัสด้วย UTF-8 Decoder
+            let decoded = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+            outputDiv.innerText = decoded;
+        } catch (e) {
+            outputDiv.innerText = "เกิดข้อผิดพลาดในการแปลงรหัส ลองสลับเป็นโหมดสำรองดูครับ";
+        }
+    } else if (mode === 'tis620-raw') {
+        // สำหรับกรณีรหัสไทยเดิมล้วนๆ
+        let result = "";
+        for (let i = 0; i < input.length; i++) {
+            let code = input.charCodeAt(i);
+            if (code >= 0xA1 && code <= 0xFB) {
+                result += String.fromCharCode(code + 0x0E00 - 0xA0);
+            } else {
+                result += input[i];
+            }
+        }
+        outputDiv.innerText = result;
+    }
+}
+</script>
+
+</body>
+</html>
