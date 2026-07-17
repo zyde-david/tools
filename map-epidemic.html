@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>ระบบบริหารจัดการทะเบียนระบาดวิทยา รพ.สต.ยะรัง (เวอร์ชันแก้ไขตัวกรองและแผนที่คู่ความเร็วสูง)</title>
+    <title>ระบบบริหารจัดการทะเบียนระบาดวิทยา รพ.สต.ยะรัง (เวอร์ชันแก้ไขตัวกรองและแผนที่)</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,18 +37,26 @@
         .form-group { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: bold; }
         input, select { padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
         .nav-bar { padding: 10px 0 0 0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; font-weight: bold; font-size: 13px; }
+
+        /* Toast error message */
+        .toast-error { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #dc2626; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 90%; display: none; }
+        .toast-success { background: #16a34a; }
     </style>
 </head>
 <body>
-<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<div class="toast-error" id="toastMsg"></div>
 
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
 
     <div class="header-zone">
         <div>
             <h2>📊 ศูนย์จัดการข้อมูลทะเบียนพิกัดระบาดวิทยา รพ.สต.ยะรัง</h2>
             <p style="font-size: 11px; opacity: 0.8;">ซ่อมระบบตัวกรองทำงานฉับไว ล้างป้ายเตือนบ้าน 1/12 ซ้ำ และเพิ่มปุ่มแผนที่เปิดแท็บใหม่ความเร็วสูง</p>
         </div>
-        <div style="font-size: 12px; background: #115e59; padding: 6px 12px; border-radius: 6px; font-weight: bold;">🔒 ข้อมูลปลอดภัย ประมวลผลบนหน่วยความจำในเครื่องของคุณ</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="font-size: 12px; background: #115e59; padding: 6px 12px; border-radius: 6px; font-weight: bold;">🔒 ข้อมูลปลอดภัย ประมวลผลบนเครื่องคุณ</div>
+            <a href="index.html" style="color: white; background: #1e293b; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">🏠 กลับหน้าหลัก</a>
+        </div>
     </div>
 
     <div class="control-zone">
@@ -128,122 +136,169 @@
         let currentSortField = 'house';
         let isSortAsc = true;
 
+        function showError(msg) {
+            const toast = document.getElementById('toastMsg');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            toast.className = 'toast-error';
+            setTimeout(() => { toast.style.display = 'none'; }, 6000);
+        }
+
+        function showSuccess(msg) {
+            const toast = document.getElementById('toastMsg');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            toast.className = 'toast-error toast-success';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
         document.getElementById('excelInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            if (typeof XLSX === 'undefined') {
+                showError('❌ ไลบรารี XLSX ยังไม่โหลด กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet);
-                
-                const getVal = (row, keys) => {
-                    for (let k of keys) {
-                        let foundKey = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase());
-                        if (foundKey) return row[foundKey];
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rawRows = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (!rawRows || rawRows.length === 0) {
+                        showError('❌ ไม่พบข้อมูลในไฟล์ Excel หรือไฟล์ว่างเปล่า');
+                        return;
                     }
-                    return null;
-                };
-
-                let tempDataset = rawRows.map((row, index) => {
-                    let lat = parseFloat(getVal(row, ["LATITUDE", "ละติจูด", "lat"]));
-                    let lon = parseFloat(getVal(row, ["LONGITUDE", "ลองจิจูด", "lon"]));
-                    return {
-                        id: index,
-                        pid: String(getVal(row, ["PID", "CITIZEN_ID", "รหัสบุคคล", "เลขบัตรประชาชน"]) || "ไม่มีข้อมูล"),
-                        house: String(getVal(row, ["HOUSE", "บ้านเลขที่"]) || "-"),
-                        village: parseInt(getVal(row, ["VILLAGE", "หมู่", "หมู่ที่"])) || 0,
-                        lat: isNaN(lat) ? null : lat,
-                        lon: isNaN(lon) ? null : lon,
-                        symptoms: getVal(row, ["SYMPTOMS", "อาการ"]) || "มีไข้สูง",
-                        onsetDate: getVal(row, ["ONSET_DATE", "วันที่เริ่มป่วย"]) || "2026-07-10",
-                        isGuessed: false,
-                        clusterInfo: "",
-                        statusCode: "normal" 
+                    
+                    const getVal = (row, keys) => {
+                        for (let k of keys) {
+                            let foundKey = Object.keys(row).find(rk => rk.toLowerCase().trim() === k.toLowerCase());
+                            if (foundKey) return row[foundKey];
+                        }
+                        return null;
                     };
-                });
 
-                // ตรรกะคัดกรองที่ 1: ค้นหา PID ซ้ำซ้อน ยุบรวมแถวข้อมูลคีย์เบิ้ล
-                let pidSeen = {};
-                let uniqueRows = [];
-                tempDataset.forEach(row => {
-                    let key = `${row.pid}_${row.house}_${row.village}`;
-                    if (!pidSeen[key]) { pidSeen[key] = true; uniqueRows.push(row); }
-                });
-                tempDataset = uniqueRows;
+                    let tempDataset = rawRows.map((row, index) => {
+                        let lat = parseFloat(getVal(row, ["LATITUDE", "ละติจูด", "lat", "latitude"]));
+                        let lon = parseFloat(getVal(row, ["LONGITUDE", "ลองจิจูด", "lon", "longitude"]));
+                        return {
+                            id: index,
+                            pid: String(getVal(row, ["PID", "CITIZEN_ID", "รหัสบุคคล", "เลขบัตรประชาชน", "CID"]) || "ไม่มีข้อมูล"),
+                            house: String(getVal(row, ["HOUSE", "บ้านเลขที่", "บ้าน", "house_no", "hno"]) || "-"),
+                            village: parseInt(getVal(row, ["VILLAGE", "หมู่", "หมู่ที่", "moo", "village_no"])) || 0,
+                            lat: isNaN(lat) ? null : lat,
+                            lon: isNaN(lon) ? null : lon,
+                            symptoms: getVal(row, ["SYMPTOMS", "อาการ", "diagnosis"]) || "มีไข้สูง",
+                            onsetDate: getVal(row, ["ONSET_DATE", "วันที่เริ่มป่วย", "date_onset", "date_illness"]) || "2026-07-10",
+                            isGuessed: false,
+                            clusterInfo: "",
+                            statusCode: "normal" 
+                        };
+                    });
 
-                // ตรรกะคัดกรองที่ 2: คำนวณหาค่าพิกัดช่องว่าง (Gap Interpolation)
-                tempDataset.sort((a, b) => {
-                    if (a.village !== b.village) return a.village - b.village;
-                    return a.house.localeCompare(b.house, undefined, {numeric: true, sensitivity: 'base'});
-                });
-
-                for (let i = 0; i < tempDataset.length; i++) {
-                    if (tempDataset[i].lat === null || tempDataset[i].lon === null) {
-                        let prevHome = null, nextHome = null;
-                        for (let j = i - 1; j >= 0; j--) {
-                            if (tempDataset[j].village === tempDataset[i].village && tempDataset[j].lat !== null) { prevHome = tempDataset[j]; break; }
+                    // Check if we got any useful data
+                    let hasHouseData = tempDataset.some(r => r.house !== "-");
+                    let hasLatData = tempDataset.some(r => r.lat !== null);
+                    
+                    if (!hasHouseData && !hasLatData) {
+                        showError('⚠️ ไม่พบคอลัมน์ที่ตรงตามรูปแบบ (HOUSE/LATITUDE/LONGITUDE) แสดงข้อมูลดิบแทน');
+                        // Show raw column names to help user
+                        if (rawRows.length > 0) {
+                            let cols = Object.keys(rawRows[0]).join(', ');
+                            showError('คอลัมน์ที่พบในไฟล์: ' + cols.substring(0, 200));
                         }
-                        for (let j = i + 1; j < tempDataset.length; j++) {
-                            if (tempDataset[j].village === tempDataset[i].village && tempDataset[j].lat !== null) { nextHome = tempDataset[j]; break; }
-                        }
-                        if (prevHome && nextHome) {
-                            tempDataset[i].lat = (prevHome.lat + nextHome.lat) / 2;
-                            tempDataset[i].lon = (prevHome.lon + nextHome.lon) / 2;
-                            tempDataset[i].isGuessed = true;
-                            tempDataset[i].clusterInfo = `ℹ️ พิกัดแนะนำ (ช่องว่างระหว่างหลังคาเรือน ${prevHome.house} และ ${nextHome.house})`;
-                            tempDataset[i].statusCode = "normal"; // ล็อกเป็นพิกัดดีชั่วคราวจนกว่าจะเอาไปเช็กซ้ำกลุ่มอื่น
-                        } else {
-                            tempDataset[i].lat = 6.764424; tempDataset[i].lon = 101.294246;
-                            tempDataset[i].isGuessed = true;
-                            tempDataset[i].clusterInfo = "⚠️ พิกัดเดา (จุดศูนย์กลางตำบล)";
-                            tempDataset[i].statusCode = "guessed";
-                        }
+                        return;
                     }
-                }
 
-                // ตรรกะคัดกรองที่ 3: จับกลุ่มพิกัดร่วม และตรวจซ้ำสำหรับบ้าน 1/12 บั๊กป้ายเตือน
-                let coordGroups = {};
-                tempDataset.forEach(row => {
-                    let key = `${parseFloat(row.lat).toFixed(5)}_${parseFloat(row.lon).toFixed(5)}`;
-                    if (!coordGroups[key]) coordGroups[key] = [];
-                    coordGroups[key].push(row);
-                });
+                    // Dedup
+                    let pidSeen = {};
+                    let uniqueRows = [];
+                    tempDataset.forEach(row => {
+                        let key = `${row.pid}_${row.house}_${row.village}`;
+                        if (!pidSeen[key]) { pidSeen[key] = true; uniqueRows.push(row); }
+                    });
+                    tempDataset = uniqueRows;
 
-                let clusterId = 1;
-                Object.keys(coordGroups).forEach(key => {
-                    let group = coordGroups[key];
-                    if (group.length > 1) {
-                        let currentId = clusterId++;
-                        let houses = [...new Set(group.map(g => g.house))];
-                        group.forEach((row, idx) => {
-                            if (houses.length === 1) {
-                                row.clusterInfo = `👥 ป่วยร่วมบ้าน (พบสะสมในหลังนี้ ${group.length} ราย)`;
-                                row.statusCode = "normal";
-                            } else {
-                                // ตรรกะขยับ 3 เมตรกระจายหมุดหนีจุดเหมาเข่ง
-                                if (idx > 0 && !row.isGuessed) { row.lon = row.lon + (idx * 0.000027); }
-                                row.clusterInfo = `⚠️ กลุ่มพิกัดร่วมที่ ${currentId} (ซ้ำซ้อนกันอยู่ ${group.length} หลัง)`;
-                                row.statusCode = "duplicate";
+                    // Gap Interpolation
+                    tempDataset.sort((a, b) => {
+                        if (a.village !== b.village) return a.village - b.village;
+                        return a.house.localeCompare(b.house, undefined, {numeric: true, sensitivity: 'base'});
+                    });
+
+                    for (let i = 0; i < tempDataset.length; i++) {
+                        if (tempDataset[i].lat === null || tempDataset[i].lon === null) {
+                            let prevHome = null, nextHome = null;
+                            for (let j = i - 1; j >= 0; j--) {
+                                if (tempDataset[j].village === tempDataset[i].village && tempDataset[j].lat !== null) { prevHome = tempDataset[j]; break; }
                             }
-                        });
-                    } else {
-                        // FIX BUG: ล้างป้ายเตือนบ้าน 1/12 ถ้าพิกัดที่แนะนำคำนวณแล้ว "ไม่ซ้ำกับใครเลย" ปรับเป็นป้ายเขียวพิกัดปกติทันที
-                        if (group[0].clusterInfo.includes("ℹ️ พิกัดแนะนำ")) {
-                            group[0].clusterInfo = `✔️ พิกัดแนะนำดี (ทุ่นแรงเชิงพื้นที่แล้ว)`;
-                            group[0].statusCode = "normal";
-                        } else if (!group[0].isGuessed) {
-                            group[0].clusterInfo = "✔️ พิกัดปกติ (เดี่ยว)";
-                            group[0].statusCode = "normal";
+                            for (let j = i + 1; j < tempDataset.length; j++) {
+                                if (tempDataset[j].village === tempDataset[i].village && tempDataset[j].lat !== null) { nextHome = tempDataset[j]; break; }
+                            }
+                            if (prevHome && nextHome) {
+                                tempDataset[i].lat = (prevHome.lat + nextHome.lat) / 2;
+                                tempDataset[i].lon = (prevHome.lon + nextHome.lon) / 2;
+                                tempDataset[i].isGuessed = true;
+                                tempDataset[i].clusterInfo = `ℹ️ พิกัดแนะนำ (ช่องว่างระหว่างหลังคาเรือน ${prevHome.house} และ ${nextHome.house})`;
+                                tempDataset[i].statusCode = "normal";
+                            } else {
+                                tempDataset[i].lat = 6.764424; tempDataset[i].lon = 101.294246;
+                                tempDataset[i].isGuessed = true;
+                                tempDataset[i].clusterInfo = "⚠️ พิกัดเดา (จุดศูนย์กลางตำบล)";
+                                tempDataset[i].statusCode = "guessed";
+                            }
                         }
                     }
-                });
 
-                masterDataset = tempDataset;
-                buildMooFilterDropdown();
-                applySystemFilters();
+                    // Cluster Detection
+                    let coordGroups = {};
+                    tempDataset.forEach(row => {
+                        let key = `${parseFloat(row.lat).toFixed(5)}_${parseFloat(row.lon).toFixed(5)}`;
+                        if (!coordGroups[key]) coordGroups[key] = [];
+                        coordGroups[key].push(row);
+                    });
+
+                    let clusterId = 1;
+                    Object.keys(coordGroups).forEach(key => {
+                        let group = coordGroups[key];
+                        if (group.length > 1) {
+                            let currentId = clusterId++;
+                            let houses = [...new Set(group.map(g => g.house))];
+                            group.forEach((row, idx) => {
+                                if (houses.length === 1) {
+                                    row.clusterInfo = `👥 ป่วยร่วมบ้าน (พบสะสมในหลังนี้ ${group.length} ราย)`;
+                                    row.statusCode = "normal";
+                                } else {
+                                    if (idx > 0 && !row.isGuessed) { row.lon = row.lon + (idx * 0.000027); }
+                                    row.clusterInfo = `⚠️ กลุ่มพิกัดร่วมที่ ${currentId} (ซ้ำซ้อนกันอยู่ ${group.length} หลัง)`;
+                                    row.statusCode = "duplicate";
+                                }
+                            });
+                        } else {
+                            if (group[0].clusterInfo.includes("ℹ️ พิกัดแนะนำ")) {
+                                group[0].clusterInfo = `✔️ พิกัดแนะนำดี (ทุ่นแรงเชิงพื้นที่แล้ว)`;
+                                group[0].statusCode = "normal";
+                            } else if (!group[0].isGuessed) {
+                                group[0].clusterInfo = "✔️ พิกัดปกติ (เดี่ยว)";
+                                group[0].statusCode = "normal";
+                            }
+                        }
+                    });
+
+                    masterDataset = tempDataset;
+                    buildMooFilterDropdown();
+                    applySystemFilters();
+                    showSuccess(`✅ โหลดข้อมูลสำเร็จ! ${masterDataset.length} รายการ`);
+                } catch (err) {
+                    showError('❌ เกิดข้อผิดพลาดในการอ่านไฟล์: ' + err.message);
+                    console.error(err);
+                }
+            };
+            reader.onerror = function() {
+                showError('❌ ไม่สามารถอ่านไฟล์ได้');
             };
             reader.readAsArrayBuffer(file);
         });
@@ -255,7 +310,6 @@
             moos.forEach(m => { if(m) select.innerHTML += `<option value="${m}">📍 หมู่ที่ ${m}</option>`; });
         }
 
-        // แก้ไขระบบตัวกรองด้านบนให้ตัดยอดแถวแบบฉับไวและแม่นยำ (Fixed Filtering)
         function applySystemFilters() {
             const mooFilterVal = document.getElementById("mooFilter").value;
             const statusFilterVal = document.getElementById("statusFilter").value;
@@ -275,6 +329,12 @@
             tbody.innerHTML = "";
             document.getElementById("totalTxt").innerText = filteredDataset.length;
 
+            if (filteredDataset.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 40px 0;">ไม่มีข้อมูลที่ตรงกับตัวกรองที่เลือก</td></tr>';
+                document.getElementById("pageInfo").innerText = "หน้าที่ 0 / 0";
+                return;
+            }
+
             let start = (currentPage - 1) * rowsPerPage;
             let end = rowsPerPage === filteredDataset.length ? filteredDataset.length : Math.min(start + rowsPerPage, filteredDataset.length);
             let pageRows = filteredDataset.slice(start, end);
@@ -290,14 +350,29 @@
 
                 tbody.innerHTML += `<tr id="row_${item.id}">
                     <td><button class="btn btn-view" onclick="openLiveGoogleMap(${item.lat}, ${item.lon}, ${item.id})">📍 ส่องบ้าน</button></td>
-                    <td><code>${item.pid.substring(0, 5)}...</code></td>
+                    <td><code>${(item.pid || '').substring(0, 5)}...</code></td>
                     <td><strong>${item.house}</strong></td>
                     <td>หมู่ที่ ${item.village}</td>
-                    <td>${item.lat.toFixed(6)}</td>
-                    <td>${item.lon.toFixed(6)}</td>
+                    <td>${item.lat ? item.lat.toFixed(6) : '-'}</td>
+                    <td>${item.lon ? item.lon.toFixed(6) : '-'}</td>
                     <td><span class="badge ${badgeClass}">${item.clusterInfo}</span></td>
                 </tr>`;
             });
+        }
+
+        // ===== FIX: Use Blob URL to bypass popup blocker =====
+        function openMapInNewTab(htmlContent) {
+            try {
+                var blob = new Blob([htmlContent], { type: 'text/html' });
+                var blobUrl = URL.createObjectURL(blob);
+                var w = window.open(blobUrl, '_blank');
+                if (!w || w.closed) {
+                    // Fallback: redirect current page (mobile)
+                    window.location.href = blobUrl;
+                }
+            } catch(e) {
+                showError('❌ ไม่สามารถเปิดแผนที่: ' + e.message);
+            }
         }
 
         function openLiveGoogleMap(lat, lon, id) {
@@ -305,42 +380,56 @@
             const targetedRow = document.getElementById(`row_${id}`);
             if(targetedRow) targetedRow.classList.add('active-row');
 
-            const googleMapUrl = `https://maps.google.com/maps?q=${lat},${lon}&t=k&z=19&output=embed`;
-            window.open(googleMapUrl, 'GoogleMapsPopUp', 'width=750,height=550,top=100,left=100,scrollbars=yes,resizable=yes');
+            var htmlContent = '<!DOCTYPE html><html lang="th"><head>' +
+                '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                '<title>📍 บ้านเลขที่แผนที่ดาวเทียม</title>' +
+                '<style>body{margin:0;height:100vh;display:flex;flex-direction:column;font-family:sans-serif;}' +
+                'iframe{flex:1;border:none;width:100%;}' +
+                '.info-bar{background:#0f766e;color:white;padding:12px 16px;text-align:center;font-weight:bold;font-size:14px;}' +
+                '</style></head><body>' +
+                '<div class="info-bar">📍 พิกัด: ' + lat.toFixed(6) + ', ' + lon.toFixed(6) + ' | ⚡ ซูมสูงสุดแล้ว</div>' +
+                '<iframe src="https://maps.google.com/maps?q=' + lat + ',' + lon + '&t=k&z=20&output=embed" allowfullscreen></iframe>' +
+                '</body></html>';
+            openMapInNewTab(htmlContent);
         }
 
-        // 🌟 ซ่อมแซมระบบเปิดแผนที่คู่ความเร็วสูงในแท็บใหม่ (Hotfix: ลบแท็กเปรียบเทียบที่ทำให้โค้ดพังออกแล้ว)
+        // ===== FIX: Blob URL for combined map too =====
         function openCombinedMapTab(mode) {
-            if (filteredDataset.length === 0) { alert("ไม่มีข้อมูลพิกัดในกลุ่มตัวกรองนี้สำหรับเปิดแผนที่ครับ"); return; }
+            if (filteredDataset.length === 0) { showError("❌ ไม่มีข้อมูลพิกัดในกลุ่มตัวกรองนี้สำหรับเปิดแผนที่"); return; }
             
-            let activePoints = filteredDataset.slice(0, 300);
-            let mapWindow = window.open("", "_blank");
+            let activePoints = filteredDataset.slice(0, 500);
             
             let scriptTag = mode === 'heatmap' ? '<script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"><\/script>' : '';
             
-            let htmlContent = '<html><head><title>แผนที่วิเคราะห์ระบาดวิทยา ต.ยะรัง</title>' +
+            let htmlContent = '<!DOCTYPE html><html lang="th"><head>' +
+                '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                '<title>แผนที่วิเคราะห์ระบาดวิทยา ต.ยะรัง</title>' +
                 '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />' +
                 '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>' +
                 scriptTag +
-                '<style>body { margin:0; height:100vh; } #map { width:100%; height:100%; }</style></head>' +
-                '<body>
-<div id="map"></div><script>' +
+                '<style>' +
+                'body{margin:0;height:100vh;overflow:hidden;}' +
+                '#map{width:100%;height:100%;}' +
+                '.legend{position:absolute;bottom:20px;left:10px;background:white;padding:6px 12px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);font-size:12px;z-index:1000;}' +
+                '</style></head><body>' +
+                '<div id="map"></div>' +
+                '<div class="legend">📍 ' + activePoints.length + ' จุด | ' + (mode === 'multipin' ? 'หมุดรายบ้าน' : 'แผนที่ความร้อน') + '</div>' +
+                '<script>' +
                 'var map = L.map("map").setView([6.764424, 101.294246], 14);' +
-                'L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", { maxZoom: 20, attribution: "Google Maps" }).addTo(map);' +
+                'L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);' +
+                'L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {maxZoom:20}).addTo(map);' +
                 'var points = ' + JSON.stringify(activePoints) + ';' +
                 'if ("' + mode + '" === "multipin") {' +
-                '  points.forEach(function(p) { L.marker([p.lat, p.lon]).addTo(map).bindPopup("<b>บ้านเลขที่:</b> " + p.house + "<br><b>หมู่:</b> " + p.village); });' +
+                '  points.forEach(function(p) { L.marker([p.lat, p.lon]).addTo(map).bindPopup("<b>บ้านเลขที่:</b> " + p.house + "<br><b>หมู่:</b> " + p.village + "<br><b>สถานะ:</b> " + p.clusterInfo); });' +
                 '} else {' +
                 '  var heatData = points.map(function(p) { return [p.lat, p.lon, 1.0]; });' +
                 '  L.heatLayer(heatData, {radius: 25, blur: 15, maxZoom: 17}).addTo(map);' +
                 '}' +
                 '<\/script></body></html>';
             
-            mapWindow.document.write(htmlContent);
-            mapWindow.document.close();
+            openMapInNewTab(htmlContent);
         }
 
-        // ระบบจัดเรียงตรรกะอัจฉริยะ Natural Sort
         function toggleSort(field) {
             if (currentSortField === field) { isSortAsc = !isSortAsc; } 
             else { currentSortField = field; isSortAsc = true; }
@@ -352,17 +441,21 @@
         }
 
         function runNaturalSorting() {
-            filteredDataset.sort((a, b) => {
-                if (currentSortField === 'village') { return isSortAsc ? a.village - b.village : b.village - a.village; }
-                if (currentSortField === 'pid') { return isSortAsc ? a.pid.localeCompare(b.pid) : b.pid.localeCompare(a.pid); }
-                if (currentSortField === 'status') { return isSortAsc ? a.clusterInfo.localeCompare(b.clusterInfo) : b.clusterInfo.localeCompare(a.clusterInfo); }
-                if (currentSortField === 'house') {
-                    return isSortAsc ? 
-                        a.house.localeCompare(b.house, undefined, {numeric: true, sensitivity: 'base'}) : 
-                        b.house.localeCompare(a.house, undefined, {numeric: true, sensitivity: 'base'});
-                }
-                return 0;
-            });
+            try {
+                filteredDataset.sort((a, b) => {
+                    if (currentSortField === 'village') { return isSortAsc ? a.village - b.village : b.village - a.village; }
+                    if (currentSortField === 'pid') { return isSortAsc ? (a.pid||'').localeCompare(b.pid||'') : (b.pid||'').localeCompare(a.pid||''); }
+                    if (currentSortField === 'status') { return isSortAsc ? (a.clusterInfo||'').localeCompare(b.clusterInfo||'') : (b.clusterInfo||'').localeCompare(a.clusterInfo||''); }
+                    if (currentSortField === 'house') {
+                        return isSortAsc ? 
+                            (a.house||'').localeCompare(b.house||'', undefined, {numeric: true, sensitivity: 'base'}) : 
+                            (b.house||'').localeCompare(a.house||'', undefined, {numeric: true, sensitivity: 'base'});
+                    }
+                    return 0;
+                });
+            } catch(e) {
+                // silent
+            }
             renderTable();
         }
 
@@ -380,7 +473,7 @@
         }
 
         function exportCleanData() {
-            if(masterDataset.length === 0) { alert("ไม่มีข้อมูลสำหรับส่งออก"); return; }
+            if(masterDataset.length === 0) { showError("ไม่มีข้อมูลสำหรับส่งออก"); return; }
             let csv = [["HOUSE", "VILLAGE", "LATITUDE", "LONGITUDE", "SYMPTOMS", "ONSET_DATE", "CLUSTER_NOTE", "PID"]];
             masterDataset.forEach(i => { csv.push([i.house, i.village, i.lat, i.lon, i.symptoms, i.onsetDate, i.clusterInfo, i.pid]); });
             let content = "\uFEFF" + csv.map(e => e.map(v => `"${v}"`).join(",")).join("\n");
@@ -388,7 +481,23 @@
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.setAttribute("download", `รายงานระบาดวิทยา_ยะรัง_Cleaned_v5.csv`);
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+        }
+
+        // Check XLSX loaded
+        if (typeof XLSX === 'undefined') {
+            showError('⏳ กำลังโหลด XLSX library กรุณารอสักครู่...');
+            var checkXLSX = setInterval(function() {
+                if (typeof XLSX !== 'undefined') {
+                    clearInterval(checkXLSX);
+                    showSuccess('✅ พร้อมใช้งาน เลือกไฟล์ Excel เพื่อเริ่มต้น');
+                }
+            }, 500);
+            setTimeout(function() { clearInterval(checkXLSX); }, 15000);
+        } else {
+            showSuccess('✅ พร้อมใช้งาน เลือกไฟล์ Excel เพื่อเริ่มต้น');
         }
     </script>
 </body>
