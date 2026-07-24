@@ -21,7 +21,7 @@
             touch-action: manipulation;
         }
 
-        /* Color & Background print preservation */
+        /* Force color and background print preservation */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -55,11 +55,12 @@
             box-sizing: border-box;
         }
 
-        /* Text multi-line formatting */
-        #text_org, #text_intro, #text_recName, #text_recDept, #text_body, #text_grade, #text_date, #text_signName, #text_signTitle {
+        /* Dynamic Section Text Styling */
+        .cert-dynamic-text {
             white-space: pre-line;
             word-break: break-word;
             overflow-wrap: break-word;
+            transition: all 0.15s ease-in-out;
         }
 
         /* Background Layer */
@@ -91,13 +92,13 @@
             outline-offset: -8px;
         }
 
-        /* Multiply blend effect for scanned signature background cleaning */
+        /* Blend effect for scanned signature background cleaning */
         .sign-blend-darken {
             mix-blend-mode: multiply;
             filter: contrast(180%) brightness(95%);
         }
 
-        /* Scrollbars */
+        /* Custom Scrollbars */
         aside::-webkit-scrollbar, main::-webkit-scrollbar, div::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -159,12 +160,6 @@
     <!-- TOP NAVBAR -->
     <header class="no-print bg-slate-900 border-b border-slate-800 px-3 md:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 sticky top-0 z-50 shadow-lg">
         <div class="flex items-center gap-2.5">
-            <a href="../" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span>กลับ</span>
-            </a>
             <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -199,7 +194,7 @@
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
         <!-- LEFT CONTROL SIDEBAR -->
-        <aside id="sidebarPanel" class="no-print w-full lg:w-[580px] bg-slate-900 border-r border-slate-800 p-3 md:p-4 overflow-y-auto space-y-4 max-h-[calc(100vh-58px)] flex-shrink-0">
+        <aside id="sidebarPanel" class="no-print w-full lg:w-[620px] bg-slate-900 border-r border-slate-800 p-3 md:p-4 overflow-y-auto space-y-4 max-h-[calc(100vh-58px)] flex-shrink-0">
             
             <!-- Notification Toast -->
             <div id="toast" class="hidden bg-emerald-900/90 border border-emerald-500/50 text-emerald-100 p-2.5 rounded-lg text-xs flex items-center justify-between shadow-lg">
@@ -222,7 +217,7 @@
             <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">
-                        📊 2. ตารางปรับแต่งรายละเอียดแต่ละส่วน
+                        📊 2. ตารางปรับแต่งรายละเอียดและลำดับส่วน (Reorder & Customizer)
                     </h3>
                     <div class="flex items-center gap-1.5 text-xs">
                         <span class="text-slate-300 font-medium">รูปแบบตัวเลข:</span>
@@ -230,23 +225,29 @@
                             <option value="thai" selected>🇹🇭 เลขไทย (๐ ๑ ๒)</option>
                             <option value="arabic_eastern">🇸🇦 เลขอาหรับ (٠ ١ ٢)</option>
                             <option value="western">🌐 เลขอารบิกสากล (0 1 2)</option>
+                            <option value="original">🌐 ตามต้นฉบับ (ผสม)</option>
                         </select>
                     </div>
                 </div>
 
+                <p class="text-[11px] text-slate-400">
+                    💡 <b>เคล็ดลับ:</b> กดปุ่ม <b>[⬆️] [⬇️]</b> เพื่อสลับลำดับบน-ล่าง | ใช้แท็ก <code>{{คอลัมน์ 1}}</code> ถึง <code>{{คอลัมน์ 10}}</code> เพื่อแทรกข้อมูล Excel ได้ทุกช่อง
+                </p>
+
                 <!-- Table Container -->
                 <div class="overflow-x-auto rounded-lg border border-slate-700">
-                    <table class="w-full text-left text-xs border-collapse min-w-[500px]">
+                    <table class="w-full text-left text-xs border-collapse min-w-[540px]">
                         <thead>
-                            <tr class="bg-slate-900/90 text-slate-300 font-semibold border-b border-slate-700">
+                            <tr class="bg-slate-900/90 text-slate-300 font-semibold border-b border-slate-700 text-[11px]">
+                                <th class="p-2 w-14 text-center">ย้าย</th>
                                 <th class="p-2 w-28">หัวข้อ (Topic)</th>
-                                <th class="p-2">ข้อความ / ฟอนต์ / ขนาด / สี</th>
-                                <th class="p-2 w-14 text-center">แสดง (☑)</th>
-                                <th class="p-2 w-16 text-center">หลายบรรทัด</th>
+                                <th class="p-2">ข้อความ / ฟอนต์ / สไตล์ / ขยับขึ้นลง</th>
+                                <th class="p-2 w-12 text-center">แสดง</th>
+                                <th class="p-2 w-12 text-center">หลายบรรทัด</th>
                             </tr>
                         </thead>
                         <tbody id="sectionControlsTbody" class="divide-y divide-slate-800 bg-slate-950/40">
-                            <!-- Rows generated by JS -->
+                            <!-- Rows dynamically generated by JS -->
                         </tbody>
                     </table>
                 </div>
@@ -255,7 +256,7 @@
             <!-- BULK DATA IMPORT & UNLIMITED DYNAMIC COLUMN MAPPING -->
             <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
                 <div class="flex items-center justify-between flex-wrap gap-2">
-                    <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">👥 3. นำเข้ารายชื่อจำนวนมาก (Bulk Data Import)</h3>
+                    <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">👥 3. นำเข้ารายชื่อจำนวนมาก (Bulk Data Import 10+ Columns)</h3>
                     <div class="flex items-center gap-2">
                         <button onclick="downloadExcelTemplate()" class="px-2 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded text-[11px] transition flex items-center gap-1 shadow">
                             📥 <span>ไฟล์ตัวอย่าง Excel</span>
@@ -278,14 +279,14 @@
                 <!-- Paste Tab -->
                 <div id="secBulkPaste" class="hidden space-y-2 text-xs">
                     <textarea id="txtPasteList" rows="3" placeholder="วางข้อความคอลัมน์จาก Excel เช่น:
-asma binti hamid	2005	جيد
-hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"></textarea>
+asma binti hamid	2005	جيد	27 กรกฎาคม 2568
+hamid bin affan	2006	ممتاز	27 กรกฎาคม 2568" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"></textarea>
                     <button onclick="parsePastedText()" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs transition">นำเข้ารายชื่อที่วาง</button>
                 </div>
 
                 <!-- DYNAMIC COLUMN MAPPER UI -->
                 <div id="secColumnMapper" class="hidden p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 space-y-2 text-xs">
-                    <p class="font-bold text-amber-300">🔗 จับคู่คอลัมน์จาก Excel/ข้อความ เข้ากับส่วนต่างๆ ของเกียรติบัตร:</p>
+                    <p class="font-bold text-amber-300">🔗 จับคู่คอลัมน์จาก Excel (ตรวจพบหลายคอลัมน์):</p>
                     <div id="columnMappingGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <!-- Dynamic Mapping Selectors injected by JS -->
                     </div>
@@ -319,7 +320,7 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                     <input type="file" id="fileLogo" accept="image/*" onchange="handleImageUpload(event, 'logo')" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700">
                     <div class="flex items-center justify-between text-[11px] text-slate-400">
                         <span>ขนาดโลโก้</span>
-                        <input type="range" id="rngLogoSize" min="40" max="180" value="85" oninput="renderCertificate()" class="w-28 accent-blue-500">
+                        <input type="range" id="rngLogoSize" min="40" max="220" value="85" oninput="renderCertificate()" class="w-28 accent-blue-500">
                     </div>
                 </div>
 
@@ -401,48 +402,13 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                         <img id="layerLogoImg" class="hidden object-contain max-h-24" alt="Logo">
                     </div>
 
-                    <!-- DYNAMIC RENDERED SECTIONS -->
-                    <div class="relative z-10 flex-1 flex flex-col justify-around py-1 space-y-1">
-                        
-                        <!-- Section 1: Org Name -->
-                        <div id="certSec_org" class="w-full">
-                            <div id="text_org" dir="auto" class="font-bold leading-tight"></div>
-                        </div>
-
-                        <!-- Section 2: Certify Intro -->
-                        <div id="certSec_intro" class="w-full">
-                            <div id="text_intro" dir="auto" class="font-medium leading-normal"></div>
-                        </div>
-
-                        <!-- Section 3: Recipient Name & Affiliation (Separate Wrappers for 3.1 and 3.2) -->
-                        <div id="certSec_recipient" class="w-full my-1 space-y-0.5">
-                            <div id="certSec_recName" class="w-full">
-                                <div id="text_recName" dir="auto" class="font-bold leading-normal"></div>
-                            </div>
-                            <div id="certSec_recDept" class="w-full">
-                                <div id="text_recDept" dir="auto" class="font-medium leading-normal"></div>
-                            </div>
-                        </div>
-
-                        <!-- Section 4: Body / Activity -->
-                        <div id="certSec_body" class="w-full max-w-2xl mx-auto">
-                            <div id="text_body" dir="auto" class="leading-relaxed"></div>
-                        </div>
-
-                        <!-- Section 5: Grade / Assessment / Arabic -->
-                        <div id="certSec_grade" class="w-full">
-                            <div id="text_grade" dir="auto" class="font-semibold italic leading-normal"></div>
-                        </div>
-
-                        <!-- Section 6: Issue Date -->
-                        <div id="certSec_date" class="w-full">
-                            <div id="text_date" dir="auto" class="font-medium"></div>
-                        </div>
-
+                    <!-- DYNAMIC REORDERABLE CONTAINER -->
+                    <div id="dynamicSectionsContainer" class="relative z-10 flex-1 flex flex-col justify-around py-1">
+                        <!-- Dynamic Section Blocks injected by JS based on user order -->
                     </div>
 
                     <!-- BOTTOM SIGNATORY SECTION -->
-                    <div id="certSec_signatory" class="relative z-10 pt-2 flex flex-col items-center justify-center text-center">
+                    <div id="certSec_signatory" class="relative z-10 pt-1 flex flex-col items-center justify-center text-center">
                         <div id="layerSignWrapper" class="h-12 flex items-center justify-center mb-0.5">
                             <div id="layerSignSvg" class="h-12">
                                 <svg viewBox="0 0 160 80" class="h-full drop-shadow-sm">
@@ -451,8 +417,8 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                             </div>
                             <img id="layerSignImg" class="hidden object-contain max-h-16 sign-blend-darken" alt="Signature">
                         </div>
-                        <div id="certSec_signName" class="w-full"><div id="text_signName" dir="auto" class="font-bold leading-tight"></div></div>
-                        <div id="certSec_signTitle" class="w-full"><div id="text_signTitle" dir="auto" class="font-medium leading-tight"></div></div>
+                        <div id="certSec_signName" class="w-full"><div id="text_signName" dir="auto" class="cert-dynamic-text"></div></div>
+                        <div id="certSec_signTitle" class="w-full"><div id="text_signTitle" dir="auto" class="cert-dynamic-text"></div></div>
                     </div>
 
                 </div>
@@ -469,16 +435,16 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                 <h2 class="text-base font-bold font-kanit text-amber-400">คู่มือการใช้งานระบบสร้างเกียรติบัตร (อ่านง่ายใน 1 นาที)</h2>
             </div>
             <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
-                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
-                    <h4 class="font-bold text-white mb-1">📊 1. ปรับแต่งรายส่วนอิสระ (Section Control Table)</h4>
-                    <p>สามารถแก้คำ เลือกฟอนต์ (รองรับไทย, English, Jawi, Arabic หรือฟอนต์ในคอมพิวเตอร์), ปรับขนาด, ปรับสี และเลือกตัวเลข (เลขไทย / เลขอาหรับ / เลขสากล) ได้อย่างอิสระ</p>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
+                    <h4 class="font-bold text-white">📊 1. ปรับสลับลำดับ & ขยับขึ้น-ลง (Reorder & Position Offset)</h4>
+                    <p>กดปุ่ม <b>[⬆️] [⬇️]</b> ในตารางเพื่อสลับลำดับส่วนต่างๆ บนเกียรติบัตรได้อิสระ และใช้ช่อง <b>"ขยับขึ้นลง (px)"</b> เพื่อเลื่อนตำแหน่งหลบโลโก้หรือกรอบได้แม่นยำ</p>
                 </div>
-                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
-                    <h4 class="font-bold text-white mb-1">👥 2. นำเข้ารายชื่อหลายๆ คน (Bulk Import & Column Mapper)</h4>
-                    <p>อัปโหลดไฟล์ Excel หรือวางข้อความหลายๆ คอลัมน์ (เช่น ชื่อ, สังกัด, เกรดภาษาอาหรับ) ระบบจะมีตัวจับคู่คอลัมน์ (Column Mapper) ให้เลือกจับคู่เข้ากับเกียรติบัตรได้ทันที</p>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
+                    <h4 class="font-bold text-white">👥 2. แทรกคอลัมน์ Excel ได้ไม่จำกัด 10+ คอลัมน์ด้วย {{แท็ก}}</h4>
+                    <p>สามารถพิมพ์ <code>{{คอลัมน์ 1}}</code>, <code>{{คอลัมน์ 2}}</code> หรือแท็กชื่อหัวข้อในช่องข้อความใดก็ได้ เมื่อนำเข้า Excel 10 คอลัมน์ ระบบจะนำข้อมูลมาแทรกอัตโนมัติ!</p>
                 </div>
-                <div class="bg-amber-950/60 p-3 rounded-xl border border-amber-600/40 text-amber-200">
-                    <h4 class="font-bold mb-1">🖨️ 3. วิธีสั่งพิมพ์ให้สวยงาม 1 หน้าถ้วน</h4>
+                <div class="bg-amber-950/60 p-3 rounded-xl border border-amber-600/40 text-amber-200 space-y-1">
+                    <h4 class="font-bold">🖨️ 3. วิธีสั่งพิมพ์ให้สวยงาม 1 หน้าถ้วน</h4>
                     <p>1. กดปุ่ม <b>"พิมพ์ 1 ใบ"</b> หรือ <b>"พิมพ์ทั้งหมด"</b><br>
                     2. เลือก <b>ระยะขอบ (Margins): ไม่มี (None)</b><br>
                     3. ติ๊กถูก <b>กราฟิกพื้นหลัง (Background graphics)</b></p>
@@ -492,17 +458,17 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
 
     <!-- JAVASCRIPT APP LOGIC -->
     <script>
-        // Section definitions array matching the planned controller table UI
-        const sectionsConfig = [
-            { id: 'org', topic: '1. ชื่อหน่วยงาน', text: 'โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง', font: 'Sarabun', size: 28, color: '#1e293b', enable: true, multiline: false },
-            { id: 'intro', topic: '2. คำเกริ่นรับรอง', text: 'ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า', font: 'Sarabun', size: 15, color: '#475569', enable: true, multiline: false },
-            { id: 'recName', topic: '3.1 ชื่อผู้รับ', text: 'นางสาวซารีนา สาแล', font: 'Charm, cursive', size: 32, color: '#0f172a', enable: true, multiline: false },
-            { id: 'recDept', topic: '3.2 สังกัด / คณะ / ปีเกิด', text: 'นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช', font: 'Sarabun', size: 14, color: '#334155', enable: true, multiline: true },
-            { id: 'body', topic: '4. ข้อความเนื้อหา', text: 'ได้ผ่านการฝึกประสบการณ์วิชาชีพ (ฝึกงาน) ณ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง ตั้งแต่วันที่ ๖ พฤษภาคม พ.ศ. ๒๕๖๘ ถึงวันที่ ๑ สิงหาคม พ.ศ. ๒๕๖๘', font: 'Sarabun', size: 16, color: '#1e293b', enable: true, multiline: true },
-            { id: 'grade', topic: '5. เกรด / ผลประเมิน', text: '"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา"', font: 'Sarabun', size: 14, color: '#1e293b', enable: true, multiline: true },
-            { id: 'date', topic: '6. วันที่ให้ไว้', text: 'ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘', font: 'Sarabun', size: 14, color: '#475569', enable: true, multiline: false },
-            { id: 'signName', topic: '7.1 ชื่อผู้ลงนาม', text: '(นายการียา ยือแร)', font: 'Sarabun', size: 16, color: '#0f172a', enable: true, multiline: false },
-            { id: 'signTitle', topic: '7.2 ตำแหน่งผู้ลงนาม', text: 'ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง', font: 'Sarabun', size: 13, color: '#475569', enable: true, multiline: false }
+        // Default Sections Array with ordering and vertical offsets
+        let sectionsConfig = [
+            { id: 'org', topic: '1. ชื่อหน่วยงาน', text: 'โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง', font: 'Sarabun, sans-serif', size: 28, color: '#1e293b', enable: true, multiline: false, bold: true, italic: false, underline: false, offsetTop: 0 },
+            { id: 'intro', topic: '2. คำเกริ่นรับรอง', text: 'ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า', font: 'Sarabun, sans-serif', size: 15, color: '#475569', enable: true, multiline: false, bold: false, italic: false, underline: false, offsetTop: 0 },
+            { id: 'recName', topic: '3.1 ชื่อผู้รับ', text: 'นางสาวซารีนา สาแล', font: 'Charm, cursive', size: 32, color: '#0f172a', enable: true, multiline: false, bold: true, italic: false, underline: false, offsetTop: 2 },
+            { id: 'recDept', topic: '3.2 สังกัด / คณะ / ปีเกิด', text: 'นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช', font: 'Sarabun, sans-serif', size: 14, color: '#334155', enable: true, multiline: true, bold: false, italic: false, underline: false, offsetTop: 0 },
+            { id: 'body', topic: '4. ข้อความเนื้อหา', text: 'ได้ผ่านการฝึกประสบการณ์วิชาชีพ (ฝึกงาน) ณ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง ตั้งแต่วันที่ ๖ พฤษภาคม พ.ศ. ๒๕๖๘ ถึงวันที่ ๑ สิงหาคม พ.ศ. ๒๕๖๘', font: 'Sarabun, sans-serif', size: 16, color: '#1e293b', enable: true, multiline: true, bold: false, italic: false, underline: false, offsetTop: 0 },
+            { id: 'grade', topic: '5. เกรด / ผลประเมิน', text: '"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา"', font: 'Sarabun, sans-serif', size: 14, color: '#1e293b', enable: true, multiline: true, bold: false, italic: true, underline: false, offsetTop: 0 },
+            { id: 'date', topic: '6. วันที่ให้ไว้', text: 'ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘', font: 'Sarabun, sans-serif', size: 14, color: '#475569', enable: true, multiline: false, bold: false, italic: false, underline: false, offsetTop: 0 },
+            { id: 'signName', topic: '7.1 ชื่อผู้ลงนาม', text: '(นายการียา ยือแร)', font: 'Sarabun, sans-serif', size: 16, color: '#0f172a', enable: true, multiline: false, bold: true, italic: false, underline: false, offsetTop: 0 },
+            { id: 'signTitle', topic: '7.2 ตำแหน่งผู้ลงนาม', text: 'ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง', font: 'Sarabun, sans-serif', size: 13, color: '#475569', enable: true, multiline: false, bold: false, italic: false, underline: false, offsetTop: 0 }
         ];
 
         // Font options dropdown list
@@ -516,31 +482,28 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             { name: 'Playfair Display (Serif)', value: "'Playfair Display', serif" }
         ];
 
-        // Bulk recipients array
+        // Bulk recipients state with support for raw Excel column arrays
         let recipients = [
             {
                 recName: "นางสาวซารีนา สาแล",
                 recDept: "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช",
                 body: "ได้ผ่านการฝึกประสบการณ์วิชาชีพ (ฝึกงาน) ณ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง ตั้งแต่วันที่ ๖ พฤษภาคม พ.ศ. ๒๕๖๘ ถึงวันที่ ๑ สิงหาคม พ.ศ. ๒๕๖๘",
-                grade: "\"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา\""
+                grade: "\"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา\"",
+                date: "ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘",
+                rawCols: ["นางสาวซารีนา สาแล", "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ", "ฝึกงาน รพ.สต.ยะรัง", "\"เป็นผู้รับการฝึกงานที่มีความพฤติดี\"", "ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘"]
             }
         ];
+
         let currentRecipientIndex = 0;
         let signRotation = 0;
-        let currentBorderStyle = 'gold';
-
-        // Column Mapping Keys
         let detectedHeaders = [];
-        let columnMappings = {
-            recName: 0,
-            recDept: 1,
-            grade: 2,
-            body: -1
-        };
+        let columnMappings = { recName: 0, recDept: 1, grade: 2, body: 3, date: 4 };
 
-        // Convert digits dynamically based on chosen mode
+        // Convert digits dynamically based on chosen numeral mode
         function convertDigits(str, mode) {
             if (!str) return '';
+            if (mode === 'original') return String(str);
+
             const thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
             const easternArabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
             
@@ -558,6 +521,33 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             }
         }
 
+        // Interpolate tokens like {{คอลัมน์ 1}}, {{คอลัมน์ 2}}, {{Col 1}}, or header names
+        function interpolateTokens(text, recipient) {
+            if (!text) return '';
+            let result = String(text);
+
+            if (recipient && recipient.rawCols) {
+                recipient.rawCols.forEach((val, colIdx) => {
+                    const tagColNum = `{{คอลัมน์ ${colIdx + 1}}}`;
+                    const tagColEng = `{{Col ${colIdx + 1}}}`;
+                    const valStr = val !== undefined && val !== null ? String(val) : '';
+                    result = result.replaceAll(tagColNum, valStr).replaceAll(tagColEng, valStr);
+                });
+            }
+
+            if (detectedHeaders && recipient && recipient.rawCols) {
+                detectedHeaders.forEach((hdr, hIdx) => {
+                    if (hdr) {
+                        const tagHdr = `{{${hdr.trim()}}}`;
+                        const valStr = recipient.rawCols[hIdx] !== undefined ? String(recipient.rawCols[hIdx]) : '';
+                        result = result.replaceAll(tagHdr, valStr);
+                    }
+                });
+            }
+
+            return result;
+        }
+
         function renderSectionControlsTable() {
             const tbody = document.getElementById('sectionControlsTbody');
             tbody.innerHTML = '';
@@ -569,7 +559,15 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                 let fontOptsHtml = fontOptions.map(f => `<option value="${f.value}" ${sec.font === f.value ? 'selected' : ''}>${f.name}</option>`).join('');
 
                 tr.innerHTML = `
-                    <td class="p-2 font-bold text-amber-300 align-top text-[11px]">${sec.topic}</td>
+                    <td class="p-1.5 text-center align-top">
+                        <div class="flex flex-col gap-1 items-center justify-center pt-1">
+                            <button onclick="moveSection(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]"'} title="ย้ายขึ้น">⬆️</button>
+                            <button onclick="moveSection(${idx}, 1)" ${idx === sectionsConfig.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : 'class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]"'} title="ย้ายลง">⬇️</button>
+                        </div>
+                    </td>
+                    <td class="p-2 font-bold text-amber-300 align-top text-[11px] leading-tight">
+                        ${sec.topic}
+                    </td>
                     <td class="p-2 space-y-1.5 align-top">
                         <!-- Text Input / Textarea -->
                         ${sec.multiline 
@@ -577,22 +575,35 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                             : `<input type="text" value="${sec.text}" oninput="updateSecProperty(${idx}, 'text', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">`
                         }
                         
-                        <!-- Font, Size & Color controls in one line -->
+                        <!-- Font, Size, Color, Styles & Offset Controls -->
                         <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
-                            <select onchange="updateSecProperty(${idx}, 'font', this.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-[10px] max-w-[130px]">
+                            <select onchange="updateSecProperty(${idx}, 'font', this.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-[10px] max-w-[120px]">
                                 ${fontOptsHtml}
                             </select>
-                            <input type="text" placeholder="หรือพิมพ์ชื่อฟอนต์คอม..." oninput="updateSecProperty(${idx}, 'font', this.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-300 w-28" value="${sec.customFont || ''}">
+                            <input type="text" placeholder="หรือชื่อฟอนต์คอม..." oninput="updateSecProperty(${idx}, 'customFont', this.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-300 w-24" value="${sec.customFont || ''}">
                             
+                            <!-- Bold, Italic, Underline buttons -->
+                            <div class="flex items-center gap-0.5 bg-slate-900 p-0.5 rounded border border-slate-700">
+                                <button onclick="toggleStyle(${idx}, 'bold')" class="px-1.5 py-0.5 text-[10px] font-bold rounded ${sec.bold ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">B</button>
+                                <button onclick="toggleStyle(${idx}, 'italic')" class="px-1.5 py-0.5 text-[10px] italic rounded ${sec.italic ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">I</button>
+                                <button onclick="toggleStyle(${idx}, 'underline')" class="px-1.5 py-0.5 text-[10px] underline rounded ${sec.underline ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">U</button>
+                            </div>
+
                             <div class="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
                                 <span>ขนาด:</span>
-                                <input type="number" min="8" max="72" value="${sec.size}" oninput="updateSecProperty(${idx}, 'size', parseInt(this.value)||14)" class="w-10 bg-transparent text-amber-400 font-bold text-center">
+                                <input type="number" min="8" max="72" value="${sec.size}" oninput="updateSecProperty(${idx}, 'size', parseInt(this.value)||14)" class="w-9 bg-transparent text-amber-400 font-bold text-center">
                                 <span>px</span>
                             </div>
 
                             <div class="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
                                 <span>สี:</span>
-                                <input type="color" value="${sec.color}" onchange="updateSecProperty(${idx}, 'color', this.value)" class="w-5 h-5 bg-transparent border-0 cursor-pointer">
+                                <input type="color" value="${sec.color}" onchange="updateSecProperty(${idx}, 'color', this.value)" class="w-4 h-4 bg-transparent border-0 cursor-pointer">
+                            </div>
+
+                            <div class="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
+                                <span>ขยับ:</span>
+                                <input type="number" min="-30" max="60" value="${sec.offsetTop || 0}" oninput="updateSecProperty(${idx}, 'offsetTop', parseInt(this.value)||0)" class="w-10 bg-transparent text-emerald-400 font-bold text-center">
+                                <span>px</span>
                             </div>
                         </div>
                     </td>
@@ -607,21 +618,35 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             });
         }
 
-        function updateSecProperty(index, prop, val) {
-            if (prop === 'font' && typeof val === 'string' && val.trim() !== '' && !val.includes(',')) {
-                sectionsConfig[index].customFont = val;
-                sectionsConfig[index].font = val;
-            } else {
-                sectionsConfig[index][prop] = val;
+        function moveSection(index, dir) {
+            const targetIdx = index + dir;
+            if (targetIdx >= 0 && targetIdx < sectionsConfig.length) {
+                const temp = sectionsConfig[index];
+                sectionsConfig[index] = sectionsConfig[targetIdx];
+                sectionsConfig[targetIdx] = temp;
+                renderSectionControlsTable();
+                renderCertificate();
+                showToast("สลับลำดับเรียบร้อยแล้ว");
             }
+        }
 
-            // Synchronize single person typing directly into active recipient data
+        function toggleStyle(index, styleProp) {
+            sectionsConfig[index][styleProp] = !sectionsConfig[index][styleProp];
+            renderSectionControlsTable();
+            renderCertificate();
+        }
+
+        function updateSecProperty(index, prop, val) {
+            sectionsConfig[index][prop] = val;
+
+            // Synchronize typing into active recipient data
             if (prop === 'text' && recipients.length > 0) {
                 const secId = sectionsConfig[index].id;
                 if (secId === 'recName') recipients[currentRecipientIndex].recName = val;
                 if (secId === 'recDept') recipients[currentRecipientIndex].recDept = val;
                 if (secId === 'body') recipients[currentRecipientIndex].body = val;
                 if (secId === 'grade') recipients[currentRecipientIndex].grade = val;
+                if (secId === 'date') recipients[currentRecipientIndex].date = val;
                 
                 const sel = document.getElementById('selRecipient');
                 if (sel && sel.options[currentRecipientIndex]) {
@@ -635,40 +660,72 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             renderCertificate();
         }
 
-        function downloadExcelTemplate() {
-            const sampleData = [
-                ["ชื่อ-นามสกุล (recName)", "สังกัด/คณะ/ปีเกิด (recDept)", "เกรด/ผลประเมิน (grade)", "ข้อความเนื้อหาเพิ่มเติม (body)"],
-                ["asma binti hamid", "2005", "جيد", "ได้ผ่านการศึกษาอบรมศาสนศึกษาประจำปี"],
-                ["hamid bin affan", "2006", "ممتاز", "ได้ผ่านการศึกษาอบรมศาสนศึกษาประจำปี"],
-                ["affan bin ahmad", "2007", "جيد جداً", "ได้ผ่านการศึกษาอบรมศาสนศึกษาประจำปี"],
-                ["นางสาวซารีนา สาแล", "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ มสธ.", "มีความประพฤติดีเยี่ยม", "ได้ผ่านการฝึกประสบการณ์วิชาชีพ ณ รพ.สต.ยะรัง"]
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(sampleData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "รายชื่อเกียรติบัตร");
-            XLSX.writeFile(wb, "ตัวอย่างไฟล์รายชื่อ_เกียรติบัตร.xlsx");
-            showToast("ดาวน์โหลดไฟล์ตัวอย่าง Excel เรียบร้อยแล้ว");
-        }
-
         function renderCertificate() {
             const numeralMode = document.getElementById('selNumeralMode')?.value || 'thai';
+            const currRecipient = recipients[currentRecipientIndex] || {};
 
-            // Render each dynamic text section
+            // Re-render reorderable dynamic sections in certSheet
+            const dynamicContainer = document.getElementById('dynamicSectionsContainer');
+            if (!dynamicContainer) return;
+            dynamicContainer.innerHTML = '';
+
+            // Separate normal body sections from signatory section
             sectionsConfig.forEach(sec => {
-                const elem = document.getElementById(`text_${sec.id}`);
-                const wrapper = document.getElementById(`certSec_${sec.id}`);
-                
-                if (!elem || !wrapper) return;
+                if (sec.id === 'signName' || sec.id === 'signTitle') return; // rendered in bottom signatory block
+
+                const secWrapper = document.createElement('div');
+                secWrapper.id = `certSec_${sec.id}`;
+                secWrapper.className = "w-full my-0.5 transition-all";
+                secWrapper.style.marginTop = `${sec.offsetTop || 0}px`;
+
+                const textElem = document.createElement('div');
+                textElem.id = `text_${sec.id}`;
+                textElem.dir = "auto";
+                textElem.className = "cert-dynamic-text";
+
+                secWrapper.appendChild(textElem);
+                dynamicContainer.appendChild(secWrapper);
 
                 if (!sec.enable || !sec.text || sec.text.trim() === '') {
-                    wrapper.style.display = 'none';
+                    secWrapper.style.display = 'none';
                 } else {
-                    wrapper.style.display = 'block';
-                    let displayedText = convertDigits(sec.text, numeralMode);
-                    elem.textContent = displayedText;
-                    elem.style.fontSize = `${sec.size}px`;
-                    elem.style.color = sec.color;
-                    elem.style.fontFamily = sec.customFont || sec.font;
+                    secWrapper.style.display = 'block';
+
+                    // Interpolate {{คอลัมน์ X}} tokens then convert numerals
+                    let interpolated = interpolateTokens(sec.text, currRecipient);
+                    let displayedText = convertDigits(interpolated, numeralMode);
+
+                    textElem.textContent = displayedText;
+                    textElem.style.fontSize = `${sec.size}px`;
+                    textElem.style.color = sec.color;
+                    textElem.style.fontFamily = sec.customFont || sec.font;
+                    textElem.style.fontWeight = sec.bold ? 'bold' : 'normal';
+                    textElem.style.fontStyle = sec.italic ? 'italic' : 'normal';
+                    textElem.style.textDecoration = sec.underline ? 'underline' : 'none';
+                }
+            });
+
+            // Render Signatory Block (7.1 & 7.2)
+            ['signName', 'signTitle'].forEach(sId => {
+                const sec = sectionsConfig.find(s => s.id === sId);
+                const elem = document.getElementById(`text_${sId}`);
+                const wrapper = document.getElementById(`certSec_${sId}`);
+
+                if (sec && elem && wrapper) {
+                    wrapper.style.marginTop = `${sec.offsetTop || 0}px`;
+                    if (!sec.enable || !sec.text || sec.text.trim() === '') {
+                        wrapper.style.display = 'none';
+                    } else {
+                        wrapper.style.display = 'block';
+                        let interpolated = interpolateTokens(sec.text, currRecipient);
+                        elem.textContent = convertDigits(interpolated, numeralMode);
+                        elem.style.fontSize = `${sec.size}px`;
+                        elem.style.color = sec.color;
+                        elem.style.fontFamily = sec.customFont || sec.font;
+                        elem.style.fontWeight = sec.bold ? 'bold' : 'normal';
+                        elem.style.fontStyle = sec.italic ? 'italic' : 'normal';
+                        elem.style.textDecoration = sec.underline ? 'underline' : 'none';
+                    }
                 }
             });
 
@@ -740,8 +797,21 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             const sheet = document.getElementById('certSheet');
             sheet.className = sheet.className.replace(/cert-border-\w+/g, '');
             sheet.classList.add(`cert-border-${style}`);
-            currentBorderStyle = style;
             showToast(`เปลี่ยนรูปแบบกรอบเป็น: ${style}`);
+        }
+
+        function downloadExcelTemplate() {
+            const sampleData = [
+                ["คอลัมน์ 1 (recName)", "คอลัมน์ 2 (recDept)", "คอลัมน์ 3 (grade)", "คอลัมน์ 4 (body)", "คอลัมน์ 5 (date)"],
+                ["asma binti hamid", "นักเรียนชั้นปีที่ 1", "جيد", "ได้ผ่านการศึกษาอบรมประจำปี ๒๕๖๘", "ให้ไว้ ณ วันที่ ๒๗ กรกฎาคม พ.ศ. ๒๕๖๘"],
+                ["hamid bin affan", "นักเรียนชั้นปีที่ 2", "ممتاز", "ได้ผ่านการศึกษาอบรมประจำปี ๒๕๖๘", "ให้ไว้ ณ วันที่ ๒๗ กรกฎาคม พ.ศ. ๒๕๖๘"],
+                ["นางสาวซารีนา สาแล", "นักศึกษาสาขาวิชา มสธ.", "มีความประพฤติดีเยี่ยม", "ได้ผ่านการฝึกประสบการณ์วิชาชีพ ณ รพ.สต.ยะรัง", "ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "รายชื่อเกียรติบัตร");
+            XLSX.writeFile(wb, "ตัวอย่างไฟล์รายชื่อ_10คอลัมน์.xlsx");
+            showToast("ดาวน์โหลดไฟล์ตัวอย่าง Excel เรียบร้อยแล้ว");
         }
 
         function switchBulkMode(mode) {
@@ -759,12 +829,14 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             let parsed = [];
 
             lines.forEach((line, idx) => {
-                const cols = line.split('\t');
+                const cols = line.split('\t').map(c => c.trim());
                 parsed.push({
-                    recName: cols[0] ? cols[0].trim() : `ผู้รับคนที่ ${idx + 1}`,
-                    recDept: cols[1] ? cols[1].trim() : '',
-                    grade: cols[2] ? cols[2].trim() : '',
-                    body: cols[3] ? cols[3].trim() : sectionsConfig[4].text
+                    recName: cols[0] || `ผู้รับคนที่ ${idx + 1}`,
+                    recDept: cols[1] || '',
+                    grade: cols[2] || '',
+                    body: cols[3] || '',
+                    date: cols[4] || '',
+                    rawCols: cols
                 });
             });
 
@@ -795,12 +867,15 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
 
                     json.forEach((row, idx) => {
                         if (idx === 0) return; // skip header
-                        if (row.length > 0 && row[0]) {
+                        if (row.length > 0 && row[0] !== undefined) {
+                            const strCols = row.map(c => c !== undefined && c !== null ? String(c).trim() : '');
                             parsed.push({
-                                recName: row[0] ? String(row[0]).trim() : '',
-                                recDept: row[1] ? String(row[1]).trim() : '',
-                                grade: row[2] ? String(row[2]).trim() : '',
-                                body: row[3] ? String(row[3]).trim() : sectionsConfig[4].text
+                                recName: strCols[0] || '',
+                                recDept: strCols[1] || '',
+                                grade: strCols[2] || '',
+                                body: strCols[3] || '',
+                                date: strCols[4] || '',
+                                rawCols: strCols
                             });
                         }
                     });
@@ -810,7 +885,7 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
                         currentRecipientIndex = 0;
                         renderColumnMapperUI();
                         updateRecipientNavigator();
-                        showToast(`นำเข้าไฟล์ Excel ${parsed.length} รายชื่อเรียบร้อย`);
+                        showToast(`นำเข้าไฟล์ Excel ${parsed.length} รายชื่อ (${detectedHeaders.length} คอลัมน์) เรียบร้อย`);
                     }
                 } catch(err) {
                     showToast("เกิดข้อผิดพลาดในการอ่านไฟล์ Excel");
@@ -827,10 +902,11 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             grid.innerHTML = '';
 
             const fields = [
-                { key: 'recName', label: 'ชื่อผู้รับ' },
-                { key: 'recDept', label: 'สังกัด/ปีเกิด' },
-                { key: 'grade', label: 'เกรด/ผลประเมิน' },
-                { key: 'body', label: 'ข้อความเนื้อหา' }
+                { key: 'recName', label: '3.1 ชื่อผู้รับ' },
+                { key: 'recDept', label: '3.2 สังกัด/ปีเกิด' },
+                { key: 'grade', label: '5. เกรด/ผลประเมิน' },
+                { key: 'body', label: '4. ข้อความเนื้อหา' },
+                { key: 'date', label: '6. วันที่ให้ไว้' }
             ];
 
             fields.forEach(f => {
@@ -841,8 +917,8 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
 
                 grid.innerHTML += `
                     <div class="space-y-1">
-                        <label class="text-slate-300 font-medium block">${f.label}</label>
-                        <select onchange="updateColumnMapping('${f.key}', parseInt(this.value))" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-slate-200">
+                        <label class="text-slate-300 font-medium block text-[11px]">${f.label}</label>
+                        <select onchange="updateColumnMapping('${f.key}', parseInt(this.value))" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-slate-200 text-[11px]">
                             ${optionsHtml}
                         </select>
                     </div>
@@ -870,12 +946,21 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             document.getElementById('badgeRecipientCount').textContent = `${recipients.length} คน`;
             document.getElementById('batchBtnLabel').textContent = `พิมพ์ทั้งหมด (${recipients.length} ใบ)`;
 
-            // Sync current recipient into sectionConfig
+            // Sync current recipient into sectionConfig if rawCols/direct text exists
             const curr = recipients[currentRecipientIndex];
-            if (curr.recName) sectionsConfig[2].text = curr.recName;
-            if (curr.recDept !== undefined) sectionsConfig[3].text = curr.recDept;
-            if (curr.body) sectionsConfig[4].text = curr.body;
-            if (curr.grade !== undefined) sectionsConfig[5].text = curr.grade;
+            if (curr) {
+                const secRecName = sectionsConfig.find(s => s.id === 'recName');
+                const secRecDept = sectionsConfig.find(s => s.id === 'recDept');
+                const secBody = sectionsConfig.find(s => s.id === 'body');
+                const secGrade = sectionsConfig.find(s => s.id === 'grade');
+                const secDate = sectionsConfig.find(s => s.id === 'date');
+
+                if (secRecName && curr.recName && !secRecName.text.includes('{{')) secRecName.text = curr.recName;
+                if (secRecDept && curr.recDept !== undefined && !secRecDept.text.includes('{{')) secRecDept.text = curr.recDept;
+                if (secBody && curr.body && !secBody.text.includes('{{')) secBody.text = curr.body;
+                if (secGrade && curr.grade !== undefined && !secGrade.text.includes('{{')) secGrade.text = curr.grade;
+                if (secDate && curr.date !== undefined && !secDate.text.includes('{{')) secDate.text = curr.date;
+            }
 
             renderSectionControlsTable();
             renderCertificate();
@@ -895,34 +980,41 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
         }
 
         function applyPreset(preset) {
+            const secOrg = sectionsConfig.find(s => s.id === 'org');
+            const secIntro = sectionsConfig.find(s => s.id === 'intro');
+            const secBody = sectionsConfig.find(s => s.id === 'body');
+            const secGrade = sectionsConfig.find(s => s.id === 'grade');
+            const secSignName = sectionsConfig.find(s => s.id === 'signName');
+            const secSignTitle = sectionsConfig.find(s => s.id === 'signTitle');
+
             if (preset === 'internship') {
-                sectionsConfig[0].text = "โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง";
-                sectionsConfig[1].text = "ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า";
-                sectionsConfig[4].text = "ได้ผ่านการฝึกประสบการณ์วิชาชีพ (ฝึกงาน) ณ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง ตั้งแต่วันที่ ๖ พฤษภาคม พ.ศ. ๒๕๖๘ ถึงวันที่ ๑ สิงหาคม พ.ศ. ๒๕๖๘";
-                sectionsConfig[5].text = "\"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา\"";
-                sectionsConfig[7].text = "(นายการียา ยือแร)";
-                sectionsConfig[8].text = "ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง";
+                if (secOrg) secOrg.text = "โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง";
+                if (secIntro) secIntro.text = "ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า";
+                if (secBody) secBody.text = "ได้ผ่านการฝึกประสบการณ์วิชาชีพ (ฝึกงาน) ณ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง ตั้งแต่วันที่ ๖ พฤษภาคม พ.ศ. ๒๕๖๘ ถึงวันที่ ๑ สิงหาคม พ.ศ. ๒๕๖๘";
+                if (secGrade) secGrade.text = "\"เป็นผู้รับการฝึกงานที่มีความพฤติดี มีความรับผิดชอบ ตรงต่อเวลา\"";
+                if (secSignName) secSignName.text = "(นายการียา ยือแร)";
+                if (secSignTitle) secSignTitle.text = "ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง";
             } else if (preset === 'training') {
-                sectionsConfig[0].text = "ศูนย์พัฒนาวิชาชีพสาธารณสุข";
-                sectionsConfig[1].text = "ขอมอบใบรับรองฉบับนี้เพื่อแสดงว่า";
-                sectionsConfig[4].text = "ได้ผ่านการอบรมเชิงปฏิบัติการ โครงการพัฒนาศักยภาพบุคลากรสุขภาพชุมชนประจำปี ๒๕๖๘";
-                sectionsConfig[5].text = "ผ่านการประเมินตามเกณฑ์มาตรฐานวิชาชีพ";
-                sectionsConfig[7].text = "(นายการียา ยือแร)";
-                sectionsConfig[8].text = "ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง";
+                if (secOrg) secOrg.text = "ศูนย์พัฒนาวิชาชีพสาธารณสุข";
+                if (secIntro) secIntro.text = "ขอมอบใบรับรองฉบับนี้เพื่อแสดงว่า";
+                if (secBody) secBody.text = "ได้ผ่านการอบรมเชิงปฏิบัติการ โครงการพัฒนาศักยภาพบุคลากรสุขภาพชุมชนประจำปี ๒๕๖๘";
+                if (secGrade) secGrade.text = "ผ่านการประเมินตามเกณฑ์มาตรฐานวิชาชีพ";
+                if (secSignName) secSignName.text = "(นายการียา ยือแร)";
+                if (secSignTitle) secSignTitle.text = "ผู้อำนวยการศูนย์พัฒนาวิชาชีพ";
             } else if (preset === 'school') {
-                sectionsConfig[0].text = "โรงเรียน / ตาดีกายะรัง";
-                sectionsConfig[1].text = "ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า";
-                sectionsConfig[4].text = "ได้สำเร็จการศึกษาตามหลักสูตรศาสนศึกษาและจริยธรรมประจำปี";
-                sectionsConfig[5].text = "ระดับผลการเรียน ( تقدير ): ممتاز";
-                sectionsConfig[7].text = "(นายการียา ยือแร)";
-                sectionsConfig[8].text = "ประธานกรรมการการศึกษา";
+                if (secOrg) secOrg.text = "โรงเรียน / ตาดีกายะรัง";
+                if (secIntro) secIntro.text = "ขอมอบเกียรติบัตรฉบับนี้เพื่อรับรองว่า";
+                if (secBody) secBody.text = "ได้สำเร็จการศึกษาตามหลักสูตรศาสนศึกษาและจริยธรรมประจำปี";
+                if (secGrade) secGrade.text = "ระดับผลการเรียน ( تقدير ): ممتاز";
+                if (secSignName) secSignName.text = "(นายการียา ยือแร)";
+                if (secSignTitle) secSignTitle.text = "ประธานกรรมการการศึกษา";
             } else if (preset === 'volunteer') {
-                sectionsConfig[0].text = "ศูนย์บำเพ็ญประโยชน์สาธารณะ";
-                sectionsConfig[1].text = "ประกาศเกียรติคุณฉบับนี้ให้ไว้เพื่อรับรองว่า";
-                sectionsConfig[4].text = "ได้เข้าร่วมปฏิบัติงานจิตอาสาพัฒนาชุมชนและส่งเสริมสุขภาพท้องถิ่น";
-                sectionsConfig[5].text = "\"เป็นผู้มีความเสียสละ อดทน และมีจิตสาธารณะดีเยี่ยม\"";
-                sectionsConfig[7].text = "(นายการียา ยือแร)";
-                sectionsConfig[8].text = "ประธานศูนย์จิตอาสา";
+                if (secOrg) secOrg.text = "ศูนย์บำเพ็ญประโยชน์สาธารณะ";
+                if (secIntro) secIntro.text = "ประกาศเกียรติคุณฉบับนี้ให้ไว้เพื่อรับรองว่า";
+                if (secBody) secBody.text = "ได้เข้าร่วมปฏิบัติงานจิตอาสาพัฒนาชุมชนและส่งเสริมสุขภาพท้องถิ่น";
+                if (secGrade) secGrade.text = "\"เป็นผู้มีความเสียสละ อดทน และมีจิตสาธารณะดีเยี่ยม\"";
+                if (secSignName) secSignName.text = "(นายการียา ยือแร)";
+                if (secSignTitle) secSignTitle.text = "ประธานศูนย์จิตอาสา";
             }
             renderSectionControlsTable();
             renderCertificate();
@@ -930,13 +1022,19 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
         }
 
         function resetToDefaults() {
-            sectionsConfig[2].text = "นางสาวซารีนา สาแล";
-            sectionsConfig[3].text = "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช";
+            const secRecName = sectionsConfig.find(s => s.id === 'recName');
+            const secRecDept = sectionsConfig.find(s => s.id === 'recDept');
+            const secBody = sectionsConfig.find(s => s.id === 'body');
+            const secGrade = sectionsConfig.find(s => s.id === 'grade');
+
+            if (secRecName) secRecName.text = "นางสาวซารีนา สาแล";
+            if (secRecDept) secRecDept.text = "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช";
             recipients = [{
-                recName: sectionsConfig[2].text,
-                recDept: sectionsConfig[3].text,
-                body: sectionsConfig[4].text,
-                grade: sectionsConfig[5].text
+                recName: "นางสาวซารีนา สาแล",
+                recDept: "นักศึกษาสาขาวิชาวิทยาศาสตร์สุขภาพ วิชาเอกสาธารณสุขชุมชน มหาวิทยาลัยสุโขทัยธรรมาธิราช",
+                body: secBody ? secBody.text : '',
+                grade: secGrade ? secGrade.text : '',
+                date: "ให้ไว้ ณ วันที่ ๔ สิงหาคม พ.ศ. ๒๕๖๘"
             }];
             currentRecipientIndex = 0;
             applyPreset('internship');
@@ -960,7 +1058,7 @@ hamid bin affan	2006	ممتاز" class="w-full bg-slate-900 border border-slate-
             let batchHtml = '';
             recipients.forEach((rec, idx) => {
                 currentRecipientIndex = idx;
-                updateRecipientNavigator();
+                renderCertificate();
                 batchHtml += singleCert.outerHTML;
             });
 

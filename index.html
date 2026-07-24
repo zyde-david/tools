@@ -169,6 +169,7 @@
         { icon: '🖨️', name: 'ระบบวางแผนจัดซื้อน้ำหมึก', desc: 'บริหารฝูงเครื่องพิมพ์ IRL yield + สั่งซื้ออัจฉริยะ', tag: 'Ink Planner', file: 'ink-planner.html', cat: 'พิมพ์' },
         { icon: '📦', name: 'ระบบวิเคราะห์พัสดุคงคลัง', desc: 'นำเข้า Excel + คำนวณมูลค่า + สถานะพัสดุราชการ', tag: 'Inventory Analytics', file: 'inventory-analytics.html', cat: 'พัสดุ' },
         { icon: '🗄️', name: 'myPCU SQL Query Simulator', desc: 'GIS Heatmap + Custom SQL Library + Schema Manager', tag: 'myPCU SQL', file: 'mypcu-sql-simulator.html', cat: 'SQL' },
+        { icon: '📍', name: 'ระบบจัดเก็บพิกัดบ้าน อสม. (myPCU Sync)', desc: 'บันทึกพิกัด GPS บ้านเป้าหมาย + ถ่ายรูป + ป้องกันข้อมูลซ้ำ + รายงานสรุป', tag: 'GPS Tracker', file: 'gps-location-tracker.html', cat: 'GPS' },
     ];
 
     function renderCategories() {
@@ -181,7 +182,8 @@
                 c === 'แผนที่' ? '🗺️ แผนที่' :
                 c === 'คีย์ข้อมูล' ? '⌨️ คีย์ข้อมูล' :
                 c === 'ถอดรหัส' ? '🔓 ถอดรหัส' :
-                c === 'พัสดุ' ? '📦 พัสดุ' : c
+                c === 'พัสดุ' ? '📦 พัสดุ' :
+                c === 'GPS' ? '📍 GPS' : c
             }</span>`
         ).join('');
     }
