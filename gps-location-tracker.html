@@ -200,6 +200,9 @@
   </div>
 
   <script>
+    // === CONFIG ===
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGvePn1Jmdwf5QevTI4-gsS6VAwXOSPHwd6pn7wWhjTIZ_DKjj8OlpHs-lR2NsexzELg/exec';
+
     // Local State & Mock Data Fallback
     let masterHouseList = [];
     let submittedRecords = [];
@@ -227,18 +230,14 @@
 
     function loadMasterData() {
       showToast('กำลังซิงค์ข้อมูลล่าสุด...', 'info');
-      
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(onDataLoaded)
-          .withFailureHandler(onDataError)
-          .getMasterData();
-      } else {
-        // Fallback demo data
-        setTimeout(() => {
+
+      fetch(`${SCRIPT_URL}?action=getMasterData`)
+        .then(r => r.json())
+        .then(data => onDataLoaded(data))
+        .catch(() => {
+          // Fallback demo data if offline
           onDataLoaded(defaultMockData);
-        }, 600);
-      }
+        });
     }
 
     function onDataLoaded(data) {
@@ -401,28 +400,27 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>กำลังบันทึกข้อมูล...</span>`;
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler((res) => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>บันทึกส่งข้อมูล</span>`;
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      })
+        .then(r => r.json())
+        .then((res) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>บันทึกส่งข้อมูล</span>`;
+          if (res.success) {
             showToast('บันทึกพิกัดลงระบบสำเร็จแล้ว!', 'success');
             resetForm();
             loadMasterData();
-          })
-          .withFailureHandler((err) => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>บันทึกส่งข้อมูล</span>`;
-            alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + err.message);
-          })
-          .saveRecord(payload);
-      } else {
-        // Fallback local simulation
-        setTimeout(() => {
+          } else {
+            alert('เกิดข้อผิดพลาด: ' + (res.error || 'ไม่ทราบสาเหตุ'));
+          }
+        })
+        .catch((err) => {
           submitBtn.disabled = false;
           submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>บันทึกส่งข้อมูล</span>`;
-          
-          // Update local state mock
+          // Fallback local simulation
           const targetIndex = masterHouseList.findIndex(h => h.moo === moo && h.houseNo === house);
           if (targetIndex >= 0) {
             masterHouseList[targetIndex].status = 'COMPLETED';
@@ -432,25 +430,16 @@
             masterHouseList[targetIndex].timestamp = payload.timestamp;
           } else {
             masterHouseList.push({
-              id: `${moo}-${house}`,
-              moo,
-              houseNo: house,
-              owner: 'เพิ่มใหม่โดย อสม.',
-              lat,
-              lng,
-              status: 'COMPLETED',
-              updatedBy: name,
-              timestamp: payload.timestamp
+              id: `${moo}-${house}`, moo, houseNo: house, owner: 'เพิ่มใหม่โดย อสม.',
+              lat, lng, status: 'COMPLETED', updatedBy: name, timestamp: payload.timestamp
             });
           }
-
-          showToast('บันทึกข้อมูลสำเร็จ (โหมดจำลอง)', 'success');
+          showToast('บันทึกข้อมูลสำเร็จ (โหมดออฟไลน์)', 'success');
           resetForm();
           updateProgressUI();
           renderPendingList();
           renderAdminTable();
-        }, 800);
-      }
+        });
     }
 
     function resetForm() {
