@@ -88,6 +88,25 @@ html.light {
   --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
 }
 
+/* ===== LANGUAGE TOGGLE ===== */
+.lang-toggle {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  transition: all var(--transition);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.lang-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
 .tools-fab {
   position: fixed;
@@ -462,42 +481,45 @@ html.light {
 <body class="bg-slate-100 min-h-screen py-6 px-4"><!-- ===== Responsive Navigation ===== -->
 <!-- Mobile: 3-button bottom bar -->
 <nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
-<button aria-label="ค้นหา" class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา">
-    🔍<span>ค้นหา</span>
+<button aria-label="ค้นหา" class="fab-btn fab-search" data-i18n="search" id="fabSearchBtn" title="ค้นหา">
+    🔍<span data-i18n-text="search">ค้นหา</span>
 </button>
-<a aria-label="หน้าหลัก" class="fab-btn fab-home" href="index.html" title="หน้าหลัก">
-    🏠<span>หน้าหลัก</span>
+<a aria-label="หน้าหลัก" class="fab-btn fab-home" data-i18n="home" href="index.html" title="หน้าหลัก">
+    🏠<span data-i18n-text="home">หน้าหลัก</span>
 </a>
-<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
-    📝<span>รายงานด่วน</span>
+<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" data-i18n="note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
+    📝<span data-i18n-text="note">รายงานด่วน</span>
 </a>
 </nav>
 <!-- Search Drawer (slide-up) -->
 <div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
 <div class="tools-drawer" id="toolsDrawer">
 <div class="tools-drawer-header">
-<h3>🔍 ค้นหาเครื่องมือ</h3>
+<h3 data-i18n-text="search_title">🔍 ค้นหาเครื่องมือ</h3>
+<div style="display:flex;align-items:center;gap:6px;">
+<button class="lang-toggle" id="langToggleMobile" title="Switch language">TH/EN</button>
 <button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
 </div>
+</div>
 <div class="tools-drawer-grid" id="toolsDrawerGrid">
-<a class="tools-drawer-item" href="envelope-printer.html"><span class="icon">✉️</span><span class="label">Envelope Printer</span></a>
-<a class="tools-drawer-item" href="autocorrect.html"><span class="icon">⌨️</span><span class="label">AHK AutoCorrect</span></a>
-<a class="tools-drawer-item" href="map-epidemic.html"><span class="icon">📊</span><span class="label">Epidemiology Map</span></a>
-<a class="tools-drawer-item" href="base64-decoder.html"><span class="icon">🦫</span><span class="label">Base64 Decoder</span></a>
-<a class="tools-drawer-item" href="thai-recovery.html"><span class="icon">🔤</span><span class="label">Thai Recovery</span></a>
-<a class="tools-drawer-item active" href="ink-planner.html"><span class="icon">🖨️</span><span class="label">Ink Planner</span></a>
-<a class="tools-drawer-item" href="inventory-analytics.html"><span class="icon">📦</span><span class="label">Inventory</span></a>
-<a class="tools-drawer-item" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label">Certificate Builder</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label">myPCU SQL Simulator</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label">myPCU AI SQL</span></a>
-<a class="tools-drawer-item" href="health-gis-app.html"><span class="icon">🏥</span><span class="label">Health GIS</span></a>
-<a class="tools-drawer-item" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label">GPS Tracker</span></a>
-<a class="tools-drawer-item" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label">VHV Voice Report</span></a>
-<a class="tools-drawer-item" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label">Yarang PCC</span></a>
-<div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
+<a class="tools-drawer-item" data-i18n="envelope-printer" href="envelope-printer.html"><span class="icon">✉️</span><span class="label" data-i18n-text="envelope-printer">พิมพ์ซองจดหมาย</span></a>
+<a class="tools-drawer-item" data-i18n="autocorrect" href="autocorrect.html"><span class="icon">⌨️</span><span class="label" data-i18n-text="autocorrect">คีย์ข้อมูล AHK</span></a>
+<a class="tools-drawer-item" data-i18n="map-epidemic" href="map-epidemic.html"><span class="icon">📊</span><span class="label" data-i18n-text="map-epidemic">แผนที่ระบาดวิทยา</span></a>
+<a class="tools-drawer-item" data-i18n="base64-decoder" href="base64-decoder.html"><span class="icon">🦫</span><span class="label" data-i18n-text="base64-decoder">ถอดรหัส Base64</span></a>
+<a class="tools-drawer-item" data-i18n="thai-recovery" href="thai-recovery.html"><span class="icon">🔤</span><span class="label" data-i18n-text="thai-recovery">กู้คืนภาษาไทย</span></a>
+<a class="tools-drawer-item active" data-i18n="ink-planner" href="ink-planner.html"><span class="icon">🖨️</span><span class="label" data-i18n-text="ink-planner">วางแผนน้ำหมึก</span></a>
+<a class="tools-drawer-item" data-i18n="inventory-analytics" href="inventory-analytics.html"><span class="icon">📦</span><span class="label" data-i18n-text="inventory-analytics">วิเคราะห์พัสดุ</span></a>
+<a class="tools-drawer-item" data-i18n="interactive-certificate-builder" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label" data-i18n-text="interactive-certificate-builder">เกียรติบัตร</span></a>
+<a class="tools-drawer-item" data-i18n="mypcu-sql-simulator" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label" data-i18n-text="mypcu-sql-simulator">SQL Simulator</span></a>
+<a class="tools-drawer-item" data-i18n="mypcu-sql-cheatsheet-ai" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label" data-i18n-text="mypcu-sql-cheatsheet-ai">SQL Cheatsheet AI</span></a>
+<a class="tools-drawer-item" data-i18n="health-gis-app" href="health-gis-app.html"><span class="icon">🏥</span><span class="label" data-i18n-text="health-gis-app">Health GIS</span></a>
+<a class="tools-drawer-item" data-i18n="gps-location-tracker" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label" data-i18n-text="gps-location-tracker">พิกัด GPS</span></a>
+<a class="tools-drawer-item" data-i18n="vhv-quick-report" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label" data-i18n-text="vhv-quick-report">รายงาน อสม.</span></a>
+<a class="tools-drawer-item" data-i18n="yarang-pcc-audit" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label" data-i18n-text="yarang-pcc-audit">จองคิว PCC</span></a>
+<div class="tools-drawer-no-results" data-i18n-text="no_results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
 </div>
 <div class="tools-drawer-search-wrap">
-<input autocomplete="off" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
+<input autocomplete="off" data-i18n-placeholder="search_placeholder" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
 </div>
 </div>
 <!-- Desktop sidebar -->
@@ -505,25 +527,28 @@ html.light {
 <div class="tools-sidebar-header">
 <a class="tools-sidebar-brand" href="index.html">
 <span class="brand-icon">🛠️</span>
-<span class="brand-text">Zyde's Tools</span>
+<span class="brand-text" data-i18n-text="brand">Zyde's Tools</span>
 </a>
 </div>
 <div class="tools-sidebar-nav">
-<input autocomplete="off" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
-<a class="tools-sidebar-link" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text">Envelope Printer</span></a>
-<a class="tools-sidebar-link" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text">AHK AutoCorrect</span></a>
-<a class="tools-sidebar-link" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text">Epidemiology Map</span></a>
-<a class="tools-sidebar-link" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text">Base64 Decoder</span></a>
-<a class="tools-sidebar-link" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text">Thai Recovery</span></a>
-<a class="tools-sidebar-link active" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text">Ink Planner</span></a>
-<a class="tools-sidebar-link" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text">Inventory</span></a>
-<a class="tools-sidebar-link" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text">Certificate Builder</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text">myPCU SQL Simulator</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text">myPCU AI SQL</span></a>
-<a class="tools-sidebar-link" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text">Health GIS</span></a>
-<a class="tools-sidebar-link" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text">GPS Tracker</span></a>
-<a class="tools-sidebar-link" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text">VHV Voice Report</span></a>
-<a class="tools-sidebar-link" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text">Yarang PCC</span></a>
+<input autocomplete="off" class="tools-sidebar-search" data-i18n-placeholder="search_hint" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
+<a class="tools-sidebar-link" data-i18n="envelope-printer" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text" data-i18n-text="envelope-printer">พิมพ์ซองจดหมาย</span></a>
+<a class="tools-sidebar-link" data-i18n="autocorrect" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text" data-i18n-text="autocorrect">คีย์ข้อมูล AHK</span></a>
+<a class="tools-sidebar-link" data-i18n="map-epidemic" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text" data-i18n-text="map-epidemic">แผนที่ระบาดวิทยา</span></a>
+<a class="tools-sidebar-link" data-i18n="base64-decoder" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text" data-i18n-text="base64-decoder">ถอดรหัส Base64</span></a>
+<a class="tools-sidebar-link" data-i18n="thai-recovery" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text" data-i18n-text="thai-recovery">กู้คืนภาษาไทย</span></a>
+<a class="tools-sidebar-link active" data-i18n="ink-planner" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text" data-i18n-text="ink-planner">วางแผนน้ำหมึก</span></a>
+<a class="tools-sidebar-link" data-i18n="inventory-analytics" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text" data-i18n-text="inventory-analytics">วิเคราะห์พัสดุ</span></a>
+<a class="tools-sidebar-link" data-i18n="interactive-certificate-builder" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text" data-i18n-text="interactive-certificate-builder">เกียรติบัตร</span></a>
+<a class="tools-sidebar-link" data-i18n="mypcu-sql-simulator" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text" data-i18n-text="mypcu-sql-simulator">SQL Simulator</span></a>
+<a class="tools-sidebar-link" data-i18n="mypcu-sql-cheatsheet-ai" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text" data-i18n-text="mypcu-sql-cheatsheet-ai">SQL Cheatsheet AI</span></a>
+<a class="tools-sidebar-link" data-i18n="health-gis-app" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text" data-i18n-text="health-gis-app">Health GIS</span></a>
+<a class="tools-sidebar-link" data-i18n="gps-location-tracker" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text" data-i18n-text="gps-location-tracker">พิกัด GPS</span></a>
+<a class="tools-sidebar-link" data-i18n="vhv-quick-report" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text" data-i18n-text="vhv-quick-report">รายงาน อสม.</span></a>
+<a class="tools-sidebar-link" data-i18n="yarang-pcc-audit" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text" data-i18n-text="yarang-pcc-audit">จองคิว PCC</span></a>
+<div style="padding:0.5rem;border-top:1px solid var(--border-color);margin-top:auto;">
+<button class="lang-toggle" id="langToggleDesktop" style="width:100%;" title="Switch language">TH/EN</button>
+</div>
 </div>
 </aside>
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
@@ -1006,27 +1031,94 @@ html.light {
 <script>
 (function() {
   "use strict";
-  const current = window.location.pathname.split("/").pop() || "index.html";
+  var current = window.location.pathname.split("/").pop() || "index.html";
+
+  /* ===================== I18N ===================== */
+  var LANG_KEY = "tools_lang";
+  var lang = localStorage.getItem(LANG_KEY) || "th";
+
+  var i18n = {
+    th: {
+      search: "ค้นหา", home: "หน้าหลัก", note: "รายงานด่วน",
+      search_title: "ค้นหาเครื่องมือ", no_results: "ไม่พบเครื่องมือที่ค้นหา",
+      search_placeholder: "พิมพ์ชื่อเครื่องมือ...", search_hint: "ค้นหา...",
+      brand: "Zyde's Tools",
+      envelope_printer: "พิมพ์ซองจดหมาย", autocorrect: "คีย์ข้อมูล AHK",
+      epidemic_map: "แผนที่ระบาดวิทยา", base64_decoder: "ถอดรหัส Base64",
+      thai_recovery: "กู้คืนภาษาไทย", ink_planner: "วางแผนน้ำหมึก",
+      inventory: "วิเคราะห์พัสดุ", certificate_builder: "เกียรติบัตร",
+      mypcu_sql_simulator: "SQL Simulator", mypcu_sql_cheatsheet_ai: "SQL Cheatsheet AI",
+      health_gis_app: "Health GIS", gps_location_tracker: "พิกัด GPS",
+      vhv_quick_report: "รายงาน อสม.", yarang_pcc_audit: "จองคิว PCC"
+    },
+    en: {
+      search: "Search", home: "Home", note: "Quick Note",
+      search_title: "Search Tools", no_results: "No tools found",
+      search_placeholder: "Type tool name...", search_hint: "Search...",
+      brand: "Zyde's Tools",
+      envelope_printer: "Envelope Printer", autocorrect: "AHK AutoCorrect",
+      epidemic_map: "Epidemiology Map", base64_decoder: "Base64 Decoder",
+      thai_recovery: "Thai Recovery", ink_planner: "Ink Planner",
+      inventory: "Inventory", certificate_builder: "Certificate Builder",
+      mypcu_sql_simulator: "myPCU SQL Simulator", mypcu_sql_cheatsheet_ai: "myPCU AI SQL",
+      health_gis_app: "Health GIS", gps_location_tracker: "GPS Tracker",
+      vhv_quick_report: "VHV Voice Report", yarang_pcc_audit: "Yarang PCC"
+    }
+  };
+
+  function applyLang(l) {
+    lang = l;
+    localStorage.setItem(LANG_KEY, l);
+    // Update all data-i18n-text elements
+    document.querySelectorAll("[data-i18n-text]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n-text");
+      if (i18n[l] && i18n[l][key]) el.textContent = i18n[l][key];
+    });
+    // Update all data-i18n-placeholder inputs
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n-placeholder");
+      if (i18n[l] && i18n[l][key]) el.placeholder = i18n[l][key];
+    });
+    // Update title attributes on data-i18n elements
+    document.querySelectorAll("[data-i18n]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n");
+      if (i18n[l] && i18n[l][key]) el.setAttribute("title", i18n[l][key]);
+    });
+    // Update toggle buttons
+    document.querySelectorAll(".lang-toggle").forEach(function(btn) {
+      btn.textContent = l === "th" ? "TH/EN" : "EN/TH";
+    });
+  }
+
+  /* ===================== LANG TOGGLE ===================== */
+  document.querySelectorAll(".lang-toggle").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      applyLang(lang === "th" ? "en" : "th");
+    });
+  });
+
+  // Apply saved language on load
+  applyLang(lang);
 
   /* ===================== SIDEBAR SEARCH ===================== */
-  const sidebarSearch = document.getElementById("sidebarSearch");
+  var sidebarSearch = document.getElementById("sidebarSearch");
   if (sidebarSearch) {
     sidebarSearch.addEventListener("input", function() {
-      const q = this.value.toLowerCase().trim();
+      var q = this.value.toLowerCase().trim();
       document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
-        const text = link.textContent.toLowerCase();
+        var text = link.textContent.toLowerCase();
         link.style.display = !q || text.includes(q) ? "flex" : "none";
       });
     });
   }
 
   /* ===================== DRAWER ===================== */
-  const overlay = document.getElementById("toolsDrawerOverlay");
-  const drawer = document.getElementById("toolsDrawer");
-  const openBtn = document.getElementById("fabSearchBtn");
-  const closeBtn = document.getElementById("toolsDrawerClose");
-  const searchInput = document.getElementById("toolsDrawerSearchInput");
-  const noResults = document.getElementById("toolsNoResults");
+  var overlay = document.getElementById("toolsDrawerOverlay");
+  var drawer = document.getElementById("toolsDrawer");
+  var openBtn = document.getElementById("fabSearchBtn");
+  var closeBtn = document.getElementById("toolsDrawerClose");
+  var searchInput = document.getElementById("toolsDrawerSearchInput");
+  var noResults = document.getElementById("toolsNoResults");
 
   function openDrawer() {
     overlay.classList.add("open");
@@ -1055,7 +1147,7 @@ html.light {
     var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
     items.forEach(function(item) {
       var text = item.textContent.toLowerCase();
-      var match = !q || text.includes(q);
+      var match = !q || text.indexOf(q) !== -1;
       item.style.display = match ? "flex" : "none";
       if (match) found = true;
     });
@@ -1068,19 +1160,16 @@ html.light {
     searchInput.addEventListener("input", function() {
       filterDrawer(this.value.toLowerCase().trim());
     });
-    /* Prevent close on input click (bubbles up) */
     searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
   }
 
   /* ===================== ACTIVE STATE ===================== */
-  /* Sidebar */
   document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
     var href = a.getAttribute("href");
     if (href === current || (current === "index.html" && href === "index.html")) {
       a.classList.add("active");
     }
   });
-  /* Drawer */
   document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
     var href = a.getAttribute("href");
     if (href === current || (current === "index.html" && href === "index.html")) {

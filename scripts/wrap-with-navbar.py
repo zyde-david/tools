@@ -10,21 +10,22 @@ from bs4 import BeautifulSoup
 TOOLS_DIR = Path(__file__).parent.parent
 
 # Nav links (no home - it's hardcoded in template)
+# Format: (icon, thai_name, english_name, href)
 NAV_LINKS = [
-    ("✉️", "Envelope Printer", "envelope-printer.html"),
-    ("⌨️", "AHK AutoCorrect", "autocorrect.html"),
-    ("📊", "Epidemiology Map", "map-epidemic.html"),
-    ("🦫", "Base64 Decoder", "base64-decoder.html"),
-    ("🔤", "Thai Recovery", "thai-recovery.html"),
-    ("🖨️", "Ink Planner", "ink-planner.html"),
-    ("📦", "Inventory", "inventory-analytics.html"),
-    ("🏆", "Certificate Builder", "interactive-certificate-builder.html"),
-    ("🗄️", "myPCU SQL Simulator", "mypcu-sql-simulator.html"),
-    ("🧠", "myPCU AI SQL", "mypcu-sql-cheatsheet-ai.html"),
-    ("🏥", "Health GIS", "health-gis-app.html"),
-    ("📍", "GPS Tracker", "gps-location-tracker.html"),
-    ("🎤", "VHV Voice Report", "vhv-quick-report.html"),
-    ("🏥", "Yarang PCC", "yarang-pcc-audit.html"),
+    ("✉️", "พิมพ์ซองจดหมาย", "Envelope Printer", "envelope-printer.html"),
+    ("⌨️", "คีย์ข้อมูล AHK", "AHK AutoCorrect", "autocorrect.html"),
+    ("📊", "แผนที่ระบาดวิทยา", "Epidemiology Map", "map-epidemic.html"),
+    ("🦫", "ถอดรหัส Base64", "Base64 Decoder", "base64-decoder.html"),
+    ("🔤", "กู้คืนภาษาไทย", "Thai Recovery", "thai-recovery.html"),
+    ("🖨️", "วางแผนน้ำหมึก", "Ink Planner", "ink-planner.html"),
+    ("📦", "วิเคราะห์พัสดุ", "Inventory", "inventory-analytics.html"),
+    ("🏆", "เกียรติบัตร", "Certificate Builder", "interactive-certificate-builder.html"),
+    ("🗄️", "SQL Simulator", "myPCU SQL Simulator", "mypcu-sql-simulator.html"),
+    ("🧠", "SQL Cheatsheet AI", "myPCU AI SQL", "mypcu-sql-cheatsheet-ai.html"),
+    ("🏥", "Health GIS", "Health GIS", "health-gis-app.html"),
+    ("📍", "พิกัด GPS", "GPS Tracker", "gps-location-tracker.html"),
+    ("🎤", "รายงาน อสม.", "VHV Voice Report", "vhv-quick-report.html"),
+    ("🏥", "จองคิว PCC", "Yarang PCC", "yarang-pcc-audit.html"),
 ]
 
 # Pages that have their own fixed bottom bar/FAB
@@ -76,6 +77,25 @@ html.light {
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+}
+
+/* ===== LANGUAGE TOGGLE ===== */
+.lang-toggle {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  transition: all var(--transition);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.lang-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
@@ -421,14 +441,14 @@ html.light {
 RESPONSIVE_NAV_HTML = '''<!-- ===== Responsive Navigation ===== -->
 <!-- Mobile: 3-button bottom bar -->
 <nav class="tools-fab" role="navigation" aria-label="เครื่องมือนำทาง">
-  <button class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา" aria-label="ค้นหา">
-    🔍<span>ค้นหา</span>
+  <button class="fab-btn fab-search" id="fabSearchBtn" data-i18n="search" title="ค้นหา" aria-label="ค้นหา">
+    🔍<span data-i18n-text="search">ค้นหา</span>
   </button>
-  <a href="index.html" class="fab-btn fab-home" title="หน้าหลัก" aria-label="หน้าหลัก">
-    🏠<span>หน้าหลัก</span>
+  <a href="index.html" class="fab-btn fab-home" data-i18n="home" title="หน้าหลัก" aria-label="หน้าหลัก">
+    🏠<span data-i18n-text="home">หน้าหลัก</span>
   </a>
-  <a href="vhv-quick-report.html" class="fab-btn fab-note" title="อสม.รายงานด่วน" aria-label="อสม.รายงานด่วน">
-    📝<span>รายงานด่วน</span>
+  <a href="vhv-quick-report.html" class="fab-btn fab-note" data-i18n="note" title="อสม.รายงานด่วน" aria-label="อสม.รายงานด่วน">
+    📝<span data-i18n-text="note">รายงานด่วน</span>
   </a>
 </nav>
 
@@ -436,15 +456,18 @@ RESPONSIVE_NAV_HTML = '''<!-- ===== Responsive Navigation ===== -->
 <div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
 <div class="tools-drawer" id="toolsDrawer">
   <div class="tools-drawer-header">
-    <h3>🔍 ค้นหาเครื่องมือ</h3>
-    <button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
+    <h3 data-i18n-text="search_title">🔍 ค้นหาเครื่องมือ</h3>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="lang-toggle" id="langToggleMobile" title="Switch language">TH/EN</button>
+      <button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
+    </div>
   </div>
   <div class="tools-drawer-grid" id="toolsDrawerGrid">
     {drawer_items}
-    <div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
+    <div class="tools-drawer-no-results" id="toolsNoResults" data-i18n-text="no_results">ไม่พบเครื่องมือที่ค้นหา</div>
   </div>
   <div class="tools-drawer-search-wrap">
-    <input type="text" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." autocomplete="off">
+    <input type="text" id="toolsDrawerSearchInput" data-i18n-placeholder="search_placeholder" placeholder="พิมพ์ชื่อเครื่องมือ..." autocomplete="off">
   </div>
 </div>
 
@@ -453,12 +476,15 @@ RESPONSIVE_NAV_HTML = '''<!-- ===== Responsive Navigation ===== -->
   <div class="tools-sidebar-header">
     <a href="index.html" class="tools-sidebar-brand">
       <span class="brand-icon">🛠️</span>
-      <span class="brand-text">Zyde's Tools</span>
+      <span class="brand-text" data-i18n-text="brand">Zyde's Tools</span>
     </a>
   </div>
   <div class="tools-sidebar-nav">
-    <input type="text" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." autocomplete="off">
+    <input type="text" class="tools-sidebar-search" id="sidebarSearch" data-i18n-placeholder="search_hint" placeholder="ค้นหา..." autocomplete="off">
     {sidebar_links}
+    <div style="padding:0.5rem;border-top:1px solid var(--border-color);margin-top:auto;">
+      <button class="lang-toggle" id="langToggleDesktop" title="Switch language" style="width:100%;">TH/EN</button>
+    </div>
   </div>
 </aside>'''
 
@@ -467,27 +493,94 @@ RESPONSIVE_NAV_JS = '''
 <script>
 (function() {
   "use strict";
-  const current = window.location.pathname.split("/").pop() || "index.html";
+  var current = window.location.pathname.split("/").pop() || "index.html";
+
+  /* ===================== I18N ===================== */
+  var LANG_KEY = "tools_lang";
+  var lang = localStorage.getItem(LANG_KEY) || "th";
+
+  var i18n = {
+    th: {
+      search: "\u0E04\u0E49\u0E19\u0E2B\u0E32", home: "\u0E2B\u0E19\u0E49\u0E32\u0E2B\u0E25\u0E31\u0E01", note: "\u0E23\u0E32\u0E22\u0E07\u0E32\u0E19\u0E14\u0E48\u0E27\u0E19",
+      search_title: "\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D", no_results: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D\u0E17\u0E35\u0E48\u0E04\u0E49\u0E19\u0E2B\u0E32",
+      search_placeholder: "\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E21\u0E37\u0E2D...", search_hint: "\u0E04\u0E49\u0E19\u0E2B\u0E32...",
+      brand: "Zyde's Tools",
+      envelope_printer: "\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E0B\u0E2D\u0E07\u0E08\u0E14\u0E2B\u0E21\u0E32\u0E22", autocorrect: "\u0E04\u0E35\u0E22\u0E4C\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 AHK",
+      epidemic_map: "\u0E41\u0E1C\u0E19\u0E17\u0E35\u0E48\u0E23\u0E30\u0E1A\u0E32\u0E14\u0E27\u0E34\u0E17\u0E22\u0E32", base64_decoder: "\u0E16\u0E2D\u0E14\u0E23\u0E2B\u0E31\u0E2A Base64",
+      thai_recovery: "\u0E01\u0E39\u0E49\u0E04\u0E37\u0E19\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22", ink_planner: "\u0E27\u0E32\u0E07\u0E41\u0E1C\u0E19\u0E19\u0E49\u0E33\u0E2B\u0E21\u0E36\u0E01",
+      inventory: "\u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E1E\u0E31\u0E2A\u0E14\u0E38", certificate_builder: "\u0E40\u0E01\u0E35\u0E22\u0E23\u0E15\u0E34\u0E1A\u0E31\u0E15\u0E23",
+      mypcu_sql_simulator: "SQL Simulator", mypcu_sql_cheatsheet_ai: "SQL Cheatsheet AI",
+      health_gis_app: "Health GIS", gps_location_tracker: "\u0E1E\u0E34\u0E01\u0E31\u0E14 GPS",
+      vhv_quick_report: "\u0E23\u0E32\u0E22\u0E07\u0E32\u0E19 \u0E2D\u0E2A\u0E21.", yarang_pcc_audit: "\u0E08\u0E2D\u0E07\u0E04\u0E34\u0E27 PCC"
+    },
+    en: {
+      search: "Search", home: "Home", note: "Quick Note",
+      search_title: "Search Tools", no_results: "No tools found",
+      search_placeholder: "Type tool name...", search_hint: "Search...",
+      brand: "Zyde's Tools",
+      envelope_printer: "Envelope Printer", autocorrect: "AHK AutoCorrect",
+      epidemic_map: "Epidemiology Map", base64_decoder: "Base64 Decoder",
+      thai_recovery: "Thai Recovery", ink_planner: "Ink Planner",
+      inventory: "Inventory", certificate_builder: "Certificate Builder",
+      mypcu_sql_simulator: "myPCU SQL Simulator", mypcu_sql_cheatsheet_ai: "myPCU AI SQL",
+      health_gis_app: "Health GIS", gps_location_tracker: "GPS Tracker",
+      vhv_quick_report: "VHV Voice Report", yarang_pcc_audit: "Yarang PCC"
+    }
+  };
+
+  function applyLang(l) {
+    lang = l;
+    localStorage.setItem(LANG_KEY, l);
+    // Update all data-i18n-text elements
+    document.querySelectorAll("[data-i18n-text]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n-text");
+      if (i18n[l] && i18n[l][key]) el.textContent = i18n[l][key];
+    });
+    // Update all data-i18n-placeholder inputs
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n-placeholder");
+      if (i18n[l] && i18n[l][key]) el.placeholder = i18n[l][key];
+    });
+    // Update title attributes on data-i18n elements
+    document.querySelectorAll("[data-i18n]").forEach(function(el) {
+      var key = el.getAttribute("data-i18n");
+      if (i18n[l] && i18n[l][key]) el.setAttribute("title", i18n[l][key]);
+    });
+    // Update toggle buttons
+    document.querySelectorAll(".lang-toggle").forEach(function(btn) {
+      btn.textContent = l === "th" ? "TH/EN" : "EN/TH";
+    });
+  }
+
+  /* ===================== LANG TOGGLE ===================== */
+  document.querySelectorAll(".lang-toggle").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      applyLang(lang === "th" ? "en" : "th");
+    });
+  });
+
+  // Apply saved language on load
+  applyLang(lang);
 
   /* ===================== SIDEBAR SEARCH ===================== */
-  const sidebarSearch = document.getElementById("sidebarSearch");
+  var sidebarSearch = document.getElementById("sidebarSearch");
   if (sidebarSearch) {
     sidebarSearch.addEventListener("input", function() {
-      const q = this.value.toLowerCase().trim();
+      var q = this.value.toLowerCase().trim();
       document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
-        const text = link.textContent.toLowerCase();
+        var text = link.textContent.toLowerCase();
         link.style.display = !q || text.includes(q) ? "flex" : "none";
       });
     });
   }
 
   /* ===================== DRAWER ===================== */
-  const overlay = document.getElementById("toolsDrawerOverlay");
-  const drawer = document.getElementById("toolsDrawer");
-  const openBtn = document.getElementById("fabSearchBtn");
-  const closeBtn = document.getElementById("toolsDrawerClose");
-  const searchInput = document.getElementById("toolsDrawerSearchInput");
-  const noResults = document.getElementById("toolsNoResults");
+  var overlay = document.getElementById("toolsDrawerOverlay");
+  var drawer = document.getElementById("toolsDrawer");
+  var openBtn = document.getElementById("fabSearchBtn");
+  var closeBtn = document.getElementById("toolsDrawerClose");
+  var searchInput = document.getElementById("toolsDrawerSearchInput");
+  var noResults = document.getElementById("toolsNoResults");
 
   function openDrawer() {
     overlay.classList.add("open");
@@ -516,7 +609,7 @@ RESPONSIVE_NAV_JS = '''
     var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
     items.forEach(function(item) {
       var text = item.textContent.toLowerCase();
-      var match = !q || text.includes(q);
+      var match = !q || text.indexOf(q) !== -1;
       item.style.display = match ? "flex" : "none";
       if (match) found = true;
     });
@@ -529,19 +622,16 @@ RESPONSIVE_NAV_JS = '''
     searchInput.addEventListener("input", function() {
       filterDrawer(this.value.toLowerCase().trim());
     });
-    /* Prevent close on input click (bubbles up) */
     searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
   }
 
   /* ===================== ACTIVE STATE ===================== */
-  /* Sidebar */
   document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
     var href = a.getAttribute("href");
     if (href === current || (current === "index.html" && href === "index.html")) {
       a.classList.add("active");
     }
   });
-  /* Drawer */
   document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
     var href = a.getAttribute("href");
     if (href === current || (current === "index.html" && href === "index.html")) {
@@ -554,17 +644,19 @@ RESPONSIVE_NAV_JS = '''
 
 def build_sidebar_links(current_file):
     html = []
-    for icon, title, href in NAV_LINKS:
+    for icon, th_name, en_name, href in NAV_LINKS:
         active = ' active' if href == current_file else ''
-        html.append(f'  <a href="{href}" class="tools-sidebar-link{active}" title="{title}"><span class="icon">{icon}</span><span class="link-text">{title}</span></a>')
+        key = href.replace('.html', '')
+        html.append(f'  <a href="{href}" class="tools-sidebar-link{active}" title="{en_name}" data-i18n="{key}"><span class="icon">{icon}</span><span class="link-text" data-i18n-text="{key}">{th_name}</span></a>')
     return '\n'.join(html)
 
 
 def build_drawer_items(current_file):
     items = []
-    for icon, title, href in NAV_LINKS:
+    for icon, th_name, en_name, href in NAV_LINKS:
         active = ' active' if href == current_file else ''
-        items.append(f'  <a href="{href}" class="tools-drawer-item{active}"><span class="icon">{icon}</span><span class="label">{title}</span></a>')
+        key = href.replace('.html', '')
+        items.append(f'  <a href="{href}" class="tools-drawer-item{active}" data-i18n="{key}"><span class="icon">{icon}</span><span class="label" data-i18n-text="{key}">{th_name}</span></a>')
     return '\n'.join(items)
 
 
