@@ -1,0 +1,17 @@
+#!/bin/bash
+# sudo-bw — Run a command with sudo, fetching password from Bitwarden
+# Usage: sudo-bw <item-name-or-id> <command> [args...]
+
+set -euo pipefail
+
+BW_ITEM="${1:?Usage: sudo-bw <item-name-or-id> <command> [args...]}"
+shift
+
+# Get password from Bitwarden
+PASS=$(bw get password "$BW_ITEM" 2>/dev/null) || {
+    echo "❌ Could not retrieve password for '$BW_ITEM'. Is Bitwarden unlocked?" >&2
+    exit 1
+}
+
+# Run with sudo
+echo "$PASS" | sudo -S "$@"
