@@ -209,18 +209,27 @@ html.light {
 <a class="nav-link active" href="yarang-pcc-audit.html" title="Yarang PCC">🏥<span>Yarang PCC</span></a>
 </nav>
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
-<style>
-.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
-.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
-.tools-nav .nav-home:hover{background:#334155;}
-.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
-.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
-.tools-nav .nav-link.active{opacity:1;background:#312e81;}
-.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
-.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
-@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
-</style>
 
+<div class="tools-nav">
+<a class="nav-home" href="index.html" title="หน้าหลัก">🏠</a>
+<span class="nav-sep">|</span>
+<a class="nav-link" href="interactive-certificate-builder.html" title="🏆 Certificate Builder">🏆</a>
+<a class="nav-link" href="envelope-printer.html" title="✉️ Envelope Printer">✉️</a>
+<a class="nav-link" href="autocorrect.html" title="⌨️ AHK AutoCorrect">⌨️</a>
+<a class="nav-link" href="map-epidemic.html" title="📊 Epidemiology Map">📊</a>
+<a class="nav-link" href="base64-decoder.html" title="🦫 Base64 Decoder">🦫</a>
+<a class="nav-link" href="thai-recovery.html" title="🔤 Thai Recovery">🔤</a>
+<a class="nav-link" href="ink-planner.html" title="🖨️ Ink Planner">🖨️</a>
+<a class="nav-link" href="inventory-analytics.html" title="📦 Inventory">📦</a>
+<a class="nav-link" href="mypcu-sql-simulator.html" title="🗄️ myPCU SQL">🗄️</a>
+<a class="nav-link" href="mypcu-sql-cheatsheet-ai.html" title="🧠 myPCU AI SQL">🧠</a>
+<a class="nav-link" href="health-gis-app.html" title="🏥 Health GIS">🏥</a>
+<a class="nav-link" href="vhv-quick-report.html" title="🎤 VHV Voice Report">🎤</a>
+<a class="nav-link" href="gps-location-tracker.html" title="📍 GPS Tracker">📍</a>
+<a class="nav-link" href="yarang-pcc-audit.html" title="🏥 Yarang PCC Queue">🏥</a>
+<span class="nav-sep">|</span>
+<span class="nav-title">🏥 Yarang PCC</span>
+</div>
 <div id="root"></div>
 <script type="text/babel">
     const { useState, useEffect, useRef } = React;
