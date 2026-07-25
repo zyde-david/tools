@@ -176,14 +176,20 @@ html.light {
 </style><style>
 /* Ensure content not hidden behind bottom nav on mobile */
 @media (max-width: 767px) {
-  body { padding-bottom: calc(var(--nav-height) + 1rem); }
-  main { padding-bottom: calc(var(--nav-height) + 1rem); }
+  body {padding-bottom: calc(var(--nav-height) + 1rem); }
+  main {padding-bottom: calc(var(--nav-height) + 1rem); }
   .container, .tool-main, #main-content, [role="main"] {
     padding-bottom: calc(var(--nav-height) + 1rem) !important;
   }
+  /* Hide page's own bottom bar on mobile - we provide the nav */
+  [data-has-own-bottom-bar] nav.fixed.bottom-0,
+  [data-has-own-bottom-bar] nav[class*="bottom-0"],
+  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
+    display: none !important;
+  }
 }
 @media (min-width: 768px) {
-  body { padding-left: var(--nav-width); }
+  body {padding-left: var(--nav-width); }
   main, .container, .tool-main, #main-content, [role="main"] {
     margin-left: var(--nav-width);
     max-width: calc(100% - var(--nav-width));

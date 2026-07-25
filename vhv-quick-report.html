@@ -276,21 +276,27 @@ html.light {
 </style><style>
 /* Ensure content not hidden behind bottom nav on mobile */
 @media (max-width: 767px) {
-  body { padding-bottom: calc(var(--nav-height) + 1rem); }
-  main { padding-bottom: calc(var(--nav-height) + 1rem); }
+  body {padding-bottom: calc(var(--nav-height) + 1rem + 80px); }
+  main {padding-bottom: calc(var(--nav-height) + 1rem + 80px); }
   .container, .tool-main, #main-content, [role="main"] {
-    padding-bottom: calc(var(--nav-height) + 1rem) !important;
+    padding-bottom: calc(var(--nav-height) + 1rem + 80px) !important;
+  }
+  /* Hide page's own bottom bar on mobile - we provide the nav */
+  [data-has-own-bottom-bar] nav.fixed.bottom-0,
+  [data-has-own-bottom-bar] nav[class*="bottom-0"],
+  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
+    display: none !important;
   }
 }
 @media (min-width: 768px) {
-  body { padding-left: var(--nav-width); }
+  body {padding-left: var(--nav-width); }
   main, .container, .tool-main, #main-content, [role="main"] {
     margin-left: var(--nav-width);
     max-width: calc(100% - var(--nav-width));
   }
 }
 </style></head>
-<body class="bg-slate-100 min-h-screen text-slate-800 pb-28"><!-- ===== Responsive Navigation ===== -->
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-28" data-has-own-bottom-bar="true"><!-- ===== Responsive Navigation ===== -->
 <nav aria-label="เครื่องมือนำทาง" class="tools-nav" role="navigation">
 <a aria-label="หน้าหลัก" class="nav-home" href="index.html" title="หน้าหลัก">🏠<span>หน้าหลัก</span></a>
 <a class="nav-link" href="envelope-printer.html" title="Envelope Printer">✉️<span>Envelope Printer</span></a>
@@ -563,48 +569,7 @@ html.light {
 </div>
 </main>
 <!-- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR -->
-<nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl px-2 py-1 max-w-2xl mx-auto flex items-center justify-around h-16">
-<!-- Hidden Inputs for Combined Media -->
-<input accept="image/*,video/*" class="hidden" id="combinedMediaInput" multiple="" onchange="handleCombinedMediaSelect(event)" type="file"/>
-<!-- 1. Mode Toggle (Personal / Public) -->
-<button class="flex flex-col items-center justify-center w-12 py-1 transition active:scale-95 shrink-0" id="navBarPrivacyToggleBtn" onclick="togglePrivacyFromBar()" type="button">
-<i class="fa-solid fa-user-lock text-base text-amber-600" id="navBarPrivacyIcon"></i>
-<span class="text-[9px] font-bold mt-0.5 text-amber-700" id="navBarPrivacyText">ส่วนตัว</span>
-</button>
-<!-- 2. Attach Media Button -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0" onclick="document.getElementById('combinedMediaInput').click()" type="button">
-<div class="relative">
-<i class="fa-solid fa-camera text-base"></i>
-<span class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full" id="mediaCountBadge">0</span>
-</div>
-<span class="text-[9px] font-bold mt-0.5">แนบสื่อ</span>
-</button>
-<!-- 3. CENTER RAISED CIRCULAR MIC BUTTON -->
-<div class="relative -top-5 shrink-0 flex flex-col items-center">
-<button class="w-16 h-16 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-lg hover:shadow-xl active:scale-90 transition-all duration-200 flex flex-col items-center justify-center border-4 border-slate-100 shrink-0" id="micBtn" onclick="toggleRecording()">
-<i class="fa-solid fa-microphone text-2xl" id="micIcon"></i>
-<span class="text-[9px] font-extrabold -mt-0.5" id="micBtnText">พูด</span>
-</button>
-<!-- Recording Wave Indicator -->
-<div class="hidden absolute -top-2 left-1/2 -translate-x-1/2 flex items-center space-x-1 bg-red-600 px-2 py-0.5 rounded-full shadow" id="soundWave">
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.1s"></div>
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.3s"></div>
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.2s"></div>
-</div>
-</div>
-<!-- 4. DIRECT SEND / SUBMIT BUTTON -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-emerald-600 hover:text-emerald-800 transition active:scale-95 shrink-0" id="navBarSendBtn" onclick="submitReport()" type="button">
-<div class="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center shadow-sm">
-<i class="fa-solid fa-paper-plane text-xs text-emerald-700" id="navBarSendIcon"></i>
-</div>
-<span class="text-[9px] font-bold mt-0.5 text-emerald-800">ส่งข้อมูล</span>
-</button>
-<!-- 5. Profile & Settings Button -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0" onclick="openProfileModal()" type="button">
-<i class="fa-solid fa-circle-user text-base"></i>
-<span class="text-[9px] font-bold mt-0.5">โปรไฟล์</span>
-</button>
-</nav>
+
 <!-- Unified Modal: Profile, Google Account & Export Suite -->
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="profileModal">
 <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
