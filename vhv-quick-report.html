@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงาน อสม. ด่วน (VHV Voice Report)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                    },
+                    colors: {
+                        vhv: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .mic-pulse {
+            animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            70% {
+                transform: scale(1.08);
+                box-shadow: 0 0 0 20px rgba(220, 38, 38, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+            }
+        }
+
+        .sound-wave-bar {
+            animation: sound-wave 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes sound-wave {
+            0% { height: 4px; }
+            100% { height: 20px; }
+        }
+
+        @media print {
+            header, nav, button, input, select, textarea, .no-print {
+                display: none !important;
+            }
+            body {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+
+    <!-- Firebase Modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.db = null;
+        window.auth = null;
+        window.currentUser = null;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.signInWithPopup = signInWithPopup;
+        window.signOut = signOut;
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'vhv-quick-report';
+
+        window.doc = doc;
+        window.collection = collection;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.updateDoc = updateDoc;
+        window.deleteDoc = deleteDoc;
+
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                window.auth = getAuth(app);
+                window.db = getFirestore(app);
+
+                const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                if (initialToken) {
+                    signInWithCustomToken(window.auth, initialToken).catch(() => signInAnonymously(window.auth));
+                } else {
+                    signInAnonymously(window.auth);
+                }
+
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.currentUser = user;
+                        if (window.onFirebaseUserChanged) window.onFirebaseUserChanged(user);
+                        if (window.onFirebaseReady) window.onFirebaseReady();
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Firebase fallback:", e);
+        }
+    </script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-28">
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🎤 VHV Voice Report</span>
+</div>
+
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🎤 VHV Voice Report</span>
+</div>
+
+
+    <!-- Top Header (Ultra Clean) -->
+    <header class="bg-vhv-700 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-base">
+                    🎙️
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm leading-tight flex items-center space-x-1">
+                        <span>Fast Voice & อสม.</span>
+                        <span id="roleBadge" class="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">อสม.</span>
+                    </h1>
+                    <p class="text-[10px] text-emerald-100 truncate max-w-[160px]" id="userSubTitle">กำลังโหลด...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Role Switcher Button -->
+                <button onclick="toggleRoleView()" class="bg-emerald-800/90 hover:bg-emerald-800 border border-emerald-500/30 text-white text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1">
+                    <i class="fa-solid fa-user-shield text-amber-300"></i>
+                    <span id="switchRoleBtnText">เจ้าหน้าที่</span>
+                </button>
+
+                <!-- Profile Avatar Button -->
+                <button onclick="openProfileModal()" class="w-8 h-8 rounded-full bg-white text-vhv-700 font-bold flex items-center justify-center shadow hover:scale-105 transition text-xs border border-emerald-300" title="โปรไฟล์ / Google / ส่งออก">
+                    <span id="headerAvatarText">👤</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 pt-3 space-y-3">
+
+        <!-- VHV MAIN VIEW -->
+        <div id="vhvView" class="space-y-3">
+            
+            <!-- Offline Sync Banner -->
+            <div id="syncBanner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-2.5 shadow-sm flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-amber-800 text-xs">
+                    <i class="fa-solid fa-cloud-arrow-up text-amber-600"></i>
+                    <span id="pendingCountText" class="font-bold">มี 0 รายการรอนำส่ง cloud</span>
+                </div>
+                <button onclick="syncPendingReports()" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-xs font-semibold shadow transition">
+                    ส่งทันที
+                </button>
+            </div>
+
+            <!-- MAIN INPUT CARD -->
+            <section class="bg-white rounded-3xl p-3.5 shadow-md border border-slate-100 space-y-2.5">
+                
+                <!-- Current Mode Indicator Banner -->
+                <div id="privacyModeBanner" class="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-1.5 flex items-center justify-between text-xs">
+                    <span class="font-bold text-amber-800 flex items-center space-x-1">
+                        <i id="privacyModeIcon" class="fa-solid fa-user-lock text-amber-600"></i>
+                        <span id="privacyModeLabel">โหมดปัจจุบัน: 🔒 โน้ตส่วนตัว</span>
+                    </span>
+                    <span class="text-[10px] text-amber-700">เปลี่ยนได้ที่แถบล่างสุด</span>
+                </div>
+
+                <!-- Textarea Transcript -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+                            <i class="fa-solid fa-align-left text-vhv-600"></i>
+                            <span>ข้อความที่พูด (แก้ไขได้):</span>
+                        </label>
+                        <button onclick="clearTranscript()" class="text-[11px] text-slate-400 hover:text-red-500 transition">
+                            <i class="fa-solid fa-trash-can"></i> ล้าง
+                        </button>
+                    </div>
+                    <textarea id="reportText" rows="2" 
+                        placeholder="กดปุ่มพูด 🎙️ ที่แถบด้านล่าง หรือพิมพ์ข้อความที่นี่..." 
+                        class="w-full p-2.5 rounded-2xl border border-slate-200 focus:border-vhv-500 focus:ring-2 focus:ring-emerald-200 text-xs outline-none transition text-slate-800 leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- Quick Phrase Shortcuts -->
+                <div class="flex flex-wrap gap-1">
+                    <button onclick="insertQuickText('พบแหล่งลูกน้ำยุงลาย')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
+                        🦟 ยุงลาย
+                    </button>
+                    <button onclick="insertQuickText('เกิดอุบัติเหตุ')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
+                        🚑 อุบัติเหตุ
+                    </button>
+                    <button onclick="insertQuickText('ผู้ป่วยติดเตียง')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
+                        🧑‍🦽 ติดเตียง
+                    </button>
+                    <button onclick="insertQuickText('ขยะ/น้ำเสีย')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
+                        🧹 สิ่งแวดล้อม
+                    </button>
+                </div>
+
+                <!-- Category Selector -->
+                <div class="bg-slate-50 rounded-xl px-2.5 py-1.5 border border-slate-200 flex items-center justify-between">
+                    <span id="categoryIcon" class="text-sm">📋</span>
+                    <select id="categorySelect" onchange="manualCategoryChange()" class="w-full text-xs bg-transparent text-slate-700 outline-none font-semibold ml-1">
+                        <option value="💡 ไอเดีย/ความคิด">💡 ไอเดีย/ความคิด</option>
+                        <option value="📌 งาน/To-Do">📌 งาน/To-Do</option>
+                        <option value="🩺 สุขภาพส่วนตัว">🩺 สุขภาพส่วนตัว</option>
+                        <option value="🦟 ยุงลาย/ไข้เลือดออก">🦟 ยุงลาย/ไข้เลือดออก</option>
+                        <option value="🚑 อุบัติเหตุ/ฉุกเฉิน">🚑 อุบัติเหตุ/ฉุกเฉิน</option>
+                        <option value="🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ">🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ</option>
+                        <option value="🧹 สิ่งแวดล้อม/ขยะ">🧹 สิ่งแวดล้อม/ขยะ</option>
+                        <option value="💊 ยาหมด/เวชภัณฑ์">💊 ยาหมด/เวชภัณฑ์</option>
+                        <option value="📋 บันทึกทั่วไป" selected>📋 บันทึกทั่วไป</option>
+                    </select>
+                </div>
+
+                <!-- Media Preview Container -->
+                <div id="mediaPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1"></div>
+
+                <!-- Audio Clip Preview Box (Shows when recorded) -->
+                <div id="recordedAudioBox" class="hidden bg-emerald-50 border border-emerald-200 p-2 rounded-2xl space-y-1">
+                    <div class="flex items-center justify-between text-xs font-bold text-emerald-800">
+                        <span class="flex items-center space-x-1">
+                            <i class="fa-solid fa-file-audio text-emerald-600"></i>
+                            <span>เสียงที่บันทึกไว้</span>
+                        </span>
+                        <button onclick="discardRecordedAudio()" class="text-[11px] text-slate-400 hover:text-red-500">
+                            <i class="fa-solid fa-trash"></i> ลบเสียง
+                        </button>
+                    </div>
+                    <audio id="audioPreview" controls class="w-full h-8"></audio>
+                </div>
+
+                <!-- BIG SAVE BUTTON -->
+                <button id="submitBtn" onclick="submitReport()" 
+                    class="w-full bg-vhv-600 hover:bg-vhv-700 active:scale-[0.98] text-white py-2.5 px-4 rounded-2xl font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition">
+                    <i id="submitBtnIcon" class="fa-solid fa-bookmark"></i>
+                    <span id="submitBtnText">บันทึกโน้ตส่วนตัว</span>
+                </button>
+
+                <!-- Metadata Summary -->
+                <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5 border-t border-slate-100">
+                    <span class="flex items-center space-x-1">
+                        <i class="fa-solid fa-location-dot text-red-500"></i>
+                        <span id="gpsText" class="font-mono">พิกัด GPS...</span>
+                    </span>
+                    <span class="flex items-center space-x-1">
+                        <i class="fa-solid fa-clock text-blue-500"></i>
+                        <span id="timeText">--:-- น.</span>
+                    </span>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="space-y-2 pt-1">
+                <div class="flex items-center justify-between px-1">
+                    <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-vhv-600"></i>
+                        <span>ประวัติการบันทึก</span>
+                    </h2>
+                    
+                    <div class="flex items-center space-x-1 text-xs">
+                        <button onclick="filterHistoryTab('ALL')" id="histTabAll" class="hist-tab-btn bg-vhv-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0">ทั้งหมด</button>
+                        <button onclick="filterHistoryTab('PERSONAL')" id="histTabPersonal" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">🔒 ส่วนตัว</button>
+                        <button onclick="filterHistoryTab('PUBLIC')" id="histTabPublic" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">📢 ส่ง รพ.สต.</button>
+                        <button onclick="filterHistoryTab('TRASH')" id="histTabTrash" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">🗑️</button>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderHistory()" placeholder="ค้นหาบันทึก..." 
+                        class="w-full pl-8 pr-3 py-1 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div id="historyList" class="space-y-2.5">
+                    <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                        <i class="fa-regular fa-clipboard text-3xl mb-2 opacity-50"></i>
+                        <p class="text-xs">ยังไม่มีประวัติการบันทึก</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- OFFICER DASHBOARD VIEW -->
+        <div id="officerDashboardView" class="hidden space-y-3">
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">📋</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">รายงานทั้งหมด</p>
+                        <p id="statTotal" class="text-base font-bold text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">🚑</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">ฉุกเฉิน/ด่วน</p>
+                        <p id="statEmergency" class="text-base font-bold text-rose-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">⏳</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">รอดำเนินการ</p>
+                        <p id="statPending" class="text-base font-bold text-amber-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">✅</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">เสร็จสิ้นแล้ว</p>
+                        <p id="statDone" class="text-base font-bold text-emerald-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700">กรองรายการรายงาน:</span>
+                    <button onclick="refreshOfficerFeed()" class="text-xs text-vhv-700 hover:underline">
+                        <i class="fa-solid fa-rotate"></i> รีเฟรช
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-1 text-xs">
+                    <button onclick="setFilter('ALL')" id="filterAll" class="filter-btn bg-vhv-600 text-white font-bold px-2.5 py-1 rounded-xl">ทั้งหมด</button>
+                    <button onclick="setFilter('PENDING')" id="filterPending" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🟡 รอดำเนินการ</button>
+                    <button onclick="setFilter('EMERGENCY')" id="filterEmergency" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🚑 ฉุกเฉิน</button>
+                    <button onclick="setFilter('MOSQUITO')" id="filterMosquito" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🦟 ไข้เลือดออก</button>
+                    <button onclick="setFilter('DONE')" id="filterDone" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🟢 เสร็จสิ้น</button>
+                </div>
+            </div>
+
+            <!-- Officer Feed Stream -->
+        <div id="officerReportFeed" class="space-y-2.5">
+            <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                <p class="text-xs">กำลังโหลดรายงาน...</p>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+    <!-- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl px-2 py-1 max-w-2xl mx-auto flex items-center justify-around h-16">
+        
+        <!-- Hidden Inputs for Combined Media -->
+        <input type="file" id="combinedMediaInput" accept="image/*,video/*" multiple onchange="handleCombinedMediaSelect(event)" class="hidden">
+
+        <!-- 1. Mode Toggle (Personal / Public) -->
+        <button type="button" onclick="togglePrivacyFromBar()" id="navBarPrivacyToggleBtn" 
+            class="flex flex-col items-center justify-center w-12 py-1 transition active:scale-95 shrink-0">
+            <i id="navBarPrivacyIcon" class="fa-solid fa-user-lock text-base text-amber-600"></i>
+            <span id="navBarPrivacyText" class="text-[9px] font-bold mt-0.5 text-amber-700">ส่วนตัว</span>
+        </button>
+
+        <!-- 2. Attach Media Button -->
+        <button type="button" onclick="document.getElementById('combinedMediaInput').click()" 
+            class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0">
+            <div class="relative">
+                <i class="fa-solid fa-camera text-base"></i>
+                <span id="mediaCountBadge" class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">0</span>
+            </div>
+            <span class="text-[9px] font-bold mt-0.5">แนบสื่อ</span>
+        </button>
+
+        <!-- 3. CENTER RAISED CIRCULAR MIC BUTTON -->
+        <div class="relative -top-5 shrink-0 flex flex-col items-center">
+            <button id="micBtn" onclick="toggleRecording()" 
+                class="w-16 h-16 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-lg hover:shadow-xl active:scale-90 transition-all duration-200 flex flex-col items-center justify-center border-4 border-slate-100 shrink-0">
+                <i id="micIcon" class="fa-solid fa-microphone text-2xl"></i>
+                <span id="micBtnText" class="text-[9px] font-extrabold -mt-0.5">พูด</span>
+            </button>
+
+            <!-- Recording Wave Indicator -->
+            <div id="soundWave" class="hidden absolute -top-2 left-1/2 -translate-x-1/2 flex items-center space-x-1 bg-red-600 px-2 py-0.5 rounded-full shadow">
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.1s"></div>
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.3s"></div>
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.2s"></div>
+            </div>
+        </div>
+
+        <!-- 4. DIRECT SEND / SUBMIT BUTTON -->
+        <button type="button" onclick="submitReport()" id="navBarSendBtn"
+            class="flex flex-col items-center justify-center w-12 py-1 text-emerald-600 hover:text-emerald-800 transition active:scale-95 shrink-0">
+            <div class="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center shadow-sm">
+                <i id="navBarSendIcon" class="fa-solid fa-paper-plane text-xs text-emerald-700"></i>
+            </div>
+            <span class="text-[9px] font-bold mt-0.5 text-emerald-800">ส่งข้อมูล</span>
+        </button>
+
+        <!-- 5. Profile & Settings Button -->
+        <button type="button" onclick="openProfileModal()" 
+            class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0">
+            <i class="fa-solid fa-circle-user text-base"></i>
+            <span class="text-[9px] font-bold mt-0.5">โปรไฟล์</span>
+        </button>
+    </nav>
+
+    <!-- Unified Modal: Profile, Google Account & Export Suite -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 class="font-bold text-base text-slate-800 flex items-center space-x-2">
+                    <span>👤 ข้อมูล อสม. & คลาวด์</span>
+                </h3>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Profile Info Form -->
+            <form id="profileForm" onsubmit="saveProfile(event)" class="space-y-2.5">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">ชื่อ-นามสกุล อสม.</label>
+                    <input type="text" id="profName" required placeholder="เช่น สมศรี ใจดี" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">เบอร์โทรศัพท์ติดต่อ</label>
+                    <input type="tel" id="profPhone" required placeholder="เช่น 0812345678" pattern="[0-9]{9,10}" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">หมู่ที่ / ชื่อชุมชน</label>
+                    <input type="text" id="profVillage" required placeholder="เช่น หมู่ 3 บ้านดอนพัฒนา" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <button type="submit" class="w-full bg-vhv-600 hover:bg-vhv-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">
+                    บันทึกข้อมูล อสม.
+                </button>
+            </form>
+
+            <!-- Google Account Cloud Sync -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+                <h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-cloud-arrow-up text-vhv-600"></i>
+                    <span>ซิงค์บัญชี Cloud Sync</span>
+                </h4>
+
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
+                    <p id="accNameDisplay" class="font-bold text-slate-800 truncate">บัญชีทั่วไป (Anonymous)</p>
+                    <p id="accTypeDisplay" class="text-slate-400 text-[10px] font-mono truncate">ID: --</p>
+                </div>
+
+                <button type="button" onclick="signInWithGoogleAccount()" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-2 px-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-xs">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>เข้าสู่ระบบด้วย Google Account</span>
+                </button>
+
+                <div class="flex space-x-1.5 pt-1">
+                    <input type="text" id="syncKeyInput" readonly class="w-full bg-slate-100 border border-slate-200 font-mono text-[11px] px-2.5 py-1.5 rounded-xl text-slate-700 outline-none">
+                    <button onclick="copySyncKey()" class="bg-slate-800 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0">
+                        คัดลอก Key
+                    </button>
+                </div>
+            </div>
+
+            <!-- Export Tools (Tech Savvy) -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+                <h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-export text-emerald-600"></i>
+                    <span>ส่งออกข้อมูล & สำรองข้อมูล</span>
+                </h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button onclick="exportToCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-file-csv text-sm"></i>
+                        <span>Excel CSV</span>
+                    </button>
+                    <button onclick="triggerPrintSummary()" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-print text-sm"></i>
+                        <span>พิมพ์/PDF</span>
+                    </button>
+                </div>
+                <div class="flex space-x-2 text-xs">
+                    <button onclick="exportToJSON()" class="w-1/2 bg-amber-50 text-amber-800 border border-amber-200 font-bold py-1.5 rounded-xl">
+                        💾 Backup JSON
+                    </button>
+                    <button onclick="document.getElementById('importJsonInput').click()" class="w-1/2 bg-slate-100 text-slate-700 border border-slate-200 font-bold py-1.5 rounded-xl">
+                        📂 Restore JSON
+                    </button>
+                    <input type="file" id="importJsonInput" accept=".json" onchange="importFromJSON(event)" class="hidden">
+                </div>
+            </div>
+
+            <button type="button" onclick="closeProfileModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+                ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
+
+    <!-- Officer Auth Passcode Modal -->
+    <div id="officerAuthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-100 text-center">
+            <h3 class="font-bold text-base text-slate-800 mb-1">สำหรับเจ้าหน้าที่ รพ.สต.</h3>
+            <p class="text-xs text-slate-500 mb-3">รหัสทดสอบ: 10660</p>
+            <form onsubmit="verifyOfficerPin(event)" class="space-y-2.5">
+                <input type="password" id="officerPinInput" placeholder="กรอกรหัส PIN (10660)" required
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 text-center font-mono text-base outline-none focus:border-amber-500">
+                <div class="flex space-x-2">
+                    <button type="button" onclick="closeOfficerAuthModal()" class="w-1/2 bg-slate-100 text-slate-600 py-1.5 rounded-xl text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="w-1/2 bg-amber-600 text-white py-1.5 rounded-xl text-xs font-bold shadow">เข้าสู่ระบบ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Officer Response Modal -->
+    <div id="officerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100">
+            <h3 class="font-bold text-base text-slate-800 mb-3">🏥 อัปเดตสถานะการช่วยเหลือ</h3>
+            <div id="officerModalContent" class="space-y-2 text-xs text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-2xl border"></div>
+            <form onsubmit="saveOfficerResponse(event)" class="space-y-2.5">
+                <input type="hidden" id="modalReportId">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">สถานะ</label>
+                    <select id="modalStatusSelect" class="w-full px-2.5 py-2 rounded-xl border text-xs font-semibold outline-none">
+                        <option value="รอดำเนินการ">🟡 รอดำเนินการ (Pending)</option>
+                        <option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ (In Progress)</option>
+                        <option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น (Resolved)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">บันทึกตอบกลับ</label>
+                    <textarea id="modalOfficerNote" rows="2" placeholder="เช่น ส่งทีมลงพื้นที่แล้ว..." class="w-full px-2.5 py-1.5 rounded-xl border text-xs outline-none"></textarea>
+                </div>
+                <div class="flex space-x-2 pt-1">
+                    <button type="button" onclick="closeOfficerModal()" class="w-1/3 bg-slate-100 text-slate-700 py-2 rounded-xl text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="w-2/3 bg-vhv-600 text-white py-2 rounded-xl text-xs font-bold shadow">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lightbox Media Viewer Modal -->
+    <div id="mediaLightboxModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" onclick="closeMediaModal()">
+        <div class="relative max-w-2xl max-h-[85vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
+            <button onclick="closeMediaModal()" class="absolute -top-9 right-0 text-white text-2xl font-bold p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="lightboxContent" class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl bg-black"></div>
+        </div>
+    </div>
+
+    <!-- Toast Banner -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">บันทึกเรียบร้อย</span>
+    </div>
+
+    <script>
+        // Global Category Dictionary
+        const CATEGORIES = {
+            '💡 ไอเดีย/ความคิด': { icon: '💡', keywords: ['ไอเดีย', 'คิดว่า', 'เสนอ'] },
+            '📌 งาน/To-Do': { icon: '📌', keywords: ['งาน', 'ต้องทำ', 'การบ้าน', 'นัด'] },
+            '🩺 สุขภาพส่วนตัว': { icon: '🩺', keywords: ['ความดัน', 'เบาหวาน', 'ยา', 'หมอ'] },
+            '🦟 ยุงลาย/ไข้เลือดออก': { icon: '🦟', keywords: ['ยุง', 'ยุงลาย', 'ลูกน้ำ', 'ไข้เลือดออก', 'พ่นยา'] },
+            '🚑 อุบัติเหตุ/ฉุกเฉิน': { icon: '🚑', keywords: ['อุบัติเหตุ', 'ล้ม', 'สลบ', 'ฉุกเฉิน', 'เลอดออก', 'เจ็บป่วยฉุกเฉิน'] },
+            '🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ': { icon: '🧑‍🦽', keywords: ['ติดเตียง', 'ผู้สูงอายุ', 'อัมพฤกษ์', 'อัมพาต', 'แพมเพิส'] },
+            '🧹 สิ่งแวดล้อม/ขยะ': { icon: '🧹', keywords: ['ขยะ', 'น้ำเสีย', 'กลิ่น', 'ท่อตัน'] },
+            '💊 ยาหมด/เวชภัณฑ์': { icon: '💊', keywords: ['ยาหมด', 'เวชภัณฑ์', 'เข็ม', 'ผ้าก๊อซ'] },
+            '📋 บันทึกทั่วไป': { icon: '📋', keywords: [] }
+        };
+
+        // Application State
+        let currentRole = 'VHV';
+        let isOfficerAuthenticated = false;
+        let currentPrivacy = 'personal';
+        let historyFilter = 'ALL';
+        let isRecording = false;
+        let recognition = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioBase64 = null;
+        let currentGps = { lat: null, lng: null, accuracy: null };
+        let profile = null;
+        let localReports = [];
+        let cloudReports = [];
+        let personalCloudNotes = [];
+        let currentFilter = 'ALL';
+        let aiDebounceTimer = null;
+        let attachedPhotos = [];
+        let attachedVideos = [];
+        let unsubscribeFirestore = null;
+        let unsubscribePersonalNotes = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            loadLocalReports();
+            checkAutoDeleteTrash();
+            initGeolocation();
+            initSpeechRecognition();
+            setupNetworkListeners();
+
+            updateTimeDisplay();
+            setInterval(updateTimeDisplay, 10000);
+
+            document.getElementById('reportText').addEventListener('input', (e) => {
+                debouncedAICategorize(e.target.value);
+            });
+
+            window.onFirebaseUserChanged = (user) => {
+                updateAccountSyncUI(user);
+                listenToPersonalNotes();
+            };
+
+            window.onFirebaseReady = () => {
+                listenToCloudReports();
+                listenToPersonalNotes();
+            };
+        });
+
+        // Toggle Privacy Mode from Bottom Navigation Bar
+        function togglePrivacyFromBar() {
+            const newMode = currentPrivacy === 'personal' ? 'public' : 'personal';
+            setNotePrivacy(newMode);
+        }
+
+        // Set Privacy (Personal vs Public)
+        function setNotePrivacy(mode) {
+            currentPrivacy = mode;
+            const label = document.getElementById('privacyModeLabel');
+            const icon = document.getElementById('privacyModeIcon');
+            const banner = document.getElementById('privacyModeBanner');
+            const submitBtnIcon = document.getElementById('submitBtnIcon');
+            const submitBtnText = document.getElementById('submitBtnText');
+
+            const navIcon = document.getElementById('navBarPrivacyIcon');
+            const navText = document.getElementById('navBarPrivacyText');
+
+            if (mode === 'personal') {
+                banner.className = "bg-amber-50 border border-amber-200 rounded-2xl px-3 py-1.5 flex items-center justify-between text-xs transition";
+                label.textContent = "โหมดปัจจุบัน: 🔒 โน้ตส่วนตัว (Private)";
+                icon.className = "fa-solid fa-user-lock text-amber-600";
+                submitBtnIcon.className = "fa-solid fa-bookmark";
+                submitBtnText.textContent = "บันทึกโน้ตส่วนตัว";
+
+                if (navIcon) navIcon.className = "fa-solid fa-user-lock text-base text-amber-600";
+                if (navText) {
+                    navText.textContent = "ส่วนตัว";
+                    navText.className = "text-[9px] font-bold mt-0.5 text-amber-700";
+                }
+            } else {
+                banner.className = "bg-emerald-50 border border-emerald-200 rounded-2xl px-3 py-1.5 flex items-center justify-between text-xs transition";
+                label.textContent = "โหมดปัจจุบัน: 📢 ส่งรายงานให้ รพ.สต.";
+                icon.className = "fa-solid fa-bullhorn text-emerald-600";
+                submitBtnIcon.className = "fa-solid fa-paper-plane";
+                submitBtnText.textContent = "ส่งรายงานไปยัง รพ.สต.";
+
+                if (navIcon) navIcon.className = "fa-solid fa-bullhorn text-base text-emerald-600";
+                if (navText) {
+                    navText.textContent = "ส่ง รพ.สต.";
+                    navText.className = "text-[9px] font-bold mt-0.5 text-emerald-700";
+                }
+            }
+
+            showToast(`เปลี่ยนโหมดเป็น ${mode === 'personal' ? '🔒 โน้ตส่วนตัว' : '📢 ส่ง รพ.สต.'}`, "info");
+        }
+
+        // Submitting Report / Note
+        async function submitReport() {
+            const text = document.getElementById('reportText').value.trim();
+            if (!text && attachedPhotos.length === 0 && attachedVideos.length === 0 && !recordedAudioBase64) {
+                showToast("กรุณาพูด พิมพ์ หรือแนบสื่อก่อนกดบันทึก", "error");
+                return;
+            }
+
+            if (!profile) {
+                openProfileModal();
+                return;
+            }
+
+            const category = document.getElementById('categorySelect').value;
+            const now = new Date();
+            const reportId = 'N-' + Date.now();
+
+            const initialLog = [{
+                timestamp: now.toISOString(),
+                actor: profile.name || 'อสม.',
+                action: 'สร้างบันทึก/รายงาน'
+            }];
+
+            const newReport = {
+                id: reportId,
+                privacy: currentPrivacy,
+                timestamp: now.toISOString(),
+                formattedTime: now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) + ' ' + now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                text: text || "(ไม่ได้กรอกข้อความ - มีไฟล์แนบ)",
+                category: category,
+                location: { ...currentGps },
+                reporter: { ...profile },
+                photos: [...attachedPhotos],
+                videos: [...attachedVideos],
+                audioClip: recordedAudioBase64 || null,
+                status: 'รอดำเนินการ',
+                officerNote: '',
+                synced: false,
+                inTrash: false,
+                activityLogs: initialLog
+            };
+
+            localReports.unshift(newReport);
+            saveLocalReportsToStorage();
+            renderHistory();
+            clearTranscript();
+
+            if (navigator.onLine && window.db) {
+                await syncSingleReportToCloud(newReport);
+            } else {
+                const msg = currentPrivacy === 'personal' ? "บันทึกโน้ตส่วนตัวในเครื่องเรียบร้อย" : "บันทึกในเครื่องเรียบร้อย (รอส่งเมื่อต่อเน็ต)";
+                showToast(msg, "warning");
+                updateSyncBanner();
+            }
+        }
+
+        // Toggle Privacy of Saved Item in History
+        async function toggleItemPrivacy(reportId) {
+            let item = localReports.find(r => r.id === reportId) || 
+                       cloudReports.find(r => r.id === reportId) || 
+                       personalCloudNotes.find(r => r.id === reportId);
+            if (!item) return;
+
+            const oldPrivacy = item.privacy;
+            const newPrivacy = oldPrivacy === 'personal' ? 'public' : 'personal';
+            item.privacy = newPrivacy;
+
+            if (!item.activityLogs) item.activityLogs = [];
+            item.activityLogs.push({
+                timestamp: new Date().toISOString(),
+                actor: profile?.name || 'ผู้ใช้',
+                action: `เปลี่ยนโหมดเป็น ${newPrivacy === 'personal' ? 'ส่วนตัว' : 'สาธารณะ/รพ.สต.'}`
+            });
+
+            saveLocalReportsToStorage();
+
+            if (navigator.onLine && window.db && window.doc) {
+                try {
+                    if (oldPrivacy === 'personal' && window.currentUser) {
+                        const oldRef = window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'personal_notes', reportId);
+                        if (window.deleteDoc) await window.deleteDoc(oldRef);
+                    } else {
+                        const oldRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'reports', reportId);
+                        if (window.deleteDoc) await window.deleteDoc(oldRef);
+                    }
+                    await syncSingleReportToCloud(item);
+                } catch (err) {
+                    console.warn("Privacy shift sync error:", err);
+                }
+            }
+
+            showToast(`เปลี่ยนเป็น ${newPrivacy === 'personal' ? '🔒 ส่วนตัว' : '📢 ส่ง รพ.สต.'} เรียบร้อย`, "success");
+            renderHistory();
+        }
+
+        // Combined Media Selection
+        async function handleCombinedMediaSelect(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            showToast("กำลังประมวลผลไฟล์...", "info");
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    try {
+                        const compressedBase64 = await compressImage(file, 800, 800, 0.7);
+                        attachedPhotos.push(compressedBase64);
+                    } catch (e) {
+                        showToast("ประมวลผลรูปภาพขัดข้อง", "error");
+                    }
+                } else if (file.type.startsWith('video/')) {
+                    if (file.size > 15 * 1024 * 1024) {
+                        showToast("วิดีโอใหญ่เกินไป (ควรไม่เกิน 15MB)", "warning");
+                    }
+                    await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = (e) => {
+                            attachedVideos.push(e.target.result);
+                            resolve();
+                        };
+                    });
+                }
+            }
+            renderMediaPreviews();
+            event.target.value = '';
+        }
+
+        function renderMediaPreviews() {
+            const container = document.getElementById('mediaPreviewContainer');
+            const badge = document.getElementById('mediaCountBadge');
+            const total = attachedPhotos.length + attachedVideos.length;
+
+            if (badge) {
+                if (total > 0) {
+                    badge.textContent = total;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            if (total === 0) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('hidden');
+            let html = '';
+
+            attachedPhotos.forEach((src, idx) => {
+                html += `
+                    <div class="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 group shrink-0 bg-slate-200">
+                        <img src="${src}" onclick="openMediaModal('image', '${src}')" class="w-full h-full object-cover cursor-pointer">
+                        <button type="button" onclick="removePhoto(${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 bg-slate-900/80 text-white rounded-full text-[9px] flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            attachedVideos.forEach((src, idx) => {
+                html += `
+                    <div class="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 group shrink-0 bg-slate-900 flex items-center justify-center">
+                        <video src="${src}" class="w-full h-full object-cover opacity-60"></video>
+                        <button type="button" onclick="openMediaModal('video', '${src}')" class="absolute inset-0 flex items-center justify-center text-white text-xs">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <button type="button" onclick="removeVideo(${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 bg-slate-900/80 text-white rounded-full text-[9px] flex items-center justify-center z-10">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function removePhoto(index) {
+            attachedPhotos.splice(index, 1);
+            renderMediaPreviews();
+        }
+
+        function removeVideo(index) {
+            attachedVideos.splice(index, 1);
+            renderMediaPreviews();
+        }
+
+        function clearAttachedMedia() {
+            attachedPhotos = [];
+            attachedVideos = [];
+            renderMediaPreviews();
+        }
+
+        function compressImage(file, maxWidth, maxHeight, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height = Math.round((height * maxWidth) / width);
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width = Math.round((width * maxHeight) / height);
+                                height = maxHeight;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        // Speech Recognition & Audio Recorder
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast("เบราว์เซอร์ไม่รองรับ Speech Recognition", "error");
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'th-TH';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                updateMicUI(true);
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    const textarea = document.getElementById('reportText');
+                    textarea.value = textarea.value ? textarea.value + " " + finalTranscript : finalTranscript;
+                    debouncedAICategorize(textarea.value);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error !== 'no-speech') {
+                    showToast("ไมโครโฟนขัดข้อง: " + event.error, "error");
+                }
+                stopRecording();
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                updateMicUI(false);
+            };
+        }
+
+        async function startAudioRecorder() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        recordedAudioBase64 = reader.result;
+                        const preview = document.getElementById('audioPreview');
+                        const previewBox = document.getElementById('recordedAudioBox');
+                        preview.src = recordedAudioBase64;
+                        previewBox.classList.remove('hidden');
+                    };
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start();
+            } catch (err) {
+                console.warn("MediaRecorder error:", err);
+            }
+        }
+
+        function stopAudioRecorder() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function discardRecordedAudio() {
+            recordedAudioBase64 = null;
+            document.getElementById('audioPreview').src = '';
+            document.getElementById('recordedAudioBox').classList.add('hidden');
+            showToast("ลบไฟล์เสียงแล้ว", "info");
+        }
+
+        function toggleRecording() {
+            if (!recognition) {
+                initSpeechRecognition();
+                if (!recognition) return;
+            }
+
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            try {
+                recognition.start();
+                startAudioRecorder();
+                initGeolocation();
+            } catch (err) {
+                console.error("Start recording error:", err);
+            }
+        }
+
+        function stopRecording() {
+            if (recognition) recognition.stop();
+            stopAudioRecorder();
+            isRecording = false;
+            updateMicUI(false);
+        }
+
+        function updateMicUI(recording) {
+            const micBtn = document.getElementById('micBtn');
+            const micIcon = document.getElementById('micIcon');
+            const micBtnText = document.getElementById('micBtnText');
+            const soundWave = document.getElementById('soundWave');
+
+            if (recording) {
+                micBtn.className = "w-15 h-15 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white shadow-xl mic-pulse flex flex-col items-center justify-center border-4 border-slate-100";
+                micIcon.className = 'fa-solid fa-square text-xl animate-bounce';
+                micBtnText.textContent = 'หยุด';
+                soundWave.classList.remove('hidden');
+            } else {
+                micBtn.className = "w-15 h-15 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-xl hover:shadow-2xl flex flex-col items-center justify-center border-4 border-slate-100";
+                micIcon.className = 'fa-solid fa-microphone text-2xl';
+                micBtnText.textContent = 'พูด';
+                soundWave.classList.add('hidden');
+            }
+        }
+
+        // Trash Management
+        function moveToTrash(reportId) {
+            const item = localReports.find(r => r.id === reportId) || 
+                         cloudReports.find(r => r.id === reportId) || 
+                         personalCloudNotes.find(r => r.id === reportId);
+            if (!item) return;
+
+            item.inTrash = true;
+            item.deletedAt = new Date().toISOString();
+
+            saveLocalReportsToStorage();
+            if (navigator.onLine && window.db) {
+                syncSingleReportToCloud(item);
+            }
+
+            showToast("ย้ายไปยังถังขยะแล้ว", "info");
+            renderHistory();
+        }
+
+        function restoreFromTrash(reportId) {
+            const item = localReports.find(r => r.id === reportId) || 
+                         cloudReports.find(r => r.id === reportId) || 
+                         personalCloudNotes.find(r => r.id === reportId);
+            if (!item) return;
+
+            item.inTrash = false;
+            delete item.deletedAt;
+
+            saveLocalReportsToStorage();
+            if (navigator.onLine && window.db) {
+                syncSingleReportToCloud(item);
+            }
+
+            showToast("กู้คืนโน้ตเรียบร้อย", "success");
+            renderHistory();
+        }
+
+        function permanentlyDelete(reportId) {
+            localReports = localReports.filter(r => r.id !== reportId);
+            saveLocalReportsToStorage();
+
+            if (navigator.onLine && window.db && window.doc) {
+                try {
+                    const docRefPublic = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'reports', reportId);
+                    window.deleteDoc && window.deleteDoc(docRefPublic);
+
+                    if (window.currentUser) {
+                        const docRefPersonal = window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'personal_notes', reportId);
+                        window.deleteDoc && window.deleteDoc(docRefPersonal);
+                    }
+                } catch (e) {
+                    console.warn("Delete doc error:", e);
+                }
+            }
+
+            showToast("ลบรายการถาวรแล้ว", "info");
+            renderHistory();
+        }
+
+        function checkAutoDeleteTrash() {
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+
+            localReports = localReports.filter(item => {
+                if (item.inTrash && item.deletedAt) {
+                    const deletedTime = new Date(item.deletedAt).getTime();
+                    if (now - deletedTime > thirtyDaysMs) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            saveLocalReportsToStorage();
+        }
+
+        function filterHistoryTab(tab) {
+            historyFilter = tab;
+            document.querySelectorAll('.hist-tab-btn').forEach(btn => {
+                btn.className = "hist-tab-btn bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold px-2 py-0.5 rounded-lg shrink-0";
+            });
+            if (tab === 'ALL') document.getElementById('histTabAll').className = "hist-tab-btn bg-vhv-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0";
+            if (tab === 'PERSONAL') document.getElementById('histTabPersonal').className = "hist-tab-btn bg-amber-500 text-white font-bold px-2 py-0.5 rounded-lg shrink-0";
+            if (tab === 'PUBLIC') document.getElementById('histTabPublic').className = "hist-tab-btn bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0";
+            if (tab === 'TRASH') document.getElementById('histTabTrash').className = "hist-tab-btn bg-rose-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0";
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+            let allDisplayReports = [
+                ...personalCloudNotes,
+                ...cloudReports,
+                ...localReports.filter(lr => !cloudReports.some(cr => cr.id === lr.id) && !personalCloudNotes.some(pn => pn.id === lr.id))
+            ];
+
+            if (historyFilter === 'TRASH') {
+                allDisplayReports = allDisplayReports.filter(r => r.inTrash);
+            } else {
+                allDisplayReports = allDisplayReports.filter(r => !r.inTrash);
+
+                if (historyFilter === 'PERSONAL') {
+                    allDisplayReports = allDisplayReports.filter(r => r.privacy === 'personal');
+                } else if (historyFilter === 'PUBLIC') {
+                    allDisplayReports = allDisplayReports.filter(r => r.privacy !== 'personal');
+                }
+            }
+
+            if (searchQuery) {
+                allDisplayReports = allDisplayReports.filter(r => 
+                    r.text.toLowerCase().includes(searchQuery) || 
+                    r.category.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            if (allDisplayReports.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                        <i class="fa-regular fa-clipboard text-3xl mb-2 opacity-50"></i>
+                        <p class="text-xs">${historyFilter === 'TRASH' ? 'ถังขยะว่างเปล่า' : 'ไม่พบประวัติการบันทึก'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = allDisplayReports.map((item, idx) => {
+                const icon = CATEGORIES[item.category]?.icon || '📋';
+                const isPersonal = item.privacy === 'personal';
+                
+                const privacyBadge = isPersonal
+                    ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1"><i class="fa-solid fa-lock text-[9px]"></i> <span>ส่วนตัว</span></span>`
+                    : `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1"><i class="fa-solid fa-bullhorn text-[9px]"></i> <span>ส่ง รพ.สต.</span></span>`;
+
+                if (item.inTrash) {
+                    return `
+                        <div class="bg-rose-50/50 rounded-2xl p-3 border border-rose-200 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-rose-800">🗑️ อยู่ในถังขยะ</span>
+                                <div class="flex space-x-1">
+                                    <button onclick="restoreFromTrash('${item.id}')" class="bg-white text-emerald-700 border border-emerald-300 px-2 py-0.5 rounded-lg font-bold">กู้คืน</button>
+                                    <button onclick="permanentlyDelete('${item.id}')" class="bg-rose-600 text-white px-2 py-0.5 rounded-lg font-bold">ลบถาวร</button>
+                                </div>
+                            </div>
+                            <p class="text-slate-700 bg-white p-2 rounded-xl truncate">"${item.text}"</p>
+                        </div>
+                    `;
+                }
+
+                const gpsLink = (item.location?.lat && item.location?.lng)
+                    ? `<a href="https://maps.google.com/?q=${item.location.lat},${item.location.lng}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center space-x-1 font-mono">
+                         <i class="fa-solid fa-map-pin text-red-500"></i>
+                         <span>${item.location.lat}, ${item.location.lng}</span>
+                       </a>`
+                    : `<span class="text-[10px] text-slate-400">ไม่มีพิกัด</span>`;
+
+                let audioPlayerHtml = '';
+                if (item.audioClip) {
+                    const audioId = `audio_hist_${idx}`;
+                    audioPlayerHtml = `
+                        <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-xl space-y-1">
+                            <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800">
+                                <span class="flex items-center space-x-1">
+                                    <i class="fa-solid fa-volume-high text-emerald-600"></i>
+                                    <span>คลิปเสียงบันทึก</span>
+                                </span>
+                                <div class="space-x-1">
+                                    <button onclick="setAudioSpeed('${audioId}', 1.0)" class="bg-white border px-1 rounded text-[9px]">1x</button>
+                                    <button onclick="setAudioSpeed('${audioId}', 1.5)" class="bg-white border px-1 rounded text-[9px]">1.5x</button>
+                                    <button onclick="setAudioSpeed('${audioId}', 2.0)" class="bg-white border px-1 rounded text-[9px]">2x</button>
+                                </div>
+                            </div>
+                            <audio id="${audioId}" src="${item.audioClip}" controls class="w-full h-8"></audio>
+                        </div>
+                    `;
+                }
+
+                let mediaHtml = '';
+                const photos = item.photos || [];
+                const videos = item.videos || [];
+
+                if (photos.length > 0 || videos.length > 0) {
+                    mediaHtml += `<div class="flex flex-wrap gap-1.5 pt-1">`;
+                    photos.forEach(p => {
+                        mediaHtml += `
+                            <div onclick="openMediaModal('image', '${p}')" class="w-12 h-12 rounded-xl border overflow-hidden cursor-pointer bg-slate-100 shrink-0">
+                                <img src="${p}" class="w-full h-full object-cover">
+                            </div>
+                        `;
+                    });
+                    videos.forEach(v => {
+                        mediaHtml += `
+                            <div onclick="openMediaModal('video', '${v}')" class="w-12 h-12 rounded-xl border overflow-hidden cursor-pointer bg-slate-900 flex items-center justify-center text-white shrink-0 relative">
+                                <video src="${v}" class="w-full h-full object-cover opacity-60"></video>
+                                <i class="fa-solid fa-play absolute text-xs"></i>
+                            </div>
+                        `;
+                    });
+                    mediaHtml += `</div>`;
+                }
+
+                return `
+                    <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">${icon}</span>
+                                <span class="font-bold text-xs text-slate-800">${item.category}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                ${privacyBadge}
+                                <button onclick="toggleItemPrivacy('${item.id}')" title="สลับโหมด" class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded border">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
+                                </button>
+                                <button onclick="moveToTrash('${item.id}')" class="text-slate-400 hover:text-rose-500 text-xs p-1">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-700 leading-relaxed font-normal bg-slate-50 p-2 rounded-xl border border-slate-100">${item.text}</p>
+
+                        ${audioPlayerHtml}
+                        ${mediaHtml}
+
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-400">
+                            <span><i class="fa-regular fa-clock"></i> ${item.formattedTime}</span>
+                            ${gpsLink}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Officer Feed & Management
+        function renderOfficerFeed() {
+            const feedContainer = document.getElementById('officerReportFeed');
+            let reportsToDisplay = [...cloudReports, ...localReports.filter(lr => !cloudReports.some(cr => cr.id === lr.id))];
+
+            reportsToDisplay = reportsToDisplay.filter(r => !r.inTrash && r.privacy !== 'personal');
+
+            document.getElementById('statTotal').textContent = reportsToDisplay.length;
+            document.getElementById('statEmergency').textContent = reportsToDisplay.filter(r => r.category.includes('อุบัติเหตุ')).length;
+            document.getElementById('statPending').textContent = reportsToDisplay.filter(r => (r.status || 'รอดำเนินการ') === 'รอดำเนินการ').length;
+            document.getElementById('statDone').textContent = reportsToDisplay.filter(r => r.status === 'ดำเนินการเสร็จสิ้น').length;
+
+            if (currentFilter === 'PENDING') reportsToDisplay = reportsToDisplay.filter(r => (r.status || 'รอดำเนินการ') === 'รอดำเนินการ');
+            if (currentFilter === 'EMERGENCY') reportsToDisplay = reportsToDisplay.filter(r => r.category.includes('อุบัติเหตุ'));
+            if (currentFilter === 'MOSQUITO') reportsToDisplay = reportsToDisplay.filter(r => r.category.includes('ยุงลาย'));
+            if (currentFilter === 'DONE') reportsToDisplay = reportsToDisplay.filter(r => r.status === 'ดำเนินการเสร็จสิ้น');
+
+            if (reportsToDisplay.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                        <p class="text-xs">ไม่พบรายการรายงาน</p>
+                    </div>
+                `;
+                return;
+            }
+
+            feedContainer.innerHTML = reportsToDisplay.map((item, idx) => {
+                const icon = CATEGORIES[item.category]?.icon || '📋';
+                const reporterName = item.reporter?.name || 'ไม่ระบุชื่อ';
+                const reporterPhone = item.reporter?.phone || '';
+                const reporterVillage = item.reporter?.village || '';
+
+                const officerStatus = item.status || 'รอดำเนินการ';
+                let officerTag = `<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">🟡 รอดำเนินการ</span>`;
+                if (officerStatus === 'กำลังดำเนินการ') officerTag = `<span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">🔵 กำลังดำเนินการ</span>`;
+                if (officerStatus === 'ดำเนินการเสร็จสิ้น') officerTag = `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">🟢 เสร็จสิ้น</span>`;
+
+                const mapLink = (item.location?.lat && item.location?.lng)
+                    ? `https://maps.google.com/?q=${item.location.lat},${item.location.lng}`
+                    : null;
+
+                return `
+                    <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 space-y-2">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">${icon}</span>
+                                <div>
+                                    <h4 class="font-bold text-xs text-slate-800">${item.category}</h4>
+                                    <p class="text-[11px] text-slate-500">👤 ${reporterName} (${reporterVillage})</p>
+                                </div>
+                            </div>
+                            ${officerTag}
+                        </div>
+
+                        <div class="bg-slate-50 p-2 rounded-xl text-xs text-slate-800">
+                            "${item.text}"
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
+                            <span><i class="fa-regular fa-clock"></i> ${item.formattedTime}</span>
+                            <div class="flex items-center space-x-1">
+                                ${reporterPhone ? `<a href="tel:${reporterPhone}" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold">โทร</a>` : ''}
+                                ${mapLink ? `<a href="${mapLink}" target="_blank" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold">แผนที่</a>` : ''}
+                                <button onclick="openOfficerModal('${item.id}')" class="bg-vhv-600 text-white px-2 py-0.5 rounded-lg font-bold">จัดการ</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openOfficerModal(reportId) {
+            const allReports = [...cloudReports, ...localReports];
+            const report = allReports.find(r => r.id === reportId);
+            if (!report) return;
+
+            document.getElementById('modalReportId').value = report.id;
+            document.getElementById('modalStatusSelect').value = report.status || 'รอดำเนินการ';
+            document.getElementById('modalOfficerNote').value = report.officerNote || '';
+
+            const contentBox = document.getElementById('officerModalContent');
+            contentBox.innerHTML = `
+                <p><strong>ผู้รายงาน:</strong> ${report.reporter?.name || 'อสม.'} (${report.reporter?.phone || '-'})</p>
+                <p><strong>หมวดหมู่:</strong> ${report.category}</p>
+                <p class="text-slate-800 font-medium">"${report.text}"</p>
+            `;
+
+            document.getElementById('officerModal').classList.remove('hidden');
+        }
+
+        function closeOfficerModal() {
+            document.getElementById('officerModal').classList.add('hidden');
+        }
+
+        async function saveOfficerResponse(e) {
+            e.preventDefault();
+            const reportId = document.getElementById('modalReportId').value;
+            const newStatus = document.getElementById('modalStatusSelect').value;
+            const newNote = document.getElementById('modalOfficerNote').value.trim();
+
+            if (window.db && window.doc && window.updateDoc) {
+                const { doc, updateDoc } = window;
+                try {
+                    const docRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'reports', reportId);
+                    await updateDoc(docRef, {
+                        status: newStatus,
+                        officerNote: newNote,
+                        updatedAt: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.error("Error updating doc:", err);
+                }
+            }
+
+            const target = localReports.find(r => r.id === reportId);
+            if (target) {
+                target.status = newStatus;
+                target.officerNote = newNote;
+                saveLocalReportsToStorage();
+            }
+
+            closeOfficerModal();
+            renderOfficerFeed();
+            renderHistory();
+            showToast("อัปเดตสถานะเรียบร้อย", "success");
+        }
+
+        // Cloud & Local Sync Utilities
+        async function syncSingleReportToCloud(report) {
+            if (!window.db || !window.doc || !window.setDoc) return false;
+            const { doc, setDoc } = window;
+            try {
+                let docRef;
+                if (report.privacy === 'personal' && window.currentUser) {
+                    docRef = doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'personal_notes', report.id);
+                } else {
+                    docRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'reports', report.id);
+                }
+                
+                const cloudData = { ...report, synced: true, updatedAt: new Date().toISOString() };
+                await setDoc(docRef, cloudData);
+
+                const target = localReports.find(r => r.id === report.id);
+                if (target) target.synced = true;
+                saveLocalReportsToStorage();
+                renderHistory();
+                updateSyncBanner();
+
+                showToast(report.privacy === 'personal' ? "บันทึกโน้ตลง Cloud แล้ว!" : "ส่งรายงานไปยัง รพ.สต. แล้ว!", "success");
+                return true;
+            } catch (err) {
+                console.error("Cloud save failed:", err);
+                return false;
+            }
+        }
+
+        function listenToPersonalNotes() {
+            if (!window.db || !window.collection || !window.onSnapshot || !window.currentUser) return;
+            const { collection, onSnapshot } = window;
+            try {
+                const notesCol = collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'personal_notes');
+                unsubscribePersonalNotes = onSnapshot(notesCol, (snapshot) => {
+                    const items = [];
+                    snapshot.forEach((doc) => {
+                        items.push({ id: doc.id, ...doc.data() });
+                    });
+                    items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    personalCloudNotes = items;
+                    renderHistory();
+                }, (error) => {
+                    console.warn("Personal notes sync error:", error);
+                });
+            } catch (err) {
+                console.warn("Personal notes error:", err);
+            }
+        }
+
+        function listenToCloudReports() {
+            if (!window.db || !window.collection || !window.onSnapshot) return;
+            const { collection, onSnapshot } = window;
+            try {
+                const reportsCol = collection(window.db, 'artifacts', window.appId, 'public', 'data', 'reports');
+                unsubscribeFirestore = onSnapshot(reportsCol, (snapshot) => {
+                    const items = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data.privacy !== 'personal') {
+                            items.push({ id: doc.id, ...data });
+                        }
+                    });
+                    items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    cloudReports = items;
+                    if (currentRole === 'OFFICER') {
+                        renderOfficerFeed();
+                    }
+                    renderHistory();
+                }, (error) => {
+                    console.error("Firestore sync error:", error);
+                });
+            } catch (err) {
+                console.warn("Firestore error:", err);
+            }
+        }
+
+        function syncPendingReports() {
+            if (!navigator.onLine) {
+                showToast("ยังไม่มีการเชื่อมต่ออินเทอร์เน็ต", "error");
+                return;
+            }
+            const pending = localReports.filter(r => !r.synced);
+            pending.forEach(async (r) => {
+                await syncSingleReportToCloud(r);
+            });
+        }
+
+        function loadProfile() {
+            const savedProfile = localStorage.getItem('vhv_profile');
+            if (savedProfile) {
+                profile = JSON.parse(savedProfile);
+                document.getElementById('userSubTitle').textContent = `${profile.name} (${profile.village})`;
+                document.getElementById('profName').value = profile.name;
+                document.getElementById('profPhone').value = profile.phone;
+                document.getElementById('profVillage').value = profile.village;
+
+                const initial = profile.name ? profile.name.charAt(0) : '👤';
+                const avatarEl = document.getElementById('headerAvatarText');
+                if (avatarEl) avatarEl.textContent = initial;
+            } else {
+                openProfileModal();
+            }
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            profile = {
+                name: document.getElementById('profName').value.trim(),
+                phone: document.getElementById('profPhone').value.trim(),
+                village: document.getElementById('profVillage').value.trim()
+            };
+            localStorage.setItem('vhv_profile', JSON.stringify(profile));
+            document.getElementById('userSubTitle').textContent = `${profile.name} (${profile.village})`;
+            
+            const initial = profile.name ? profile.name.charAt(0) : '👤';
+            const avatarEl = document.getElementById('headerAvatarText');
+            if (avatarEl) avatarEl.textContent = initial;
+
+            closeProfileModal();
+            showToast("บันทึกข้อมูล อสม. เรียบร้อยแล้ว", "success");
+        }
+
+        function openProfileModal() {
+            document.getElementById('profileModal').classList.remove('hidden');
+            if (window.currentUser) {
+                updateAccountSyncUI(window.currentUser);
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        function updateAccountSyncUI(user) {
+            if (!user) return;
+            const nameEl = document.getElementById('accNameDisplay');
+            const typeEl = document.getElementById('accTypeDisplay');
+            const keyInput = document.getElementById('syncKeyInput');
+
+            if (keyInput) keyInput.value = user.uid;
+
+            if (user.isAnonymous) {
+                nameEl.textContent = "ผู้ใช้ทั่วไป (Anonymous)";
+                typeEl.textContent = `Cloud User ID: ${user.uid.substring(0, 10)}...`;
+            } else {
+                nameEl.textContent = user.displayName || user.email || "บัญชี Google";
+                typeEl.textContent = user.email ? `Google: ${user.email}` : `UID: ${user.uid.substring(0, 10)}...`;
+            }
+        }
+
+        async function signInWithGoogleAccount() {
+            if (!window.auth || !window.GoogleAuthProvider || !window.signInWithPopup) {
+                showToast("ระบบสิทธิ์ Google ไม่พร้อมใช้งาน", "error");
+                return;
+            }
+            try {
+                showToast("กำลังเชื่อมต่อ Google...", "info");
+                const provider = new window.GoogleAuthProvider();
+                const result = await window.signInWithPopup(window.auth, provider);
+                const user = result.user;
+
+                showToast(`ยินดีต้อนรับ ${user.displayName || user.email}`, "success");
+                updateAccountSyncUI(user);
+                listenToPersonalNotes();
+            } catch (error) {
+                console.warn("Google sign in popup error:", error);
+                showToast("ไม่สามารถเข้าสู่ระบบด้วย Google ได้", "error");
+            }
+        }
+
+        function copySyncKey() {
+            const input = document.getElementById('syncKeyInput');
+            if (!input.value) return;
+            input.select();
+            document.execCommand('copy');
+            showToast("คัดลอก Sync Key เรียบร้อยแล้ว", "success");
+        }
+
+        function exportToCSV() {
+            let allReports = [...personalCloudNotes, ...cloudReports, ...localReports];
+            if (allReports.length === 0) {
+                showToast("ไม่มีข้อมูลสำหรับส่งออก", "warning");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "ID,ประเภท,วันที่-เวลา,หมวดหมู่,ข้อความรายงาน,ผู้รายงาน,เบอร์โทร,ชุมชน,ละติจูด,ลองจิจูด,สถานะ\n";
+
+            allReports.forEach(item => {
+                const reporterName = item.reporter?.name || 'ไม่ระบุ';
+                const reporterPhone = item.reporter?.phone || '-';
+                const reporterVillage = item.reporter?.village || '-';
+                const privacyName = item.privacy === 'personal' ? 'ส่วนตัว' : 'ส่ง รพ.สต.';
+                const cleanText = (item.text || '').replace(/"/g, '""').replace(/\n/g, ' ');
+
+                csvContent += `"${item.id}","${privacyName}","${item.formattedTime}","${item.category}","${cleanText}","${reporterName}","${reporterPhone}","${reporterVillage}","${item.location?.lat || ''}","${item.location?.lng || ''}","${item.status || 'บันทึกแล้ว'}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `VHV_Report_Export_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast("ส่งออกไฟล์ CSV เรียบร้อยแล้ว", "success");
+        }
+
+        function triggerPrintSummary() {
+            closeProfileModal();
+            window.print();
+        }
+
+        function exportToJSON() {
+            let allReports = [...personalCloudNotes, ...cloudReports, ...localReports];
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allReports, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `vhv_notes_backup_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("สำรองข้อมูล JSON เรียบร้อย", "success");
+        }
+
+        function importFromJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        localReports = [...imported, ...localReports];
+                        saveLocalReportsToStorage();
+                        renderHistory();
+                        showToast(`นำเข้าข้อมูลสำเร็จ ${imported.length} รายการ`, "success");
+                        closeProfileModal();
+                    } else {
+                        showToast("ไฟล์ JSON ไม่ถูกต้อง", "error");
+                    }
+                } catch (err) {
+                    showToast("อ่านไฟล์ JSON ไม่ได้", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function debouncedAICategorize(text) {
+            clearTimeout(aiDebounceTimer);
+            if (!text.trim()) {
+                updateCategoryUI('📋 บันทึกทั่วไป');
+                return;
+            }
+            aiDebounceTimer = setTimeout(() => {
+                categorizeText(text);
+            }, 400);
+        }
+
+        async function categorizeText(text) {
+            updateCategoryUI(heuristicCategorize(text));
+        }
+
+        function heuristicCategorize(text) {
+            const lowerText = text.toLowerCase();
+            for (const [catName, catObj] of Object.entries(CATEGORIES)) {
+                if (catObj.keywords && catObj.keywords.some(kw => lowerText.includes(kw))) {
+                    return catName;
+                }
+            }
+            return '📋 บันทึกทั่วไป';
+        }
+
+        function updateCategoryUI(categoryName) {
+            const categoryObj = CATEGORIES[categoryName] || CATEGORIES['📋 บันทึกทั่วไป'] || { icon: "📋" };
+            document.getElementById('categoryIcon').textContent = categoryObj.icon;
+            document.getElementById('categorySelect').value = categoryName;
+        }
+
+        function manualCategoryChange() {
+            updateCategoryUI(document.getElementById('categorySelect').value);
+        }
+
+        function insertQuickText(phrase) {
+            const textarea = document.getElementById('reportText');
+            textarea.value = textarea.value ? textarea.value + " " + phrase : phrase;
+            debouncedAICategorize(textarea.value);
+            showToast("เพิ่มข้อความแล้ว", "success");
+        }
+
+        function clearTranscript() {
+            document.getElementById('reportText').value = '';
+            updateCategoryUI('📋 บันทึกทั่วไป');
+            clearAttachedMedia();
+            discardRecordedAudio();
+        }
+
+        function initGeolocation() {
+            const gpsText = document.getElementById('gpsText');
+            if ("geolocation" in navigator) {
+                gpsText.textContent = "ค้นหาสัญญาณ...";
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentGps = {
+                            lat: pos.coords.latitude.toFixed(5),
+                            lng: pos.coords.longitude.toFixed(5),
+                            accuracy: pos.coords.accuracy
+                        };
+                        gpsText.textContent = `${currentGps.lat}, ${currentGps.lng}`;
+                    },
+                    (err) => {
+                        gpsText.textContent = "ไม่พบพิกัด (เปิด GPS)";
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+                );
+            } else {
+                gpsText.textContent = "ไม่รองรับ GPS";
+            }
+        }
+
+        function updateTimeDisplay() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + " น.";
+            document.getElementById('timeText').textContent = timeStr;
+        }
+
+        function setAudioSpeed(audioId, speed) {
+            const el = document.getElementById(audioId);
+            if (el) {
+                el.playbackRate = speed;
+                showToast(`ความเร็วเล่นเสียง: ${speed}x`, "info");
+            }
+        }
+
+        function openMediaModal(type, url) {
+            const modal = document.getElementById('mediaLightboxModal');
+            const content = document.getElementById('lightboxContent');
+            if (type === 'image') {
+                content.innerHTML = `<img src="${url}" class="max-w-full max-h-[80vh] object-contain rounded-xl">`;
+            } else if (type === 'video') {
+                content.innerHTML = `<video src="${url}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl"></video>`;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeMediaModal() {
+            const modal = document.getElementById('mediaLightboxModal');
+            const content = document.getElementById('lightboxContent');
+            content.innerHTML = '';
+            modal.classList.add('hidden');
+        }
+
+        function loadLocalReports() {
+            const saved = localStorage.getItem('vhv_reports');
+            if (saved) {
+                try { localReports = JSON.parse(saved); } catch (e) { localReports = []; }
+            }
+            renderHistory();
+            updateSyncBanner();
+        }
+
+        function saveLocalReportsToStorage() {
+            localStorage.setItem('vhv_reports', JSON.stringify(localReports));
+        }
+
+        function updateSyncBanner() {
+            const pending = localReports.filter(r => !r.synced);
+            const banner = document.getElementById('syncBanner');
+            const pendingText = document.getElementById('pendingCountText');
+
+            if (pending.length > 0) {
+                banner.classList.remove('hidden');
+                pendingText.textContent = `มี ${pending.length} รายการรอนำส่ง cloud`;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function toggleRoleView() {
+            if (currentRole === 'VHV') {
+                if (!isOfficerAuthenticated) {
+                    openOfficerAuthModal();
+                } else {
+                    switchToOfficerRole();
+                }
+            } else {
+                switchToVhvRole();
+            }
+        }
+
+        function openOfficerAuthModal() {
+            const input = document.getElementById('officerPinInput');
+            if (input) input.value = '';
+            document.getElementById('officerAuthModal').classList.remove('hidden');
+            if (input) input.focus();
+        }
+
+        function closeOfficerAuthModal() {
+            document.getElementById('officerAuthModal').classList.add('hidden');
+        }
+
+        function verifyOfficerPin(e) {
+            if (e) e.preventDefault();
+            const pinInput = document.getElementById('officerPinInput');
+            const pin = pinInput ? pinInput.value.trim() : '';
+
+            if (pin === '10660') {
+                isOfficerAuthenticated = true;
+                closeOfficerAuthModal();
+                switchToOfficerRole();
+                showToast("เข้าสู่ระบบโหมดเจ้าหน้าที่สำเร็จ", "success");
+            } else {
+                showToast("รหัส PIN ไม่ถูกต้อง (รหัสทดสอบ: 10660)", "error");
+            }
+        }
+
+        function switchToOfficerRole() {
+            currentRole = 'OFFICER';
+            document.getElementById('vhvView').classList.add('hidden');
+            document.getElementById('officerDashboardView').classList.remove('hidden');
+            
+            const roleBadge = document.getElementById('roleBadge');
+            if (roleBadge) {
+                roleBadge.textContent = "เจ้าหน้าที่ รพ.สต.";
+                roleBadge.className = "bg-amber-500 text-slate-900 text-[10px] px-1.5 py-0.5 rounded-full font-semibold";
+            }
+            
+            const switchBtnText = document.getElementById('switchRoleBtnText');
+            if (switchBtnText) switchBtnText.textContent = "โหมด อสม.";
+
+            renderOfficerFeed();
+        }
+
+        function switchToVhvRole() {
+            currentRole = 'VHV';
+            document.getElementById('officerDashboardView').classList.add('hidden');
+            document.getElementById('vhvView').classList.remove('hidden');
+            
+            const roleBadge = document.getElementById('roleBadge');
+            if (roleBadge) {
+                roleBadge.textContent = "อสม.";
+                roleBadge.className = "bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-semibold";
+            }
+            
+            const switchBtnText = document.getElementById('switchRoleBtnText');
+            if (switchBtnText) switchBtnText.textContent = "เจ้าหน้าที่";
+
+            renderHistory();
+        }
+
+        function refreshOfficerFeed() {
+            renderOfficerFeed();
+        }
+
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold px-2.5 py-1 rounded-xl";
+            });
+
+            if (filterType === 'ALL') document.getElementById('filterAll').className = "filter-btn bg-vhv-600 text-white font-bold px-2.5 py-1 rounded-xl";
+            if (filterType === 'PENDING') document.getElementById('filterPending').className = "filter-btn bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl";
+            if (filterType === 'EMERGENCY') document.getElementById('filterEmergency').className = "filter-btn bg-rose-600 text-white font-bold px-2.5 py-1 rounded-xl";
+            if (filterType === 'MOSQUITO') document.getElementById('filterMosquito').className = "filter-btn bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-xl";
+            if (filterType === 'DONE') document.getElementById('filterDone').className = "filter-btn bg-slate-700 text-white font-bold px-2.5 py-1 rounded-xl";
+
+            renderOfficerFeed();
+        }
+
+        function setupNetworkListeners() {
+            window.addEventListener('online', () => {
+                showToast("เชื่อมต่ออินเทอร์เน็ตแล้ว - ซิงค์ข้อมูลอัตโนมัติ", "success");
+                syncPendingReports();
+            });
+
+            window.addEventListener('offline', () => {
+                showToast("เข้าสู่โหมดออฟไลน์ บันทึกข้อมูลในเครื่อง", "warning");
+            });
+        }
+
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+
+            if (type === "success") {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            } else if (type === "error") {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+            } else if (type === "warning") {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-info text-blue-400";
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

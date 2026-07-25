@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจองคิว รพ.สต.ยะรัง PCC</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 22s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🏥 Yarang PCC</span>
+</div>
+
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const SYSTEM_URL = 'https://yarang-pcc.pages.dev/';
+
+    // MASTER CLINIC DATA MATCHING MATRIX SPECIFICATIONS
+    const INITIAL_CLINICS = [
+      { 
+        id: 'dentist', name: 'Dentist', room: 'ห้องทันตกรรม', 
+        quotas: { mon: {am:0, pm:0}, tue: {am:0, pm:0}, wed: {am:0, pm:3}, thu: {am:0, pm:0}, fri: {am:0, pm:0}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: false, timeslot: true, onlineBooking: true, showMainPage: true, slotMinutes: 60,
+        services: ['ขูดหินปูน', 'อุดฟัน', 'ถอนฟัน', 'ตรวจสุขภาพช่องปาก'],
+        warning: '⚠️ หากมีความดันโลหิตสูง (>160/100 mmHg) หรือทานยาละลายลิ่มเลือด ไม่สามารถถอนฟันได้'
+      },
+      { 
+        id: 'thai', name: 'Thai', room: 'อาคารแพทย์แผนไทย', 
+        quotas: { mon: {am:2, pm:2}, tue: {am:2, pm:2}, wed: {am:2, pm:2}, thu: {am:2, pm:2}, fri: {am:2, pm:2}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: false, timeslot: true, onlineBooking: true, showMainPage: true, slotMinutes: 45,
+        services: ['นวดประคบสมุนไพร', 'อบสมุนไพร', 'ดูแลหญิงหลังคลอด'],
+        warning: 'ผู้มีไข้สูงเกิน 38.5°C ห้ามรับบริการนวดประคบ'
+      },
+      { 
+        id: 'chinese', name: 'chinese', room: 'ห้องแพทย์แผนไทย', 
+        quotas: { mon: {am:1, pm:0}, tue: {am:1, pm:0}, wed: {am:1, pm:0}, thu: {am:1, pm:0}, fri: {am:1, pm:0}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: true, timeslot: false, onlineBooking: false, showMainPage: false, slotMinutes: 30,
+        services: ['ฝังเข็มรักษาโรค', 'ครอบแก้ว'],
+        warning: 'งดรับบริการขณะท้องว่างหรืออ่อนเพลียรุนแรง'
+      },
+      { 
+        id: 'ncd', name: 'NCD', room: 'ห้องตรวจ 2', 
+        quotas: { mon: {am:10, pm:10}, tue: {am:10, pm:10}, wed: {am:10, pm:10}, thu: {am:10, pm:10}, fri: {am:10, pm:10}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: true, timeslot: false, onlineBooking: true, showMainPage: true, slotMinutes: 15,
+        services: ['ตรวจเจาะเลือดเบาหวาน (FBS)', 'วัดความดันโลหิต', 'รับยาต่อเนื่อง'],
+        warning: '⚠️ ตรวจเลือดเจาะเบาหวาน กรุณางดอาหารและน้ำหลังเที่ยงคืน'
+      },
+      { 
+        id: 'anc', name: 'ANC', room: 'ห้องแม่และเด็ก', 
+        quotas: { mon: {am:0, pm:10}, tue: {am:0, pm:0}, wed: {am:0, pm:0}, thu: {am:0, pm:0}, fri: {am:0, pm:0}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: true, timeslot: false, onlineBooking: true, showMainPage: true, slotMinutes: 20,
+        services: ['ตรวจครรภ์ตามนัด', 'อัลตราซาวด์เบื้องต้น', 'ประเมินพัฒนาการทารก'],
+        warning: 'กรณีมีอาการเลือดออกช่องคลอด ให้ติดต่อห้องฉุกเฉินทันที'
+      },
+      { 
+        id: 'general', name: 'general', room: 'ห้องตรวจ 1', 
+        quotas: { mon: {am:10, pm:10}, tue: {am:10, pm:10}, wed: {am:10, pm:10}, thu: {am:10, pm:10}, fri: {am:10, pm:10}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: false, timeslot: true, onlineBooking: true, showMainPage: true, slotMinutes: 15,
+        services: ['ตรวจรักษาอาการป่วยทั่วไป', 'ออกใบรับรองแพทย์', 'ปรึกษาสุขภาพ'],
+        warning: 'ไข้สูง ซึม หายใจหอบเหนื่อย ให้เข้ารับบริการห้องฉุกเฉินทันที'
+      },
+      { 
+        id: 'family_plan', name: 'family plan', room: 'ห้องตรวจ 1', 
+        quotas: { mon: {am:0, pm:0}, tue: {am:0, pm:0}, wed: {am:0, pm:0}, thu: {am:0, pm:0}, fri: {am:0, pm:0}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: false, timeslot: true, onlineBooking: false, showMainPage: false, slotMinutes: 15,
+        services: ['ฉีดยาคุมกำเนิด', 'รับยาเม็ดคุมกำเนิด', 'ปรึกษาการวางแผนครอบครัว'],
+        warning: 'กรุณานำสมุดประจำตัวคุมกำเนิดมาด้วยทุกครั้ง'
+      },
+      { 
+        id: 'kid_vaccine', name: 'Kid vaccine', room: 'ห้องแม่และเด็ก', 
+        quotas: { mon: {am:0, pm:0}, tue: {am:5, pm:0}, wed: {am:0, pm:0}, thu: {am:0, pm:0}, fri: {am:0, pm:0}, sat: {am:0, pm:0}, sun: {am:0, pm:0} },
+        fifo: true, timeslot: false, onlineBooking: false, showMainPage: true, slotMinutes: 15,
+        services: ['ฉีดวัคซีนตามวัย (0-5 ปี)', 'หยอดวัคซีนโปลิโอ'],
+        warning: 'เด็กมีไข้สูง หรือป่วยเป็นโรคติดเชื้อ ให้เลื่อนการรับวัคซีน'
+      }
+    ];
+
+    const INITIAL_BOOKINGS = [
+      { id: 'BK-1001', queueNo: 'DEN-P001', clinicId: 'dentist', clinicName: 'Dentist', patientName: 'มะหมูด ยะรัง', cid: '1-9401-00123-01-2', phone: '0812345678', date: '2026-07-29', session: 'PM', slotTime: '13:00 - 14:00', selectedServices: ['ขูดหินปูน', 'อุดฟัน'], status: 'confirmed', type: 'online', note: 'ปวดฟันเล็กน้อย' },
+      { id: 'BK-1002', queueNo: 'GEN-A001', clinicId: 'general', clinicName: 'general', patientName: 'นางอามีเนาะ สดุดี', cid: '', phone: '0898765432', date: '2026-07-24', session: 'AM', slotTime: '08:30 - 08:45', selectedServices: ['ตรวจรักษาอาการป่วยทั่วไป'], status: 'checked-in', type: 'online', note: 'มีไข้ ไอเจ็บคอ' }
+    ];
+
+    function App() {
+      const [role, setRole] = useState('patient'); // 'patient' | 'officer' | 'admin'
+      const [activeTab, setActiveTab] = useState('home'); 
+
+      const [officerToken, setOfficerToken] = useState(() => localStorage.getItem('officer_token') || '');
+      const [adminToken, setAdminToken] = useState(() => localStorage.getItem('admin_token') || '');
+      const [loginInputToken, setLoginInputToken] = useState('');
+      const [authError, setAuthError] = useState('');
+
+      const [clinics, setClinics] = useState(INITIAL_CLINICS);
+      const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
+      const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+
+      // Audit Logs State
+      const [auditLogs, setAuditLogs] = useState([
+        { id: 'LOG-1001', time: '2026-07-23 20:15:10', user: 'System Engine', action: 'SYSTEM_INIT', details: 'เริ่มต้นระบบจัดการคิว รพ.สต.ยะรัง (Matrix Settings & Audit Tracking Enabled)' },
+        { id: 'LOG-1002', time: '2026-07-23 20:20:45', user: 'Officer Dental', action: 'UPDATE_SERVICES', details: 'อัปเดตรายการบริการประจำคลินิก Dentist' }
+      ]);
+
+      // Patient Search Gate States (Privacy Protection)
+      const [searchPhone, setSearchPhone] = useState('');
+      const [searchBookingNo, setSearchBookingNo] = useState('');
+      const [searchedResults, setSearchedResults] = useState(null);
+
+      // Patient Booking Form
+      const [selectedClinic, setSelectedClinic] = useState(INITIAL_CLINICS[0]);
+      const [bookingDate, setBookingDate] = useState('2026-07-24');
+      const [bookingSession, setBookingSession] = useState('AM');
+      const [selectedSlot, setSelectedSlot] = useState('');
+      const [patientForm, setPatientForm] = useState({ name: '', cid: '', phone: '', note: '' });
+      const [selectedServices, setSelectedServices] = useState([]);
+      const [recentCreatedBooking, setRecentCreatedBooking] = useState(null);
+
+      // Manual Queue State
+      const [manualClinic, setManualClinic] = useState('general');
+      const [manualName, setManualName] = useState('');
+      const [manualPhone, setManualPhone] = useState('');
+      const [manualCid, setManualCid] = useState('');
+
+      // Gemini AI Chat
+      const [chatMessages, setChatMessages] = useState([
+        { sender: 'ai', text: 'สวัสดีครับ ผมคือผู้ช่วย AI Gemini 2.5 สำหรับเจ้าหน้าที่ รพ.สต.ยะรัง สามารถถามจำนวนคิว ตรวจสอบรายชื่อผู้ป่วย หรือสรุปสถานะประจำวันได้ทันทีครับ' }
+      ]);
+      const [inputMessage, setInputMessage] = useState('');
+      const [isChatLoading, setIsChatLoading] = useState(false);
+      const chatEndRef = useRef(null);
+
+      // Officer Table Filter
+      const [filterClinic, setFilterClinic] = useState('all');
+      const [filterStatus, setFilterStatus] = useState('all');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [editingServicesClinic, setEditingServicesClinic] = useState(null);
+      const [newServiceInput, setNewServiceInput] = useState('');
+
+      const isOfficerAuthed = Boolean(officerToken || adminToken);
+      const isAdminAuthed = Boolean(adminToken);
+
+      useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [chatMessages, isChatLoading]);
+
+      const logAction = (user, action, details) => {
+        const newLog = {
+          id: `LOG-${Date.now().toString().slice(-4)}`,
+          time: new Date().toLocaleString('th-TH'),
+          user,
+          action,
+          details
+        };
+        setAuditLogs(prev => [newLog, ...prev]);
+      };
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setAuthError('');
+        if (role === 'officer') {
+          if (loginInputToken === 'OFFICER123' || loginInputToken === 'ADMIN999') {
+            setOfficerToken(loginInputToken);
+            localStorage.setItem('officer_token', loginInputToken);
+            setActiveTab('officer-queue');
+            logAction('Officer', 'LOGIN_SUCCESS', `เข้าสู่ระบบด้วยโทเค็น ${loginInputToken}`);
+          } else setAuthError('โทเค็นไม่ถูกต้อง! (ลองใช้: OFFICER123)');
+        } else if (role === 'admin') {
+          if (loginInputToken === 'ADMIN999') {
+            setAdminToken(loginInputToken);
+            localStorage.setItem('admin_token', loginInputToken);
+            setActiveTab('officer-clinic-matrix');
+            logAction('Admin', 'LOGIN_SUCCESS', 'ผู้ดูแลระบบเข้าสู่ระบบเรียบร้อย');
+          } else setAuthError('โทเค็น Admin ไม่ถูกต้อง! (ลองใช้: ADMIN999)');
+        }
+      };
+
+      const handleLogout = () => {
+        logAction(role, 'LOGOUT', 'ออกจากระบบ');
+        setOfficerToken(''); setAdminToken('');
+        localStorage.removeItem('officer_token'); localStorage.removeItem('admin_token');
+        setRole('patient'); setActiveTab('home');
+      };
+
+      const handlePatientSearch = (e) => {
+        e.preventDefault();
+        const results = bookings.filter(b => {
+          const matchPhone = searchPhone && b.phone.includes(searchPhone.trim());
+          const matchNo = searchBookingNo && b.queueNo.toLowerCase().includes(searchBookingNo.trim().toLowerCase());
+          return matchPhone || matchNo;
+        });
+        setSearchedResults(results);
+        logAction('Patient Public', 'SEARCH_QUEUE', 'ค้นหาคิวผ่านเบอร์โทร/เลขคิว');
+      };
+
+      // Export Functions (UTF-8 BOM supported for Microsoft Excel)
+      const exportQueueToCSV = () => {
+        const headers = ["Booking ID", "Queue No", "Clinic", "Patient Name", "CID", "Phone", "Date", "Session", "Slot/Type", "Services", "Status", "Type", "Note"];
+        const rows = bookings.map(b => [
+          b.id, b.queueNo, `"${b.clinicName}"`, `"${b.patientName}"`, `"${b.cid || ''}"`, `"${b.phone}"`,
+          b.date, b.session, `"${b.slotTime}"`, `"${(b.selectedServices || []).join(', ')}"`, b.status, b.type, `"${b.note || ''}"`
+        ]);
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        downloadCSV(csvContent, `yarang_pcc_queue_report_${new Date().toISOString().split('T')[0]}.csv`);
+        logAction(role, 'EXPORT_QUEUE_CSV', 'ส่งออกรายงานตารางคิวประจำวันเป็น CSV');
+      };
+
+      const exportAuditLogsToCSV = () => {
+        const headers = ["Log ID", "Timestamp", "User/Role", "Action Type", "Details"];
+        const rows = auditLogs.map(l => [
+          l.id, `"${l.time}"`, `"${l.user}"`, `"${l.action}"`, `"${l.details}"`
+        ]);
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        downloadCSV(csvContent, `yarang_pcc_audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+        logAction(role, 'EXPORT_AUDIT_CSV', 'ส่งออกบันทึกประวัติการใช้งานระบบ (Audit Logs) เป็น CSV');
+      };
+
+      const downloadCSV = (content, filename) => {
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      // Batch MyPCU CSV Import
+      const handleMyPCUImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const lines = evt.target.result.split('\n').slice(1);
+          let count = 0;
+          const newBks = [];
+          lines.forEach((line, idx) => {
+            if (!line.trim()) return;
+            const cols = line.split(',');
+            const pName = cols[0]?.replace(/"/g, '').trim() || `ผู้ป่วย MyPCU ${idx+1}`;
+            const phone = cols[1]?.replace(/"/g, '').trim() || '0800000000';
+            newBks.push({
+              id: `BK-PCU-${Date.now().toString().slice(-3)}-${idx}`,
+              queueNo: `GEN-M${String(idx+1).padStart(3, '0')}`,
+              clinicId: 'general',
+              clinicName: 'general',
+              patientName: pName,
+              cid: 'นำเข้า MyPCU',
+              phone: phone,
+              date: new Date().toISOString().split('T')[0],
+              session: 'AM',
+              slotTime: 'MyPCU Manual Batch',
+              selectedServices: ['ตรวจโรคทั่วไป'],
+              status: 'confirmed',
+              type: 'mypcu_import',
+              note: 'นำเข้าอัตโนมัติจากไฟล์ MyPCU'
+            });
+            count++;
+          });
+          setBookings(prev => [...newBks, ...prev]);
+          logAction('Officer', 'MYPCU_IMPORT', `นำเข้าคิวสำเร็จ ${count} รายการจากไฟล์ MyPCU CSV`);
+          alert(`นำเข้าข้อมูลจาก MyPCU เรียบร้อยแล้วจำนวน ${count} รายการ`);
+        };
+        reader.readAsText(file);
+      };
+
+      // Gemini AI Chat Assistant
+      const handleSendGeminiChat = async (e) => {
+        e.preventDefault();
+        if (!inputMessage.trim() || isChatLoading) return;
+
+        const userText = inputMessage;
+        setInputMessage('');
+        setChatMessages(prev => [...prev, { sender: 'user', text: userText }]);
+        setIsChatLoading(true);
+
+        const apiKey = "";
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const queueSummary = JSON.stringify(bookings.map(b => ({ queue: b.queueNo, clinic: b.clinicName, name: b.patientName, status: b.status, time: b.slotTime })));
+
+        const payload = {
+          contents: [{ parts: [{ text: `Queue Database Snapshot: ${queueSummary}\nOfficer Question: ${userText}` }] }],
+          systemInstruction: { parts: [{ text: "You are an AI queue assistant for officers at รพ.สต.ยะรัง. Answer officer queries accurately and concisely in polite Thai using the provided database snapshot." }] }
+        };
+
+        try {
+          const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (response.ok) {
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) setChatMessages(prev => [...prev, { sender: 'ai', text }]);
+          }
+        } catch (err) {
+          setChatMessages(prev => [...prev, { sender: 'ai', text: 'ไม่สามารถเชื่อมต่อ Gemini ได้ในขณะนี้' }]);
+        }
+        setIsChatLoading(false);
+      };
+
+      const generateClinicSlots = (clinicObj, session) => {
+        if (!clinicObj || clinicObj.fifo) return [];
+        const slots = [];
+        const startHour = session === 'AM' ? 8 : 13;
+        const startMinute = session === 'AM' ? 30 : 0;
+        const endHour = session === 'AM' ? 12 : 16;
+        const duration = clinicObj.slotMinutes || 15;
+        let current = startHour * 60 + startMinute;
+        const end = endHour * 60;
+
+        while (current + duration <= end) {
+          const sh = Math.floor(current / 60); const sm = current % 60;
+          const eh = Math.floor((current + duration) / 60); const em = (current + duration) % 60;
+          slots.push(`${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')} - ${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`);
+          current += duration;
+        }
+        return slots;
+      };
+
+      const handleCreateBooking = (e) => {
+        e.preventDefault();
+        if (selectedClinic.timeslot && !selectedSlot) {
+          alert('กรุณาเลือกรอบเวลาตรวจ (Slot)');
+          return;
+        }
+        if (!patientForm.name || !patientForm.phone) {
+          alert('กรุณากรอกชื่อ-นามสกุล และเบอร์โทรศัพท์');
+          return;
+        }
+
+        const count = bookings.filter(b => b.clinicId === selectedClinic.id).length + 1;
+        const sessionPrefix = bookingSession === 'AM' ? 'A' : 'P';
+        const queueNo = `${selectedClinic.id.substring(0, 3).toUpperCase()}-${sessionPrefix}${String(count).padStart(3, '0')}`;
+
+        const newBooking = {
+          id: `BK-${Date.now().toString().slice(-4)}`,
+          queueNo,
+          clinicId: selectedClinic.id,
+          clinicName: selectedClinic.name,
+          patientName: patientForm.name,
+          cid: patientForm.cid || 'ไม่ระบุ',
+          phone: patientForm.phone,
+          date: bookingDate,
+          session: bookingSession,
+          slotTime: selectedClinic.timeslot ? selectedSlot : 'ลำดับมาถึงก่อน-หลัง (FIFO)',
+          selectedServices: selectedServices.length > 0 ? selectedServices : ['ตรวจรักษาทั่วไป'],
+          status: 'pending',
+          type: 'online',
+          note: patientForm.note || 'จองออนไลน์'
+        };
+
+        setBookings([newBooking, ...bookings]);
+        setRecentCreatedBooking(newBooking);
+        logAction('Patient Public', 'CREATE_BOOKING', `สร้างคิวใหม่ ${queueNo} (${patientForm.name})`);
+        setActiveTab('booking-success');
+      };
+
+      const handleManualQueueCreate = (e) => {
+        e.preventDefault();
+        if (!manualName || !manualPhone) {
+          alert('กรุณากรอกชื่อผู้ป่วยและเบอร์โทรศัพท์');
+          return;
+        }
+        const cObj = clinics.find(c => c.id === manualClinic);
+        const count = bookings.filter(b => b.clinicId === manualClinic).length + 1;
+        const queueNo = `${manualClinic.substring(0,3).toUpperCase()}-M${String(count).padStart(3, '0')}`;
+
+        const newB = {
+          id: `BK-MAN-${Date.now().toString().slice(-4)}`,
+          queueNo,
+          clinicId: manualClinic,
+          clinicName: cObj.name,
+          patientName: manualName,
+          cid: manualCid || 'Manual Issue',
+          phone: manualPhone,
+          date: new Date().toISOString().split('T')[0],
+          session: 'AM',
+          slotTime: 'Manual Issue (ออกคิวหน้างาน)',
+          selectedServices: ['ออกคิวด่วนหน้างาน'],
+          status: 'checked-in',
+          type: 'manual_issue',
+          note: 'เจ้าหน้าที่ออกคิวให้หน้างาน'
+        };
+
+        setBookings([newB, ...bookings]);
+        logAction('Officer', 'MANUAL_QUEUE_CREATE', `ออกคิวด้วยตนเอง ${queueNo} (${manualName})`);
+        alert(`ออกคิวด้วยตนเองสำเร็จ: ${queueNo}`);
+        setManualName(''); setManualPhone(''); setManualCid('');
+      };
+
+      const handleMatrixQuotaChange = (clinicId, day, session, value) => {
+        const numVal = parseInt(value) || 0;
+        setClinics(prev => prev.map(c => {
+          if (c.id === clinicId) {
+            return {
+              ...c,
+              quotas: {
+                ...c.quotas,
+                [day]: { ...c.quotas[day], [session]: numVal }
+              }
+            };
+          }
+          return c;
+        }));
+        logAction(role, 'UPDATE_MATRIX_QUOTA', `ปรับโควต้าคลินิก ${clinicId} วัน ${day} ${session} -> ${numVal}`);
+      };
+
+      const handleMatrixToggle = (clinicId, field) => {
+        setClinics(prev => prev.map(c => {
+          if (c.id === clinicId) {
+            if (field === 'fifo') return { ...c, fifo: true, timeslot: false };
+            if (field === 'timeslot') return { ...c, fifo: false, timeslot: true };
+            return { ...c, [field]: !c[field] };
+          }
+          return c;
+        }));
+        logAction(role, 'TOGGLE_MATRIX_SETTING', `สลับการตั้งค่า ${field} ของคลินิก ${clinicId}`);
+      };
+
+      const handleAddService = (clinicId) => {
+        if (!newServiceInput.trim()) return;
+        setClinics(prev => prev.map(c => c.id === clinicId ? { ...c, services: [...c.services, newServiceInput.trim()] } : c));
+        logAction(role, 'ADD_CLINIC_SERVICE', `เพิ่มบริการ "${newServiceInput}" ให้คลินิก ${clinicId}`);
+        setNewServiceInput('');
+      };
+
+      const handleDeleteService = (clinicId, serviceName) => {
+        setClinics(prev => prev.map(c => c.id === clinicId ? { ...c, services: c.services.filter(s => s !== serviceName) } : c));
+        logAction(role, 'DELETE_CLINIC_SERVICE', `ลบบริการ "${serviceName}" จากคลินิก ${clinicId}`);
+      };
+
+      const handleUpdateStatus = (id, newStatus) => {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+        logAction(role, 'UPDATE_STATUS', `เปลี่ยนสถานะคิว ${id} -> ${newStatus}`);
+      };
+
+      const handleDeleteBooking = (id) => {
+        if (confirm('คุณต้องการลบรายการคิวนี้ออกจากระบบใช่หรือไม่? (การกระทำนี้จะถูกบันทึกใน Audit Log)')) {
+          setBookings(prev => prev.filter(b => b.id !== id));
+          logAction(role, 'DELETE_BOOKING', `ลบคิวไอดี ${id} ออกจากระบบเด็ดขาด`);
+        }
+      };
+
+      const renderStatusBadge = (status) => {
+        switch (status) {
+          case 'pending': return <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-200">รอการยืนยัน</span>;
+          case 'confirmed': return <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-200">ยืนยันแล้ว</span>;
+          case 'checked-in': return <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-200">ยื่นบัตรแล้ว</span>;
+          case 'completed': return <span className="bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200">ตรวจเสร็จสิ้น</span>;
+          case 'cancelled': return <span className="bg-rose-100 text-rose-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-rose-200">ยกเลิกแล้ว</span>;
+          default: return null;
+        }
+      };
+
+      const filteredBookings = bookings.filter(b => {
+        const matchClinic = filterClinic === 'all' || b.clinicId === filterClinic;
+        const matchStatus = filterStatus === 'all' || b.status === filterStatus;
+        const matchSearch = b.patientName.includes(searchQuery) || b.queueNo.toLowerCase().includes(searchQuery.toLowerCase()) || b.phone.includes(searchQuery);
+        return matchClinic && matchStatus && matchSearch;
+      });
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+          
+          <div className="bg-rose-700 text-white text-xs py-2 px-3 flex items-center justify-between shadow-inner z-50 sticky top-0">
+            <div onClick={() => setShowEmergencyModal(true)} className="flex items-center gap-2 overflow-hidden cursor-pointer hover:opacity-90 flex-1 mr-2">
+              <span className="bg-rose-900 px-2 py-0.5 rounded font-bold shrink-0 animate-pulse">⚠️ ฉุกเฉิน!</span>
+              <div className="whitespace-nowrap overflow-hidden text-[11px] sm:text-xs">
+                <span className="inline-block animate-marquee">
+                  ⚠️ หากท่านมีอาการ: แน่นหน้าอก หายใจหอบเหนื่อย แขนขาอ่อนแรง ปากเบี้ยว ช็อกจากอาการแพ้ ไข้สูงซึมในเด็กเล็ก หรืออุบัติเหตุร้ายแรง **อย่ารอคิวจองออนไลน์** คลิกที่นี่ หรือกดโทร 1669 ทันที!
+                </span>
+              </div>
+            </div>
+            <a href="tel:1669" className="bg-white text-rose-700 font-extrabold px-3 py-1 rounded-lg text-xs shrink-0 shadow-sm">📞 โทร 1669</a>
+          </div>
+
+          <header className="bg-teal-700 text-white shadow-md">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActiveTab('home'); setRole('patient'); }}>
+                <div className="bg-white p-2 rounded-lg text-teal-700 font-bold">🩺</div>
+                <div>
+                  <h1 className="font-bold text-lg leading-tight">รพ.สต.ยะรัง PCC</h1>
+                  <p className="text-xs text-teal-100">ระบบจองคิวและตั้งค่าตารางบริการ (Matrix System)</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-teal-800/80 p-1 rounded-xl text-xs font-medium border border-teal-600/50">
+                  <button onClick={() => { setRole('patient'); setActiveTab('home'); }} className={`px-3 py-1.5 rounded-lg ${role === 'patient' ? 'bg-white text-teal-800 font-bold' : 'text-teal-100'}`}>👤 ประชาชน</button>
+                  <button onClick={() => { setRole('officer'); setActiveTab('officer-queue'); }} className={`px-3 py-1.5 rounded-lg ${role === 'officer' ? 'bg-white text-teal-800 font-bold' : 'text-teal-100'}`}>🩺 เจ้าหน้าที่ {isOfficerAuthed && '✓'}</button>
+                  <button onClick={() => { setRole('admin'); setActiveTab('officer-clinic-matrix'); }} className={`px-3 py-1.5 rounded-lg ${role === 'admin' ? 'bg-white text-teal-800 font-bold' : 'text-teal-100'}`}>⚙️ Admin {isAdminAuthed && '✓'}</button>
+                </div>
+                {((role === 'officer' && isOfficerAuthed) || (role === 'admin' && isAdminAuthed)) && (
+                  <button onClick={handleLogout} className="bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-xl text-xs font-bold">ออก</button>
+                )}
+              </div>
+            </div>
+
+            <nav className="bg-teal-800 border-t border-teal-600/40 text-sm">
+              <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-2 scrollbar-none">
+                {role === 'patient' && (
+                  <>
+                    <button onClick={() => setActiveTab('home')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'home' ? 'bg-teal-600 text-white font-bold' : 'text-teal-100'}`}>หน้าหลักคลินิก</button>
+                    <button onClick={() => setActiveTab('my-bookings')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'my-bookings' ? 'bg-teal-600 text-white font-bold' : 'text-teal-100'}`}>🔍 ตรวจสอบใบนัดของฉัน (Privacy Lookup)</button>
+                  </>
+                )}
+
+                {((role === 'officer' && isOfficerAuthed) || (role === 'admin' && isAdminAuthed)) && (
+                  <>
+                    <button onClick={() => setActiveTab('officer-queue')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'officer-queue' ? 'bg-teal-600 text-white font-bold' : 'text-teal-100'}`}>📋 ตารางคิว & Manual Issue</button>
+                    <button onClick={() => setActiveTab('officer-clinic-matrix')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'officer-clinic-matrix' ? 'bg-amber-500 text-slate-900 font-bold' : 'text-amber-200'}`}>📊 ตั้งค่า Matrix คลินิก & บริการ</button>
+                    <button onClick={() => setActiveTab('officer-audit-log')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'officer-audit-log' ? 'bg-teal-600 text-white font-bold' : 'text-teal-100'}`}>📜 ประวัติระบบ (Audit Logs)</button>
+                    <button onClick={() => setActiveTab('officer-chat')} className={`px-3 py-1.5 rounded-md text-xs font-medium ${activeTab === 'officer-chat' ? 'bg-teal-600 text-white font-bold' : 'text-teal-100'}`}>🤖 AI คัดกรอง (Gemini 2.5)</button>
+                  </>
+                )}
+              </div>
+            </nav>
+          </header>
+
+          <main className="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+            {/* LOGIN SCREEN */}
+            {((role === 'officer' && !isOfficerAuthed) || (role === 'admin' && !isAdminAuthed)) && (
+              <div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-6 shadow-md my-8 space-y-4">
+                <h2 className="text-xl font-bold text-slate-800 text-center">เข้าสู่ระบบ ({role})</h2>
+                <form onSubmit={handleLogin} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold mb-1">Access Token Key</label>
+                    <input type="password" placeholder={role === 'officer' ? 'กรอก OFFICER123' : 'กรอก ADMIN999'} value={loginInputToken} onChange={(e) => setLoginInputToken(e.target.value)} className="w-full p-2.5 border rounded-lg font-mono" required />
+                  </div>
+                  {authError && <div className="p-3 bg-rose-50 text-rose-700 rounded-lg text-xs font-semibold">{authError}</div>}
+                  <button type="submit" className="w-full bg-teal-700 text-white font-bold py-3 rounded-xl text-sm">เข้าสู่ระบบ</button>
+                </form>
+              </div>
+            )}
+
+            {/* PATIENT VIEW: CLINIC LISTING */}
+            {role === 'patient' && activeTab === 'home' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-teal-700 to-emerald-800 rounded-2xl p-6 text-white shadow-lg space-y-2">
+                  <span className="bg-teal-900/60 text-teal-200 text-xs font-semibold px-3 py-1 rounded-full border border-teal-500/30 inline-block">รพ.สต.ยะรัง อำเภอยะรัง จังหวัดปัตตานี</span>
+                  <h2 className="text-2xl font-bold">ระบบบริการตรวจรักษาออนไลน์</h2>
+                  <p className="text-xs text-teal-100">เลือกบริการและจองคิวตรวจรักษาล่วงหน้า</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {clinics.filter(c => c.showMainPage).map(clinic => (
+                    <div key={clinic.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-white p-2 bg-teal-600 rounded-lg font-bold">🏥</span>
+                          <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded font-mono">{clinic.room}</span>
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-base mb-1">{clinic.name}</h4>
+                        <div className="text-xs text-slate-500 space-y-1 mb-3">
+                          <p>รูปแบบคิว: <strong>{clinic.fifo ? 'FIFO (คิวก่อน-หลัง)' : `Timeslot (${clinic.slotMinutes} นาที)`}</strong></p>
+                          <p>รายการบริการ: {clinic.services.join(', ')}</p>
+                        </div>
+                        {clinic.warning && <div className="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-[11px] mb-3">{clinic.warning}</div>}
+                      </div>
+
+                      <button 
+                        disabled={!clinic.onlineBooking}
+                        onClick={() => { setSelectedClinic(clinic); setSelectedServices([]); setSelectedSlot(''); setActiveTab('book'); }}
+                        className={`w-full text-xs font-bold py-2.5 rounded-lg transition ${clinic.onlineBooking ? 'bg-teal-600 hover:bg-teal-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                      >
+                        {clinic.onlineBooking ? 'จองคิวตรวจคลินิกนี้' : 'งดรับจองออนไลน์ (ติดต่อหน้างาน)'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PATIENT VIEW: BOOKING FORM WITH MULTI-SERVICES & OPTIONAL CID */}
+            {role === 'patient' && activeTab === 'book' && (
+              <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
+                <button onClick={() => setActiveTab('home')} className="text-xs text-teal-700 hover:underline">← ย้อนกลับไปเลือกคลินิก</button>
+
+                <div className="border-b pb-3">
+                  <h2 className="text-xl font-bold text-slate-800">{selectedClinic.name}</h2>
+                  <p className="text-xs text-slate-500">ห้องตรวจ: {selectedClinic.room} ({selectedClinic.fifo ? 'โหมด FIFO' : `โหมด Timeslot ${selectedClinic.slotMinutes} นาที`})</p>
+                </div>
+
+                {selectedClinic.warning && <div className="p-3 bg-amber-50 border-l-4 border-amber-500 text-amber-900 text-xs">{selectedClinic.warning}</div>}
+
+                <form onSubmit={handleCreateBooking} className="space-y-4 text-xs">
+                  {/* Service Multi-Select Checklist */}
+                  <div className="p-3 bg-slate-50 border rounded-xl space-y-2">
+                    <label className="block font-bold text-slate-800">เลือกบริการที่ต้องการเข้ารับการตรวจ (เลือกได้มากกว่า 1 รายการ)</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedClinic.services.map(s => (
+                        <label key={s} className="flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-teal-50">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedServices.includes(s)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedServices([...selectedServices, s]);
+                              else setSelectedServices(selectedServices.filter(x => x !== s));
+                            }}
+                            className="w-4 h-4 text-teal-600 rounded"
+                          />
+                          <span className="font-medium text-slate-700">{s}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold mb-1">วันที่ต้องการจอง</label>
+                      <input type="date" value={bookingDate} min={new Date().toISOString().split('T')[0]} onChange={(e) => setBookingDate(e.target.value)} className="w-full p-2.5 border rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block font-bold mb-1">รอบเวลา (Session)</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => setBookingSession('AM')} className={`py-2 font-bold rounded-lg border ${bookingSession === 'AM' ? 'bg-teal-600 text-white' : 'bg-slate-50'}`}>รอบเช้า (AM)</button>
+                        <button type="button" onClick={() => setBookingSession('PM')} className={`py-2 font-bold rounded-lg border ${bookingSession === 'PM' ? 'bg-teal-600 text-white' : 'bg-slate-50'}`}>รอบบ่าย (PM)</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedClinic.timeslot && (
+                    <div>
+                      <label className="block font-bold mb-1">เลือก Slot เวลาตรวจ</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-2 border bg-slate-50 rounded-lg">
+                        {generateClinicSlots(selectedClinic, bookingSession).map(slot => (
+                          <button type="button" key={slot} onClick={() => setSelectedSlot(slot)} className={`py-2 text-xs font-medium rounded border ${selectedSlot === slot ? 'bg-teal-700 text-white' : 'bg-white'}`}>{slot}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 border-t pt-3">
+                    <div>
+                      <label className="block text-slate-600 mb-1">ชื่อ - นามสกุล ผู้ป่วย *</label>
+                      <input type="text" value={patientForm.name} onChange={(e) => setPatientForm({...patientForm, name: e.target.value})} className="w-full p-2.5 border rounded-lg" required />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-600 mb-1">เลขบัตรประชาชน 13 หลัก <span className="text-slate-400 font-normal">(ไม่บังคับกรอก)</span></label>
+                        <input type="text" placeholder="1-94XX-XXXXX-XX-X" value={patientForm.cid} onChange={(e) => setPatientForm({...patientForm, cid: e.target.value})} className="w-full p-2.5 border rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 mb-1">เบอร์โทรศัพท์ติดต่อ *</label>
+                        <input type="tel" placeholder="08X-XXX-XXXX" value={patientForm.phone} onChange={(e) => setPatientForm({...patientForm, phone: e.target.value})} className="w-full p-2.5 border rounded-lg" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">ยืนยันการจองคิว</button>
+                </form>
+              </div>
+            )}
+
+            {/* BOOKING SUCCESS TICKET */}
+            {role === 'patient' && activeTab === 'booking-success' && recentCreatedBooking && (
+              <div className="max-w-md mx-auto bg-white rounded-2xl border-2 border-teal-600 p-6 text-center space-y-4 shadow-lg">
+                <h2 className="text-xl font-bold text-slate-800">จองคิวสำเร็จ!</h2>
+                <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-left space-y-2 text-xs">
+                  <p className="text-center text-3xl font-extrabold text-teal-800">{recentCreatedBooking.queueNo}</p>
+                  <p><strong>คลินิก:</strong> {recentCreatedBooking.clinicName}</p>
+                  <p><strong>ชื่อผู้ป่วย:</strong> {recentCreatedBooking.patientName}</p>
+                  <p><strong>บริการที่เลือก:</strong> {recentCreatedBooking.selectedServices.join(', ')}</p>
+                  <p><strong>วัน/เวลา:</strong> {recentCreatedBooking.date} ({recentCreatedBooking.slotTime})</p>
+                </div>
+                <button onClick={() => setActiveTab('home')} className="w-full bg-teal-600 text-white font-bold py-2.5 rounded-lg text-xs">กลับหน้าหลัก</button>
+              </div>
+            )}
+
+            {/* PATIENT PRIVACY LOOKUP (/my-bookings) */}
+            {role === 'patient' && activeTab === 'my-bookings' && (
+              <div className="max-w-2xl mx-auto space-y-5">
+                <div className="bg-white p-5 rounded-2xl border shadow-xs space-y-3">
+                  <h2 className="text-lg font-bold text-slate-800">🔍 ตรวจสอบและจัดการคิวนัดหมายของตนเอง</h2>
+                  <p className="text-xs text-slate-500">เพื่อความเป็นส่วนตัว (PDPA) กรุณาระบุเบอร์โทรศัพท์ หรือ หมายเลขคิว เพื่อค้นหาใบนัด</p>
+
+                  <form onSubmit={handlePatientSearch} className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="block font-bold mb-1">เบอร์โทรศัพท์ที่ใช้จอง</label>
+                      <input type="tel" placeholder="เช่น 0812345678" value={searchPhone} onChange={(e) => setSearchPhone(e.target.value)} className="w-full p-2.5 border rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="block font-bold mb-1">หรือ หมายเลขคิว (Booking ID)</label>
+                      <input type="text" placeholder="เช่น DEN-P001" value={searchBookingNo} onChange={(e) => setSearchBookingNo(e.target.value)} className="w-full p-2.5 border rounded-lg" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <button type="submit" className="w-full bg-teal-600 text-white font-bold py-2.5 rounded-lg">ค้นหาคิวนัดหมายของฉัน</button>
+                    </div>
+                  </form>
+                </div>
+
+                {searchedResults !== null && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800">ผลการค้นหา ({searchedResults.length} รายการ)</h3>
+                    {searchedResults.length === 0 ? (
+                      <div className="p-6 bg-white rounded-xl text-center text-xs text-slate-400 border">ไม่พบข้อมูลคิวนัดหมายตามที่ระบุ</div>
+                    ) : (
+                      searchedResults.map(booking => (
+                        <div key={booking.id} className="bg-white p-4 rounded-xl border flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-extrabold text-teal-800 text-base">{booking.queueNo}</span> {renderStatusBadge(booking.status)}
+                            <p className="font-bold text-slate-800 mt-1">{booking.clinicName}</p>
+                            <p className="text-slate-500">📅 {booking.date} ({booking.slotTime}) | 👤 {booking.patientName}</p>
+                            <p className="text-slate-500">🛠️ บริการ: {booking.selectedServices.join(', ')}</p>
+                          </div>
+                          {booking.status !== 'cancelled' && (
+                            <button onClick={() => handleUpdateStatus(booking.id, 'cancelled')} className="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg font-bold border border-rose-200">ยกเลิกคิว</button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* OFFICER VIEW: QUEUE TABLE, MANUAL QUEUE & MYPCU CSV IMPORT */}
+            {role === 'officer' && isOfficerAuthed && activeTab === 'officer-queue' && (
+              <div className="space-y-5">
+                
+                {/* MANUAL QUEUE ISSUANCE CARD */}
+                <div className="bg-white p-5 rounded-2xl border space-y-3 shadow-xs">
+                  <h3 className="font-bold text-slate-800 text-sm">➕ ออกคิวด้วยตนเองหน้างาน (Manual Queue Issue)</h3>
+                  <form onSubmit={handleManualQueueCreate} className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                    <select value={manualClinic} onChange={(e) => setManualClinic(e.target.value)} className="p-2 border rounded-lg">
+                      {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <input type="text" placeholder="ชื่อ-นามสกุล ผู้ป่วย *" value={manualName} onChange={(e) => setManualName(e.target.value)} className="p-2 border rounded-lg" required />
+                    <input type="tel" placeholder="เบอร์โทรศัพท์ *" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} className="p-2 border rounded-lg" required />
+                    <button type="submit" className="bg-teal-700 text-white font-bold py-2 rounded-lg">+ ออกคิวทันที</button>
+                  </form>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h2 className="font-bold text-slate-800 text-base">ตารางจัดการคิวประจำวัน & Report</h2>
+                    <p className="text-xs text-slate-500">จัดการคิวหน้างาน นำเข้าข้อมูล MyPCU และส่งออกรายงาน Excel</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-xl text-xs cursor-pointer">
+                      📥 นำเข้าคิว MyPCU (CSV)
+                      <input type="file" accept=".csv,.txt" onChange={handleMyPCUImport} className="hidden" />
+                    </label>
+                    <button onClick={exportQueueToCSV} className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-2 rounded-xl text-xs">📊 Export Queue (CSV)</button>
+                  </div>
+                </div>
+
+                {/* Filter */}
+                <div className="bg-slate-100 p-3 rounded-xl flex flex-wrap gap-2 text-xs">
+                  <input type="text" placeholder="ค้นหาชื่อ, เลขคิว, เบอร์..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="p-2 border rounded-lg bg-white flex-1 min-w-[150px]" />
+                  <select value={filterClinic} onChange={(e) => setFilterClinic(e.target.value)} className="p-2 border rounded-lg bg-white">
+                    <option value="all">ทุกคลินิก</option>
+                    {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                {/* Queue Table */}
+                <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b font-bold text-slate-600">
+                        <th className="p-3">เลขคิว</th>
+                        <th className="p-3">คลินิก</th>
+                        <th className="p-3">ชื่อผู้ป่วย</th>
+                        <th className="p-3">เบอร์โทร</th>
+                        <th className="p-3">บริการที่ต้องการ</th>
+                        <th className="p-3">สถานะ</th>
+                        <th className="p-3 text-center">จัดการคิว</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredBookings.map(b => (
+                        <tr key={b.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-extrabold text-teal-800">{b.queueNo}</td>
+                          <td className="p-3 font-medium">{b.clinicName}</td>
+                          <td className="p-3 font-bold">{b.patientName}</td>
+                          <td className="p-3">{b.phone}</td>
+                          <td className="p-3 text-slate-600">{(b.selectedServices || []).join(', ')}</td>
+                          <td className="p-3">{renderStatusBadge(b.status)}</td>
+                          <td className="p-3 text-center space-x-1 whitespace-nowrap">
+                            <button onClick={() => handleUpdateStatus(b.id, 'confirmed')} className="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold">ยืนยัน</button>
+                            <button onClick={() => handleUpdateStatus(b.id, 'checked-in')} className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold">ยื่นบัตร</button>
+                            <button onClick={() => handleUpdateStatus(b.id, 'completed')} className="bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">เสร็จสิ้น</button>
+                            <button onClick={() => handleDeleteBooking(b.id)} className="bg-rose-50 text-rose-700 px-2 py-1 rounded font-bold">ลบ</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* OFFICER / ADMIN: MATRIX CLINIC SETTINGS TABLE (MATCHING SCREENSHOT LAYOUT) */}
+            {((role === 'officer' && isOfficerAuthed) || (role === 'admin' && isAdminAuthed)) && activeTab === 'officer-clinic-matrix' && (
+              <div className="space-y-6">
+                <div className="bg-white p-4 rounded-xl border shadow-xs flex justify-between items-center">
+                  <div>
+                    <h2 className="font-bold text-slate-800 text-base">ตารางตั้งค่าคลินิก & โควต้าประจำวัน (Matrix Settings)</h2>
+                    <p className="text-xs text-slate-500">ปรับเปลี่ยนโควต้า AM/PM โหมดคิว และการเปิดจองออนไลน์</p>
+                  </div>
+                  <button onClick={exportQueueToCSV} className="bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs">📊 Export Settings (CSV)</button>
+                </div>
+
+                {/* SPREADSHEET MATRIX TABLE */}
+                <div className="bg-white rounded-xl border shadow-xs overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-[11px] font-mono">
+                    <thead>
+                      <tr className="bg-slate-200 border-b border-slate-300 text-slate-800 text-center font-bold">
+                        <th className="p-2 border-r text-left min-w-[120px]">day</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">mon</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">tue</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">wed</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">thu</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">fri</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">sat</th>
+                        <th colSpan="2" className="p-2 border-r bg-slate-100">sun</th>
+                        <th className="p-2 border-r">FIFO</th>
+                        <th className="p-2 border-r">Timeslot</th>
+                        <th className="p-2 border-r">online booking</th>
+                        <th className="p-2">show on main page</th>
+                      </tr>
+                      <tr className="bg-slate-100 border-b border-slate-300 text-center font-bold">
+                        <th className="p-1 border-r"></th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r">am</th><th className="p-1 border-r">pm</th>
+                        <th className="p-1 border-r"></th><th className="p-1 border-r"></th><th className="p-1 border-r"></th><th className="p-1"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {clinics.map(clinic => (
+                        <tr key={clinic.id} className="hover:bg-slate-50 text-center">
+                          <td className="p-2 font-bold text-left border-r text-slate-800 whitespace-nowrap">{clinic.name}</td>
+                          
+                          {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => (
+                            <React.Fragment key={day}>
+                              <td className="p-1 border-r bg-slate-50/50">
+                                <input type="number" value={clinic.quotas[day].am || ''} onChange={(e) => handleMatrixQuotaChange(clinic.id, day, 'am', e.target.value)} className="w-8 text-center p-0.5 border rounded" />
+                              </td>
+                              <td className="p-1 border-r bg-slate-50/50">
+                                <input type="number" value={clinic.quotas[day].pm || ''} onChange={(e) => handleMatrixQuotaChange(clinic.id, day, 'pm', e.target.value)} className="w-8 text-center p-0.5 border rounded" />
+                              </td>
+                            </React.Fragment>
+                          ))}
+
+                          <td className="p-2 border-r font-bold">
+                            <button onClick={() => handleMatrixToggle(clinic.id, 'fifo')} className={`px-2 py-0.5 rounded ${clinic.fifo ? 'bg-purple-600 text-white' : 'bg-slate-200'}`}>{clinic.fifo ? 'Y' : ''}</button>
+                          </td>
+                          <td className="p-2 border-r font-bold">
+                            <button onClick={() => handleMatrixToggle(clinic.id, 'timeslot')} className={`px-2 py-0.5 rounded ${clinic.timeslot ? 'bg-teal-600 text-white' : 'bg-slate-200'}`}>{clinic.timeslot ? 'Y' : ''}</button>
+                          </td>
+                          <td className="p-2 border-r font-bold">
+                            <button onClick={() => handleMatrixToggle(clinic.id, 'onlineBooking')} className={`px-2 py-0.5 rounded text-white ${clinic.onlineBooking ? 'bg-teal-600' : 'bg-slate-300 text-slate-600'}`}>
+                              {clinic.onlineBooking ? 'Y' : 'N'}
+                            </button>
+                          </td>
+                          <td className="p-2 font-bold">
+                            <button onClick={() => handleMatrixToggle(clinic.id, 'showMainPage')} className={`px-2 py-0.5 rounded text-white ${clinic.showMainPage ? 'bg-teal-600' : 'bg-slate-300 text-slate-600'}`}>
+                              {clinic.showMainPage ? 'Y' : 'N'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* CLINIC SERVICE CRUD MANAGEMENT */}
+                <div className="bg-white p-5 rounded-2xl border space-y-4">
+                  <h3 className="font-bold text-slate-800 text-sm">จัดการรายการบริการประจำคลินิก (Manage Clinic Services CRUD)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    {clinics.map(clinic => (
+                      <div key={clinic.id} className="p-3 bg-slate-50 rounded-xl border space-y-2">
+                        <div className="font-bold text-slate-800 border-b pb-1 flex justify-between">
+                          <span>{clinic.name}</span>
+                          <span className="text-slate-400 font-mono">{clinic.services.length} บริการ</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 py-1">
+                          {clinic.services.map(service => (
+                            <span key={service} className="bg-white border px-2 py-0.5 rounded-full flex items-center gap-1 font-medium text-slate-700">
+                              {service}
+                              <button onClick={() => handleDeleteService(clinic.id, service)} className="text-rose-500 font-bold hover:text-rose-700">✕</button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 pt-1">
+                          <input type="text" placeholder="+ เพิ่มบริการใหม่" value={editingServicesClinic === clinic.id ? newServiceInput : ''} onChange={(e) => { setEditingServicesClinic(clinic.id); setNewServiceInput(e.target.value); }} className="p-1.5 border rounded flex-1 text-xs" />
+                          <button onClick={() => handleAddService(clinic.id)} className="bg-teal-600 text-white font-bold px-3 py-1 rounded">เพิ่ม</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SYSTEM DATABASE AUDIT LOGS PAGE */}
+            {((role === 'officer' && isOfficerAuthed) || (role === 'admin' && isAdminAuthed)) && activeTab === 'officer-audit-log' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border flex justify-between items-center shadow-xs">
+                  <div>
+                    <h2 className="font-bold text-slate-800 text-base">ประวัติกิจกรรมและการแก้ไขระบบ (System Database Audit Log)</h2>
+                    <p className="text-xs text-slate-500">ติดตามทุกการเปลี่ยนสถานะ ลบ เพิ่ม หรือแก้ไขข้อมูลในระบบ</p>
+                  </div>
+                  <button onClick={exportAuditLogsToCSV} className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-xs">
+                    📜 Export Audit Logs (CSV)
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
+                  <table className="w-full text-left border-collapse text-xs font-mono">
+                    <thead>
+                      <tr className="bg-slate-50 border-b font-bold text-slate-600">
+                        <th className="p-3">Log ID</th>
+                        <th className="p-3">Timestamp</th>
+                        <th className="p-3">User/Role</th>
+                        <th className="p-3">Action</th>
+                        <th className="p-3">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {auditLogs.map(log => (
+                        <tr key={log.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-bold text-teal-800">{log.id}</td>
+                          <td className="p-3 text-slate-500">{log.time}</td>
+                          <td className="p-3 font-bold text-slate-700">{log.user}</td>
+                          <td className="p-3"><span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded font-bold">{log.action}</span></td>
+                          <td className="p-3 text-slate-800">{log.details}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* GEMINI 2.5 MOBILE AI ASSISTANT CHAT */}
+            {((role === 'officer' && isOfficerAuthed) || (role === 'admin' && isAdminAuthed)) && activeTab === 'officer-chat' && (
+              <div className="max-w-3xl mx-auto bg-white rounded-2xl border shadow-md flex flex-col h-[550px] overflow-hidden">
+                <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
+                  <h3 className="font-bold text-sm">🤖 Gemini 2.5 Flash Mobile Queue Assistant</h3>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">Mobile Active</span>
+                </div>
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+                  {chatMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${msg.sender === 'user' ? 'bg-teal-700 text-white' : 'bg-white border text-slate-800 shadow-xs'}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && <div className="text-slate-400 text-xs">Gemini กำลังวิเคราะห์ข้อมูลคิว...</div>}
+                  <div ref={chatEndRef} />
+                </div>
+                <form onSubmit={handleSendGeminiChat} className="p-3 bg-white border-t flex gap-2">
+                  <input type="text" placeholder="ถามข้อมูลคิว เช่น วันนี้ทันตกรรมมีกี่คิว?..." value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} className="flex-1 text-xs p-2.5 border rounded-xl" />
+                  <button type="submit" disabled={isChatLoading} className="bg-amber-500 text-slate-900 font-bold px-4 rounded-xl text-xs">ถาม AI</button>
+                </form>
+              </div>
+            )}
+
+          </main>
+
+          {/* EMERGENCY MODAL */}
+          {showEmergencyModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 border-2 border-rose-600 shadow-2xl">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-extrabold text-base text-rose-700">⚠️ คำเตือนอาการป่วยฉุกเฉินวิกฤต (Red Flags)</h3>
+                  <button onClick={() => setShowEmergencyModal(false)} className="text-slate-400 p-1">✕</button>
+                </div>
+                <div className="text-xs text-slate-700 space-y-2">
+                  <p className="font-bold text-rose-800">หากท่านมีอาการดังต่อไปนี้ **กรุณาอย่ารอคิวจองออนไลน์**:</p>
+                  <ul className="list-disc pl-5 font-medium space-y-1">
+                    <li>แน่นหน้าอก เจ็บหน้าอกรุนแรง ร้าวไปแขน/คาง</li>
+                    <li>หายใจหอบเหนื่อยรุนแรง หายใจติดขัด</li>
+                    <li>แขนขาอ่อนแรง ปากเบี้ยว พูดไม่ชัด ทันทีทันใด (Stroke)</li>
+                    <li>ไข้สูงซึมในเด็กเล็ก หรือชักเกร็ง</li>
+                  </ul>
+                </div>
+                <a href="tel:1669" className="w-full bg-rose-600 text-white font-extrabold py-3 rounded-xl text-xs flex justify-center">📞 โทร 1669 เรียกรถพยาบาลทันที</a>
+              </div>
+            </div>
+          )}
+
+          <footer className="bg-slate-900 text-slate-400 text-xs py-6 mt-10">
+            <div className="max-w-6xl mx-auto px-4 text-center sm:text-left">
+              <p className="font-bold text-slate-200">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง (รพ.สต.ยะรัง)</p>
+              <p className="text-[11px] text-slate-500">อำเภอยะรัง จังหวัดปัตตานี — PCC Queue & Matrix System</p>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
