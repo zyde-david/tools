@@ -1,249 +1,11 @@
 <!DOCTYPE html>
-<html lang="th" class="light">
+
+<html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="ระบบรายงาน อสม. ด่วน (VHV Voice Report) - เครื่องมือใน Zyde's Toolbox">
-  <title>ระบบรายงาน อสม. ด่วน (VHV Voice Report)</title>
-
-  <!-- ===== Design Tokens ===== -->
-  <style>
-    :root {
-      /* ---- Color: Brand ---- */
-      --tool-brand: #6366f1;
-      --tool-brand-hover: #4f46e5;
-      --tool-brand-light: #e0e7ff;
-      --tool-brand-text: #312e81;
-      --tool-brand-text-light: #a5b4fc;
-
-      /* ---- Color: Semantic ---- */
-      --tool-success: #22c55e;
-      --tool-success-hover: #16a34a;
-      --tool-warn: #f59e0b;
-      --tool-warn-hover: #d97706;
-      --tool-danger: #ef4444;
-      --tool-danger-hover: #dc2626;
-      --tool-info: #38bdf8;
-      --tool-info-hover: #0ea5e9;
-
-      /* ---- Color: Base (Dark Default) ---- */
-      --bg-base: #0f172a;
-      --bg-card: #1e293b;
-      --bg-elevated: #334155;
-      --bg-hover: #475569;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --border-color: #334155;
-      --border-focus: #6366f1;
-      --border-light: #475569;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-      --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
-      --radius-sm: 4px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --radius-xl: 9999px;
-      --transition: 150ms ease;
-      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-      --print-bg: #ffffff;
-      --print-text: #0f172a;
-      --nav-height: 56px;        /* Bottom bar height on mobile */
-      --nav-width: 260px;        /* Sidebar width on desktop */
-    }
-
-    /* ---- Light Mode Override ---- */
-    html.light {
-      --bg-base: #f8fafc;
-      --bg-card: #ffffff;
-      --bg-elevated: #f1f5f9;
-      --bg-hover: #e2e8f0;
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-muted: #94a3b8;
-      --border-color: #e2e8f0;
-      --border-focus: #6366f1;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
-      --print-bg: #ffffff;
-      --print-text: #0f172a;
-    }
-
-    /* ---- Base Reset ---- */
-    *, *::before, *::after { box-sizing: border-box; }
-    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    body {
-      margin: 0;
-      font-family: var(--font-sans);
-      background: var(--bg-base);
-      color: var(--text-primary);
-      line-height: 1.6;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    a { color: var(--tool-brand); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    img { max-width: 100%; height: auto; display: block; }
-
-    /* ---- Skip Link ---- */
-    .skip-link {
-      position: absolute; top: -100%; left: 1rem;
-      background: var(--tool-brand); color: white;
-      padding: 0.5rem 1rem; border-radius: var(--radius-md);
-      z-index: var(--z-toast);
-      transition: top var(--transition);
-    }
-    .skip-link:focus { top: 1rem; }
-
-    /* ============================================================
-       RESPONSIVE NAVIGATION
-       Mobile: Fixed bottom bar (position: fixed, bottom: 0)
-       Desktop (>= 768px): Fixed left sidebar (position: fixed, left: 0, height: 100vh)
-       ============================================================ */
-    .tools-nav {
-      position: fixed;
-      z-index: var(--z-nav);
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem;
-      backdrop-filter: blur(8px);
-      /* Mobile: bottom bar */
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: auto;
-      height: var(--nav-height);
-      justify-content: space-around;
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      border-bottom: none;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .tools-nav .nav-home,
-    .tools-nav .nav-link {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      color: var(--text-secondary);
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-md);
-      font-size: 1.25rem;
-      min-width: 44px;
-      min-height: 44px;
-      transition: all var(--transition);
-      flex: 1;
-    }
-    .tools-nav .nav-home span,
-    .tools-nav .nav-link span {
-      display: none; /* Hide labels on mobile bottom bar */
-      font-size: 0.625rem;
-      margin-top: 0.125rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .tools-nav .nav-home:hover,
-    .tools-nav .nav-link:hover {
-      color: var(--text-primary);
-      background: var(--bg-elevated);
-      transform: scale(1.1);
-      text-decoration: none;
-    }
-    .tools-nav .nav-link.active {
-      color: var(--tool-brand);
-      background: var(--tool-brand-light);
-    }
-
-    /* Desktop: Left Sidebar */
-    @media (min-width: 768px) {
-      .tools-nav {
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: auto;
-        width: var(--nav-width);
-        height: 100vh;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding: 1rem 0.5rem;
-        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-        border-right: 1px solid var(--border-color);
-        border-bottom: none;
-        box-shadow: var(--shadow-md);
-        overflow-y: auto;
-        gap: 0.25rem;
-      }
-      .tools-nav .nav-home,
-      .tools-nav .nav-link {
-        flex-direction: row;
-        gap: 0.75rem;
-        justify-content: flex-start;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-        min-width: auto;
-        min-height: auto;
-        width: 100%;
-        border-radius: var(--radius-md);
-      }
-      .tools-nav .nav-home span,
-      .tools-nav .nav-link span {
-        display: inline;
-      }
-      .tools-nav .nav-home:hover,
-      .tools-nav .nav-link:hover {
-        transform: none;
-        background: var(--bg-elevated);
-      }
-      .tools-nav .nav-link.active {
-        background: var(--tool-brand-light);
-        color: var(--tool-brand-text);
-      }
-      .tools-nav .nav-sep {
-        display: none;
-      }
-      .tools-nav .nav-title {
-        display: none;
-      }
-    }
-
-    /* Adjust main content for nav */
-    .tool-main {
-      flex: 1;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      padding-bottom: calc(var(--nav-height) + 1.5rem); /* Mobile: space for bottom bar */
-    }
-    @media (min-width: 768px) {
-      .tool-main {
-        margin-left: var(--nav-width);
-        max-width: calc(1200px - var(--nav-width));
-        padding-bottom: 1.5rem;
-      }
-    }
-    @media (max-width: 640px) {
-      .tool-main { padding: 1rem; padding-bottom: calc(var(--nav-height) + 1rem); }
-    }
-
-    /* ---- Footer ---- */
-    .tool-footer { border-top: 1px solid var(--border-color); }
-
-    /* ---- Toast Container ---- */
-    .toast-container { position: fixed; bottom: calc(var(--nav-height) + 1.5rem); right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
-    @media (min-width: 768px) {
-      .toast-container { bottom: 1.5rem; right: calc(var(--nav-width) + 1.5rem); }
-    }
-
-    /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ระบบรายงาน อสม. ด่วน (VHV Voice Report)</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
@@ -315,6 +77,7 @@
             }
         }
     </style>
+<!-- Firebase Modular SDK -->
 <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -362,46 +125,191 @@
             console.warn("Firebase fallback:", e);
         }
     </script>
-
-    <!-- ===== Auth Guard (Runs Before Body Render) ===== -->
-    <script>
-      (function() {
-        const authKey = 'zyde_auth';
-        const loginUrl = 'index.html';
-        if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
-          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = loginUrl + '?return=' + returnUrl;
-        }
-      })();
-    </script>
-</head>
-<body>
-
-  <!-- Skip Link -->
-  <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
-
-  <!-- ===== Responsive Navigation ===== -->
-  <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
-    <a href="index.html" class="nav-home" title="หน้าหลัก" aria-label="หน้าหลัก">🏠<span>หน้าหลัก</span></a>
-        <a href="envelope-printer.html" class="nav-link" title="Envelope Printer">✉️</a>
-    <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
-    <a href="map-epidemic.html" class="nav-link" title="Epidemiology Map">📊</a>
-    <a href="base64-decoder.html" class="nav-link" title="Base64 Decoder">🦫</a>
-    <a href="thai-recovery.html" class="nav-link" title="Thai Recovery">🔤</a>
-    <a href="ink-planner.html" class="nav-link" title="Ink Planner">🖨️</a>
-    <a href="inventory-analytics.html" class="nav-link" title="Inventory">📦</a>
-    <a href="interactive-certificate-builder.html" class="nav-link" title="Certificate Builder">🏆</a>
-    <a href="mypcu-sql-simulator.html" class="nav-link" title="myPCU SQL Simulator">🗄️</a>
-    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="myPCU AI SQL">🧠</a>
-    <a href="health-gis-app.html" class="nav-link" title="Health GIS">🏥</a>
-    <a href="gps-location-tracker.html" class="nav-link" title="GPS Tracker">📍</a>
-    <a href="vhv-quick-report.html" class="nav-link active" title="VHV Voice Report">🎤</a>
-    <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
-  </nav>
-
-  <!-- ===== Main Content ===== -->
-  <main id="main-content" class="tool-main" role="main">
-    <style>
+<style>
+/* ============================================================
+   RESPONSIVE NAVIGATION (Injected)
+   Mobile: Fixed bottom bar | Desktop: Fixed left sidebar
+   ============================================================ */
+:root {
+  --nav-height: 56px;
+  --nav-width: 260px;
+  --tool-brand: #6366f1;
+  --tool-brand-hover: #4f46e5;
+  --tool-brand-light: #e0e7ff;
+  --tool-brand-text: #312e81;
+  --bg-base: #0f172a;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
+  --bg-hover: #475569;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --border-focus: #6366f1;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition: 150ms ease;
+  --z-nav: 1000;
+}
+html.light {
+  --bg-base: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-hover: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+}
+.tools-nav {
+  position: fixed;
+  z-index: var(--z-nav);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  backdrop-filter: blur(8px);
+  /* Mobile: bottom bar */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: auto;
+  height: var(--nav-height);
+  justify-content: space-around;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-bottom: none;
+  box-shadow: var(--shadow-lg);
+}
+.tools-nav .nav-home,
+.tools-nav .nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  font-size: 1.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  transition: all var(--transition);
+  flex: 1;
+}
+.tools-nav .nav-home span,
+.tools-nav .nav-link span {
+  display: none;
+  font-size: 0.625rem;
+  margin-top: 0.125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tools-nav .nav-home:hover,
+.tools-nav .nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  transform: scale(1.1);
+  text-decoration: none;
+}
+.tools-nav .nav-link.active {
+  color: var(--tool-brand);
+  background: var(--tool-brand-light);
+}
+@media (min-width: 768px) {
+  .tools-nav {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: var(--nav-width);
+    height: 100vh;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 1rem 0.5rem;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    border-right: 1px solid var(--border-color);
+    border-bottom: none;
+    box-shadow: var(--shadow-md);
+    overflow-y: auto;
+    gap: 0.25rem;
+  }
+  .tools-nav .nav-home,
+  .tools-nav .nav-link {
+    flex-direction: row;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    min-width: auto;
+    min-height: auto;
+    width: 100%;
+    border-radius: var(--radius-md);
+  }
+  .tools-nav .nav-home span,
+  .tools-nav .nav-link span {
+    display: inline;
+  }
+  .tools-nav .nav-home:hover,
+  .tools-nav .nav-link:hover {
+    transform: none;
+    background: var(--bg-elevated);
+  }
+  .tools-nav .nav-link.active {
+    background: var(--tool-brand-light);
+    color: var(--tool-brand-text);
+  }
+}
+@media (min-width: 481px) and (max-width: 767px) {
+  .tools-nav { gap: 0.5rem; padding: 0.25rem 1rem; }
+  .tools-nav .nav-home,
+  .tools-nav .nav-link { font-size: 1.5rem; padding: 0.5rem 0.75rem; }
+}
+</style><style>
+/* Ensure content not hidden behind bottom nav on mobile */
+@media (max-width: 767px) {
+  body { padding-bottom: calc(var(--nav-height) + 1rem); }
+  main { padding-bottom: calc(var(--nav-height) + 1rem); }
+  .container, .tool-main, #main-content, [role="main"] {
+    padding-bottom: calc(var(--nav-height) + 1rem) !important;
+  }
+}
+@media (min-width: 768px) {
+  body { padding-left: var(--nav-width); }
+  main, .container, .tool-main, #main-content, [role="main"] {
+    margin-left: var(--nav-width);
+    max-width: calc(100% - var(--nav-width));
+  }
+}
+</style></head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-28"><!-- ===== Responsive Navigation ===== -->
+<nav aria-label="เครื่องมือนำทาง" class="tools-nav" role="navigation">
+<a aria-label="หน้าหลัก" class="nav-home" href="index.html" title="หน้าหลัก">🏠<span>หน้าหลัก</span></a>
+<a class="nav-link" href="envelope-printer.html" title="Envelope Printer">✉️<span>Envelope Printer</span></a>
+<a class="nav-link" href="autocorrect.html" title="AHK AutoCorrect">⌨️<span>AHK AutoCorrect</span></a>
+<a class="nav-link" href="map-epidemic.html" title="Epidemiology Map">📊<span>Epidemiology Map</span></a>
+<a class="nav-link" href="base64-decoder.html" title="Base64 Decoder">🦫<span>Base64 Decoder</span></a>
+<a class="nav-link" href="thai-recovery.html" title="Thai Recovery">🔤<span>Thai Recovery</span></a>
+<a class="nav-link" href="ink-planner.html" title="Ink Planner">🖨️<span>Ink Planner</span></a>
+<a class="nav-link" href="inventory-analytics.html" title="Inventory">📦<span>Inventory</span></a>
+<a class="nav-link" href="interactive-certificate-builder.html" title="Certificate Builder">🏆<span>Certificate Builder</span></a>
+<a class="nav-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator">🗄️<span>myPCU SQL Simulator</span></a>
+<a class="nav-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL">🧠<span>myPCU AI SQL</span></a>
+<a class="nav-link" href="health-gis-app.html" title="Health GIS">🏥<span>Health GIS</span></a>
+<a class="nav-link" href="gps-location-tracker.html" title="GPS Tracker">📍<span>GPS Tracker</span></a>
+<a class="nav-link active" href="vhv-quick-report.html" title="VHV Voice Report">🎤<span>VHV Voice Report</span></a>
+<a class="nav-link" href="yarang-pcc-audit.html" title="Yarang PCC">🏥<span>Yarang PCC</span></a>
+</nav>
+<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<style>
 .tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
 .tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
 .tools-nav .nav-home:hover{background:#334155;}
@@ -413,7 +321,7 @@
 @media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
 </style>
 
- Top Header (Ultra Clean) 
+<!-- Top Header (Ultra Clean) -->
 <header class="bg-vhv-700 text-white shadow-md sticky top-0 z-30">
 <div class="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
 <div class="flex items-center space-x-2">
@@ -623,7 +531,7 @@
 </div>
 </div>
 </main>
- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR 
+<!-- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR -->
 <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl px-2 py-1 max-w-2xl mx-auto flex items-center justify-around h-16">
 <!-- Hidden Inputs for Combined Media -->
 <input accept="image/*,video/*" class="hidden" id="combinedMediaInput" multiple="" onchange="handleCombinedMediaSelect(event)" type="file"/>
@@ -666,7 +574,7 @@
 <span class="text-[9px] font-bold mt-0.5">โปรไฟล์</span>
 </button>
 </nav>
- Unified Modal: Profile, Google Account & Export Suite 
+<!-- Unified Modal: Profile, Google Account & Export Suite -->
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="profileModal">
 <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
 <div class="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -752,7 +660,7 @@
             </button>
 </div>
 </div>
- Officer Auth Passcode Modal 
+<!-- Officer Auth Passcode Modal -->
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="officerAuthModal">
 <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-100 text-center">
 <h3 class="font-bold text-base text-slate-800 mb-1">สำหรับเจ้าหน้าที่ รพ.สต.</h3>
@@ -766,7 +674,7 @@
 </form>
 </div>
 </div>
- Officer Response Modal 
+<!-- Officer Response Modal -->
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="officerModal">
 <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100">
 <h3 class="font-bold text-base text-slate-800 mb-3">🏥 อัปเดตสถานะการช่วยเหลือ</h3>
@@ -792,7 +700,7 @@
 </form>
 </div>
 </div>
- Lightbox Media Viewer Modal 
+<!-- Lightbox Media Viewer Modal -->
 <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" id="mediaLightboxModal" onclick="closeMediaModal()">
 <div class="relative max-w-2xl max-h-[85vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
 <button class="absolute -top-9 right-0 text-white text-2xl font-bold p-1" onclick="closeMediaModal()">
@@ -801,7 +709,7 @@
 <div class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl bg-black" id="lightboxContent"></div>
 </div>
 </div>
- Toast Banner 
+<!-- Toast Banner -->
 <div class="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4" id="toast">
 <i class="fa-solid fa-circle-check text-emerald-400" id="toastIcon"></i>
 <span id="toastMsg">บันทึกเรียบร้อย</span>
@@ -2149,66 +2057,17 @@
             }, 3000);
         }
     </script>
-  </main>
 
-  <!-- ===== Footer (Optional) ===== -->
-  <footer class="tool-footer" style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.75rem; border-top:1px solid var(--border-color); margin-top:auto;">
-    Zyde's Toolbox | รพ.สต.ยะรัง
-  </footer>
-
-  <!-- ===== Toast Container (Global) ===== -->
-  <div id="toastContainer" class="toast-container"></div>
-
-  <!-- ===== Global Scripts ===== -->
-  <script>
-    // ===== Toast System =====
-    window.toast = (message, type = 'info', duration = 4000) => {
-      const container = document.getElementById('toastContainer');
-      const el = document.createElement('div');
-      el.className = `alert alert-${type}`;
-      el.style.cssText = 'pointer-events:auto; min-width:240px; max-width:360px; box-shadow:var(--shadow-lg); animation:slideIn 0.3s ease;';
-      el.textContent = message;
-      container.appendChild(el);
-      setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
-    };
-    // Toast animations
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
-      @keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
-    `;
-    document.head.appendChild(style);
-
-    // ===== Modal Helpers =====
-    window.openModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('open'); };
-    window.closeModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('open'); };
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
-    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
-
-    // ===== Auth Helpers =====
-    window.requireAuth = () => {
-      if (!sessionStorage.getItem('zyde_auth')) {
-        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = 'index.html?return=' + returnUrl;
-        return false;
-      }
-      return true;
-    };
-    window.logout = () => { sessionStorage.removeItem('zyde_auth'); window.location.href = 'index.html'; };
-
-    // ===== Nav Active State =====
-    (function() {
-      const current = window.location.pathname.split('/').pop() || 'index.html';
-      document.querySelectorAll('.nav-link').forEach(a => {
-        const href = a.getAttribute('href');
-        if (href === current || (current === 'index.html' && href === 'index.html')) {
-          a.classList.add('active');
-        }
-      });
-    })();
-  </script>
-
-  <!-- ===== CHILD: INJECT PAGE-SPECIFIC SCRIPTS HERE ===== -->
-  
-</body>
+<!-- ===== Nav Active State ===== -->
+<script>
+(function() {
+  const current = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href === current || (current === 'index.html' && href === 'index.html')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script></body>
 </html>
