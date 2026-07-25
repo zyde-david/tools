@@ -2,7 +2,7 @@
 <html lang="th" class="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="ระบบจัดเก็บพิกัด อสม. (Health GIS Standalone) - เครื่องมือใน Zyde's Toolbox">
   <title>ระบบจัดเก็บพิกัด อสม. (Health GIS Standalone)</title>
 
@@ -49,13 +49,8 @@
       --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
       --print-bg: #ffffff;
       --print-text: #0f172a;
-      --nav-height: 48px;
-
-      /* ---- Z-Index Scale ---- */
-      --z-nav: 100;
-      --z-sticky: 200;
-      --z-modal: 1000;
-      --z-toast: 2000;
+      --nav-height: 56px;        /* Bottom bar height on mobile */
+      --nav-width: 260px;        /* Sidebar width on desktop */
     }
 
     /* ---- Light Mode Override ---- */
@@ -103,49 +98,149 @@
     }
     .skip-link:focus { top: 1rem; }
 
-    /* ---- Top Navigation Bar ---- */
+    /* ============================================================
+       RESPONSIVE NAVIGATION
+       Mobile: Fixed bottom bar (position: fixed, bottom: 0)
+       Desktop (>= 768px): Fixed left sidebar (position: fixed, left: 0, height: 100vh)
+       ============================================================ */
     .tools-nav {
-      position: sticky; top: 0; z-index: var(--z-nav);
-      background: var(--bg-card); border-bottom: 1px solid var(--border-color);
-      height: var(--nav-height);
-      display: flex; align-items: center; gap: 0.5rem;
-      padding: 0 1rem; flex-wrap: wrap;
+      position: fixed;
+      z-index: var(--z-nav);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem;
       backdrop-filter: blur(8px);
-    }
-    .tools-nav .nav-home {
-      font-size: 1.25rem; text-decoration: none;
-      padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
-      color: var(--text-primary); transition: background var(--transition);
-    }
-    .tools-nav .nav-home:hover { background: var(--bg-elevated); text-decoration: none; }
-    .tools-nav .nav-sep { color: var(--border-color); font-size: 0.75rem; padding: 0 0.25rem; }
-    .tools-nav .nav-link {
-      font-size: 1.125rem; text-decoration: none;
-      padding: 0.25rem 0.375rem; border-radius: var(--radius-md);
-      opacity: 0.55; transition: all var(--transition);
-    }
-    .tools-nav .nav-link:hover { opacity: 1; background: var(--bg-elevated); transform: scale(1.15); text-decoration: none; }
-    .tools-nav .nav-link.active { opacity: 1; background: var(--tool-brand-light); }
-    .tools-nav .nav-title {
-      margin-left: auto; font-size: 0.75rem; color: var(--text-muted);
-      font-weight: 600; white-space: nowrap; overflow: hidden;
-      text-overflow: ellipsis; max-width: 140px;
-    }
-    @media (max-width: 480px) {
-      .tools-nav { gap: 0.25rem; padding: 0 0.5rem; height: auto; min-height: var(--nav-height); }
-      .tools-nav .nav-link { font-size: 1rem; padding: 0.125rem 0.25rem; }
-      .tools-nav .nav-title { font-size: 0.625rem; max-width: 80px; }
+      /* Mobile: bottom bar */
+      bottom: 0;
+      left: 0;
+      right: 0;
+      top: auto;
+      height: var(--nav-height);
+      justify-content: space-around;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border-bottom: none;
+      box-shadow: var(--shadow-lg);
     }
 
-    /* ---- Main Content Area ---- */
-    .tool-main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; margin: 0 auto; }
-    @media (max-width: 640px) { .tool-main { padding: 1rem; } }
+    .tools-nav .nav-home,
+    .tools-nav .nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: var(--text-secondary);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-md);
+      font-size: 1.25rem;
+      min-width: 44px;
+      min-height: 44px;
+      transition: all var(--transition);
+      flex: 1;
+    }
+    .tools-nav .nav-home span,
+    .tools-nav .nav-link span {
+      display: none; /* Hide labels on mobile bottom bar */
+      font-size: 0.625rem;
+      margin-top: 0.125rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .tools-nav .nav-home:hover,
+    .tools-nav .nav-link:hover {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+      transform: scale(1.1);
+      text-decoration: none;
+    }
+    .tools-nav .nav-link.active {
+      color: var(--tool-brand);
+      background: var(--tool-brand-light);
+    }
+
+    /* Desktop: Left Sidebar */
+    @media (min-width: 768px) {
+      .tools-nav {
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: auto;
+        width: var(--nav-width);
+        height: 100vh;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 1rem 0.5rem;
+        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+        box-shadow: var(--shadow-md);
+        overflow-y: auto;
+        gap: 0.25rem;
+      }
+      .tools-nav .nav-home,
+      .tools-nav .nav-link {
+        flex-direction: row;
+        gap: 0.75rem;
+        justify-content: flex-start;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        min-width: auto;
+        min-height: auto;
+        width: 100%;
+        border-radius: var(--radius-md);
+      }
+      .tools-nav .nav-home span,
+      .tools-nav .nav-link span {
+        display: inline;
+      }
+      .tools-nav .nav-home:hover,
+      .tools-nav .nav-link:hover {
+        transform: none;
+        background: var(--bg-elevated);
+      }
+      .tools-nav .nav-link.active {
+        background: var(--tool-brand-light);
+        color: var(--tool-brand-text);
+      }
+      .tools-nav .nav-sep {
+        display: none;
+      }
+      .tools-nav .nav-title {
+        display: none;
+      }
+    }
+
+    /* Adjust main content for nav */
+    .tool-main {
+      flex: 1;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      padding-bottom: calc(var(--nav-height) + 1.5rem); /* Mobile: space for bottom bar */
+    }
+    @media (min-width: 768px) {
+      .tool-main {
+        margin-left: var(--nav-width);
+        max-width: calc(1200px - var(--nav-width));
+        padding-bottom: 1.5rem;
+      }
+    }
+    @media (max-width: 640px) {
+      .tool-main { padding: 1rem; padding-bottom: calc(var(--nav-height) + 1rem); }
+    }
 
     /* ---- Footer ---- */
     .tool-footer { border-top: 1px solid var(--border-color); }
 
     /* ---- Toast Container ---- */
-    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+    .toast-container { position: fixed; bottom: calc(var(--nav-height) + 1.5rem); right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+    @media (min-width: 768px) {
+      .toast-container { bottom: 1.5rem; right: calc(var(--nav-width) + 1.5rem); }
+    }
 
     /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
     <link href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" rel="apple-touch-icon"/>
@@ -172,9 +267,7 @@
       (function() {
         const authKey = 'zyde_auth';
         const loginUrl = 'index.html';
-        // Allow child pages to opt-out by setting window.SKIP_AUTH = true before this script runs
         if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
-          // Preserve return URL
           const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
           window.location.href = loginUrl + '?return=' + returnUrl;
         }
@@ -186,10 +279,9 @@
   <!-- Skip Link -->
   <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
 
-  <!-- ===== Top Navigation Bar ===== -->
+  <!-- ===== Responsive Navigation ===== -->
   <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
-    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
-    <span class="nav-sep" aria-hidden="true">|</span>
+    <a href="index.html" class="nav-home" title="หน้าหลัก" aria-label="หน้าหลัก">🏠<span>หน้าหลัก</span></a>
         <a href="index.html" class="nav-link" title="หน้าหลัก">🏠</a>
     <a href="envelope-printer.html" class="nav-link" title="Envelope Printer">✉️</a>
     <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
@@ -205,8 +297,6 @@
     <a href="gps-location-tracker.html" class="nav-link" title="GPS Tracker">📍</a>
     <a href="vhv-quick-report.html" class="nav-link" title="VHV Voice Report">🎤</a>
     <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
-    <span class="nav-sep" aria-hidden="true">|</span>
-    <span class="nav-title" id="navTitle">ระบบจัดเก็บพิกัด อสม. (Health GIS Standalone)</span>
   </nav>
 
   <!-- ===== Main Content ===== -->
