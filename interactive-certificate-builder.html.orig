@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-
 <html lang="th">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ระบบสร้างเกียรติบัตรวิชาชีพแบบกำหนดส่วนอิสระ (Interactive Certificate Builder)</title>
-<!-- Tailwind CSS CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Google Fonts for Thai, English, Arabic, and Jawi Script -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Charm:wght@400;700&amp;family=Cinzel:wght@400;600;700&amp;family=Great+Vibes&amp;family=Kanit:ital,wght@0,300;0,400;0,500;0,600;1,300&amp;family=Noto+Naskh+Arabic:wght@400;600;700&amp;family=Playfair+Display:ital,wght@0,400;0,600;1,400&amp;family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Scheherazade+New:wght@400;700&amp;display=swap" rel="stylesheet"/>
-<!-- SheetJS CDN for reading Excel (.xlsx, .csv) files -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสร้างเกียรติบัตรวิชาชีพแบบกำหนดส่วนอิสระ (Interactive Certificate Builder)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Thai, English, Arabic, and Jawi Script -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Charm:wght@400;700&family=Cinzel:wght@400;600;700&family=Great+Vibes&family=Kanit:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Noto+Naskh+Arabic:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+    <!-- SheetJS CDN for reading Excel (.xlsx, .csv) files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
         body {
             font-family: 'Sarabun', 'TH Sarabun PSK', sans-serif;
             background-color: #0b0f19;
@@ -154,760 +154,339 @@
             }
         }
     </style>
-<style>/* ============================================================
-   RESPONSIVE NAVIGATION (Injected)
-   Mobile: Fixed bottom bar (Search, Home, Note)
-   Desktop: Collapsible sidebar (collapse on idle, expand on hover)
-   Search drawer: slide-up with search bar at bottom (sticky)
-   ============================================================ */
-:root {
-  --nav-height: 64px;
-  --nav-width: 260px;
-  --nav-collapsed: 56px;
-  --tool-brand: #6366f1;
-  --tool-brand-hover: #4f46e5;
-  --tool-brand-light: #e0e7ff;
-  --tool-brand-text: #312e81;
-  --bg-base: #0f172a;
-  --bg-card: #1e293b;
-  --bg-elevated: #334155;
-  --bg-hover: #475569;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --border-focus: #6366f1;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --transition: 150ms ease;
-  --z-nav: 1000;
-}
-html.light {
-  --bg-base: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-elevated: #f1f5f9;
-  --bg-hover: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
-}
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
 
-/* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
-.tools-fab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: var(--z-nav);
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  height: var(--nav-height);
-  padding: 0.25rem 0.5rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-}
-.tools-fab .fab-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: var(--text-secondary);
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-md);
-  font-size: 1.25rem;
-  min-width: 56px;
-  min-height: 48px;
-  transition: all var(--transition);
-  flex: 1;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  position: relative;
-}
-.tools-fab .fab-btn span {
-  font-size: 0.625rem;
-  margin-top: 0.125rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.tools-fab .fab-btn:hover,
-.tools-fab .fab-btn:active {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.tools-fab .fab-home {
-  color: var(--tool-brand);
-  font-size: 1.5rem;
-  flex: 1.3;
-  background: var(--tool-brand-light);
-  border-radius: 40px;
-  margin: 0 0.5rem;
-  min-height: 44px;
-}
-.tools-fab .fab-home:hover {
-  color: var(--tool-brand-text);
-  background: var(--tool-brand);
-}
-
-/* ===== SEARCH DRAWER (slide-up, search at bottom) ===== */
-.tools-drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: calc(var(--z-nav) + 1);
-  backdrop-filter: blur(4px);
-}
-.tools-drawer-overlay.open {
-  display: block;
-}
-.tools-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: calc(var(--z-nav) + 2);
-  background: var(--bg-card);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  max-height: 75vh;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
-}
-.tools-drawer.open {
-  transform: translateY(0);
-}
-.tools-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-.tools-drawer-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-.tools-drawer-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-elevated);
-  border: none;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.1rem;
-}
-.tools-drawer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 1rem;
-  overflow-y: auto;
-  flex: 1;
-}
-.tools-drawer-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.25rem;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  color: var(--text-secondary);
-  transition: all var(--transition);
-}
-.tools-drawer-item:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-.tools-drawer-item.active {
-  background: var(--tool-brand-light);
-  color: var(--tool-brand-text);
-}
-.tools-drawer-item .icon {
-  font-size: 1.5rem;
-}
-.tools-drawer-item .label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-/* Search bar at bottom of drawer - sticky */
-.tools-drawer-search-wrap {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  background: var(--bg-card);
-  padding: 0.75rem;
-  border-top: 1px solid var(--border-color);
-  z-index: 2;
-}
-.tools-drawer-search-wrap input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-size: 1rem;
-  outline: none;
-  box-sizing: border-box;
-}
-.tools-drawer-search-wrap input:focus {
-  border-color: var(--border-focus);
-}
-.tools-drawer-search-wrap input::placeholder {
-  color: var(--text-muted);
-}
-
-/* No results */
-.tools-drawer-no-results {
-  display: none;
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-/* ===== DESKTOP SIDEBAR (collapsible) ===== */
-@media (min-width: 768px) {
-  .tools-fab { display: none; }
-
-  .tools-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: var(--z-nav);
-    background: var(--bg-card);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-sm);
-    width: var(--nav-collapsed);
-    transition: width 0.2s ease;
-    overflow: hidden;
-  }
-  .tools-sidebar:hover {
-    width: var(--nav-width);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* Header / brand */
-  .tools-sidebar-header {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    min-height: 52px;
-  }
-  .tools-sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 700;
-    font-size: 1rem;
-  }
-  .tools-sidebar-brand .brand-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-brand .brand-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-brand .brand-text {
-    opacity: 1;
-  }
-
-  /* Search in sidebar */
-  .tools-sidebar-search {
-    width: 100%;
-    background: var(--bg-elevated);
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 0.5rem;
-    color: var(--text-primary);
-    font-size: 0.825rem;
-    outline: none;
-    box-sizing: border-box;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-search {
-    opacity: 1;
-  }
-  .tools-sidebar-search:focus {
-    border-color: var(--border-focus);
-  }
-  .tools-sidebar-search::placeholder {
-    color: var(--text-muted);
-  }
-
-  /* Nav links */
-  .tools-sidebar-nav {
-    flex: 1;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    overflow-y: auto;
-  }
-  .tools-sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.625rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    transition: all var(--transition);
-    white-space: nowrap;
-    min-height: 40px;
-  }
-  .tools-sidebar-link:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-  }
-  .tools-sidebar-link.active {
-    background: var(--tool-brand-light);
-    color: var(--tool-brand-text);
-    font-weight: 600;
-  }
-  .tools-sidebar-link .icon {
-    font-size: 1.2rem;
-    min-width: 24px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-link .link-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tools-sidebar:hover .tools-sidebar-link .link-text {
-    opacity: 1;
-  }
-
-  /* Scrollbar styling */
-  .tools-sidebar-nav::-webkit-scrollbar {
-    width: 4px;
-  }
-  .tools-sidebar-nav::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 2px;
-  }
-
-  /* Content offset - auto adjusts with sidebar width */
-  body {
-    padding-left: var(--nav-collapsed);
-    transition: padding-left 0.2s ease;
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-}
-</style><style>
-/* Ensure content not hidden behind bottom nav on mobile */
-@media (max-width: 767px) {
-  body {padding-bottom: calc(var(--nav-height) + 1rem); }
-  main {padding-bottom: calc(var(--nav-height) + 1rem); }
-  .container, .tool-main, #main-content, [role="main"] {
-    padding-bottom: calc(var(--nav-height) + 1rem) !important;
-  }
-  /* Hide page's own bottom bar on mobile - we provide the nav */
-  [data-has-own-bottom-bar] nav.fixed.bottom-0,
-  [data-has-own-bottom-bar] nav[class*="bottom-0"],
-  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
-    display: none !important;
-  }
-}
-@media (min-width: 768px) {
-  body {padding-left: var(--nav-collapsed); }
-  main, .container, .tool-main, #main-content, [role="main"] {
-    margin-left: var(--nav-collapsed);
-    max-width: calc(100% - var(--nav-collapsed));
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-  body:has(.tools-sidebar:hover) main,
-  body:has(.tools-sidebar:hover) .container,
-  body:has(.tools-sidebar:hover) .tool-main,
-  body:has(.tools-sidebar:hover) #main-content,
-  body:has(.tools-sidebar:hover) [role="main"] {
-    margin-left: var(--nav-width);
-    max-width: calc(100% - var(--nav-width));
-  }
-}
-</style></head>
-<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100"><!-- ===== Responsive Navigation ===== -->
-<!-- Mobile: 3-button bottom bar -->
-<nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
-<button aria-label="ค้นหา" class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา">
-    🔍<span>ค้นหา</span>
-</button>
-<a aria-label="หน้าหลัก" class="fab-btn fab-home" href="index.html" title="หน้าหลัก">
-    🏠<span>หน้าหลัก</span>
-</a>
-<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
-    📝<span>รายงานด่วน</span>
-</a>
-</nav>
-<!-- Search Drawer (slide-up) -->
-<div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
-<div class="tools-drawer" id="toolsDrawer">
-<div class="tools-drawer-header">
-<h3>🔍 ค้นหาเครื่องมือ</h3>
-<button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link active" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🏆 Certificate Builder</span>
 </div>
-<div class="tools-drawer-grid" id="toolsDrawerGrid">
-<a class="tools-drawer-item" href="envelope-printer.html"><span class="icon">✉️</span><span class="label">Envelope Printer</span></a>
-<a class="tools-drawer-item" href="autocorrect.html"><span class="icon">⌨️</span><span class="label">AHK AutoCorrect</span></a>
-<a class="tools-drawer-item" href="map-epidemic.html"><span class="icon">📊</span><span class="label">Epidemiology Map</span></a>
-<a class="tools-drawer-item" href="base64-decoder.html"><span class="icon">🦫</span><span class="label">Base64 Decoder</span></a>
-<a class="tools-drawer-item" href="thai-recovery.html"><span class="icon">🔤</span><span class="label">Thai Recovery</span></a>
-<a class="tools-drawer-item" href="ink-planner.html"><span class="icon">🖨️</span><span class="label">Ink Planner</span></a>
-<a class="tools-drawer-item" href="inventory-analytics.html"><span class="icon">📦</span><span class="label">Inventory</span></a>
-<a class="tools-drawer-item active" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label">Certificate Builder</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label">myPCU SQL Simulator</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label">myPCU AI SQL</span></a>
-<a class="tools-drawer-item" href="health-gis-app.html"><span class="icon">🏥</span><span class="label">Health GIS</span></a>
-<a class="tools-drawer-item" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label">GPS Tracker</span></a>
-<a class="tools-drawer-item" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label">VHV Voice Report</span></a>
-<a class="tools-drawer-item" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label">Yarang PCC</span></a>
-<div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
-</div>
-<div class="tools-drawer-search-wrap">
-<input autocomplete="off" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
-</div>
-</div>
-<!-- Desktop sidebar -->
-<aside aria-label="เครื่องมือนำทาง" class="tools-sidebar" role="navigation">
-<div class="tools-sidebar-header">
-<a class="tools-sidebar-brand" href="index.html">
-<span class="brand-icon">🛠️</span>
-<span class="brand-text">Zyde's Tools</span>
-</a>
-</div>
-<div class="tools-sidebar-nav">
-<input autocomplete="off" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
-<a class="tools-sidebar-link" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text">Envelope Printer</span></a>
-<a class="tools-sidebar-link" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text">AHK AutoCorrect</span></a>
-<a class="tools-sidebar-link" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text">Epidemiology Map</span></a>
-<a class="tools-sidebar-link" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text">Base64 Decoder</span></a>
-<a class="tools-sidebar-link" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text">Thai Recovery</span></a>
-<a class="tools-sidebar-link" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text">Ink Planner</span></a>
-<a class="tools-sidebar-link" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text">Inventory</span></a>
-<a class="tools-sidebar-link active" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text">Certificate Builder</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text">myPCU SQL Simulator</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text">myPCU AI SQL</span></a>
-<a class="tools-sidebar-link" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text">Health GIS</span></a>
-<a class="tools-sidebar-link" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text">GPS Tracker</span></a>
-<a class="tools-sidebar-link" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text">VHV Voice Report</span></a>
-<a class="tools-sidebar-link" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text">Yarang PCC</span></a>
-</div>
-</aside>
+>>>>>>> ea749cb8e3ade709edf1c2fc73e0894562eff53d
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-sm md:text-base font-bold text-white font-kanit">ระบบสร้างเกียรติบัตรวิชาชีพ (ปรับแต่งรายส่วนอิสระ)</h1>
+                <p class="text-[11px] text-amber-400 font-medium hidden sm:block">💡 พิมพ์ 1 หน้าถ้วน: เลือก <b class="underline">ระยะขอบ: ไม่มี (Margins: None)</b> และติ๊ก <b class="underline">กราฟิกพื้นหลัง</b></p>
+            </div>
+        </div>
 
-
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; ea749cb8e3ade709edf1c2fc73e0894562eff53d
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-
-<div>
-<h1 class="text-sm md:text-base font-bold text-white font-kanit">ระบบสร้างเกียรติบัตรวิชาชีพ (ปรับแต่งรายส่วนอิสระ)</h1>
-<p class="text-[11px] text-amber-400 font-medium hidden sm:block">💡 พิมพ์ 1 หน้าถ้วน: เลือก <b class="underline">ระยะขอบ: ไม่มี (Margins: None)</b> และติ๊ก <b class="underline">กราฟิกพื้นหลัง</b></p>
-</div>
-
-<div class="flex items-center gap-2 flex-wrap">
-<button class="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1" onclick="openUserGuide()">
+        <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openUserGuide()" class="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1">
                 ❓ <span>คู่มือการใช้งาน</span>
-</button>
-<button class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1" onclick="resetToDefaults()">
+            </button>
+            <button onclick="resetToDefaults()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1">
                 ⚡ <span>รีเซ็ตค่า</span>
-</button>
-<button class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1" onclick="printSingle()">
+            </button>
+            <button onclick="printSingle()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1">
                 🖨️ <span>พิมพ์ 1 ใบ</span>
-</button>
-<button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow text-xs transition flex items-center gap-1" id="btnBatchPrint" onclick="printBatchAll()">
-<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<span id="batchBtnLabel">พิมพ์ทั้งหมด (1 ใบ)</span>
-</button>
-</div>
-
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; ea749cb8e3ade709edf1c2fc73e0894562eff53d
+            </button>
+            <button onclick="printBatchAll()" id="btnBatchPrint" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow text-xs transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span id="batchBtnLabel">พิมพ์ทั้งหมด (1 ใบ)</span>
+            </button>
+        </div>
+    </header>
+>>>>>>> ea749cb8e3ade709edf1c2fc73e0894562eff53d
 
     <!-- MAIN APP SPLIT CONTAINER -->
-<div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-<!-- LEFT CONTROL SIDEBAR -->
-<aside class="no-print w-full lg:w-[620px] bg-slate-900 border-r border-slate-800 p-3 md:p-4 overflow-y-auto space-y-4 max-h-[calc(100vh-58px)] flex-shrink-0" id="sidebarPanel">
-<!-- Notification Toast -->
-<div class="hidden bg-emerald-900/90 border border-emerald-500/50 text-emerald-100 p-2.5 rounded-lg text-xs flex items-center justify-between shadow-lg" id="toast">
-<span id="toastMsg">อัปเดตข้อมูลแล้ว</span>
-<button class="text-emerald-300 font-bold ml-2 text-base" onclick="hideToast()">×</button>
-</div>
-<!-- Quick Template Presets -->
-<div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2">
-<h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">⚡ 1. เลือกแม่แบบสำเร็จรูป (1-Click Presets)</h3>
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
-<button class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate" onclick="applyPreset('internship')">🎓 ฝึกงาน รพ.สต.</button>
-<button class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate" onclick="applyPreset('training')">📜 ผ่านการอบรม</button>
-<button class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate" onclick="applyPreset('school')">🏫 ตาดีกา / โรงเรียน</button>
-<button class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate" onclick="applyPreset('volunteer')">🤝 จิตอาสา</button>
-</div>
-</div>
-<!-- SECTION CONTROLLER TABLE UI -->
-<div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
-<div class="flex items-center justify-between flex-wrap gap-2">
-<h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">
-                        📊 2. ตารางปรับแต่งรายละเอียดและลำดับส่วน (Reorder &amp; Customizer)
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+        <!-- LEFT CONTROL SIDEBAR -->
+        <aside id="sidebarPanel" class="no-print w-full lg:w-[620px] bg-slate-900 border-r border-slate-800 p-3 md:p-4 overflow-y-auto space-y-4 max-h-[calc(100vh-58px)] flex-shrink-0">
+            
+            <!-- Notification Toast -->
+            <div id="toast" class="hidden bg-emerald-900/90 border border-emerald-500/50 text-emerald-100 p-2.5 rounded-lg text-xs flex items-center justify-between shadow-lg">
+                <span id="toastMsg">อัปเดตข้อมูลแล้ว</span>
+                <button onclick="hideToast()" class="text-emerald-300 font-bold ml-2 text-base">&times;</button>
+            </div>
+
+            <!-- Quick Template Presets -->
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2">
+                <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">⚡ 1. เลือกแม่แบบสำเร็จรูป (1-Click Presets)</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    <button onclick="applyPreset('internship')" class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate">🎓 ฝึกงาน รพ.สต.</button>
+                    <button onclick="applyPreset('training')" class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate">📜 ผ่านการอบรม</button>
+                    <button onclick="applyPreset('school')" class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate">🏫 ตาดีกา / โรงเรียน</button>
+                    <button onclick="applyPreset('volunteer')" class="p-2 bg-slate-700/80 hover:bg-slate-700 text-left rounded-lg border border-slate-600 transition truncate">🤝 จิตอาสา</button>
+                </div>
+            </div>
+
+            <!-- SECTION CONTROLLER TABLE UI -->
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">
+                        📊 2. ตารางปรับแต่งรายละเอียดและลำดับส่วน (Reorder & Customizer)
                     </h3>
-<div class="flex items-center gap-1.5 text-xs">
-<span class="text-slate-300 font-medium">รูปแบบตัวเลข:</span>
-<select class="bg-slate-900 border border-slate-700 text-[11px] rounded p-1 text-amber-300 font-medium focus:outline-none focus:border-blue-500" id="selNumeralMode" onchange="renderCertificate()">
-<option selected="" value="thai">🇹🇭 เลขไทย (๐ ๑ ๒)</option>
-<option value="arabic_eastern">🇸🇦 เลขอาหรับ (٠ ١ ٢)</option>
-<option value="western">🌐 เลขอารบิกสากล (0 1 2)</option>
-<option value="original">🌐 ตามต้นฉบับ (ผสม)</option>
-</select>
-</div>
-</div>
-<p class="text-[11px] text-slate-400">
+                    <div class="flex items-center gap-1.5 text-xs">
+                        <span class="text-slate-300 font-medium">รูปแบบตัวเลข:</span>
+                        <select id="selNumeralMode" onchange="renderCertificate()" class="bg-slate-900 border border-slate-700 text-[11px] rounded p-1 text-amber-300 font-medium focus:outline-none focus:border-blue-500">
+                            <option value="thai" selected>🇹🇭 เลขไทย (๐ ๑ ๒)</option>
+                            <option value="arabic_eastern">🇸🇦 เลขอาหรับ (٠ ١ ٢)</option>
+                            <option value="western">🌐 เลขอารบิกสากล (0 1 2)</option>
+                            <option value="original">🌐 ตามต้นฉบับ (ผสม)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="text-[11px] text-slate-400">
                     💡 <b>เคล็ดลับ:</b> กดปุ่ม <b>[⬆️] [⬇️]</b> เพื่อสลับลำดับบน-ล่าง | ใช้แท็ก <code>{{คอลัมน์ 1}}</code> ถึง <code>{{คอลัมน์ 10}}</code> เพื่อแทรกข้อมูล Excel ได้ทุกช่อง
                 </p>
-<!-- Table Container -->
-<div class="overflow-x-auto rounded-lg border border-slate-700">
-<table class="w-full text-left text-xs border-collapse min-w-[540px]">
-<thead>
-<tr class="bg-slate-900/90 text-slate-300 font-semibold border-b border-slate-700 text-[11px]">
-<th class="p-2 w-14 text-center">ย้าย</th>
-<th class="p-2 w-28">หัวข้อ (Topic)</th>
-<th class="p-2">ข้อความ / ฟอนต์ / สไตล์ / ขยับขึ้นลง</th>
-<th class="p-2 w-12 text-center">แสดง</th>
-<th class="p-2 w-12 text-center">หลายบรรทัด</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-slate-800 bg-slate-950/40" id="sectionControlsTbody">
-<!-- Rows dynamically generated by JS -->
-</tbody>
-</table>
-</div>
-</div>
-<!-- BULK DATA IMPORT & UNLIMITED DYNAMIC COLUMN MAPPING -->
-<div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
-<div class="flex items-center justify-between flex-wrap gap-2">
-<h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">👥 3. นำเข้ารายชื่อจำนวนมาก (Bulk Data Import 10+ Columns)</h3>
-<div class="flex items-center gap-2">
-<button class="px-2 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded text-[11px] transition flex items-center gap-1 shadow" onclick="downloadExcelTemplate()">
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto rounded-lg border border-slate-700">
+                    <table class="w-full text-left text-xs border-collapse min-w-[540px]">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-slate-300 font-semibold border-b border-slate-700 text-[11px]">
+                                <th class="p-2 w-14 text-center">ย้าย</th>
+                                <th class="p-2 w-28">หัวข้อ (Topic)</th>
+                                <th class="p-2">ข้อความ / ฟอนต์ / สไตล์ / ขยับขึ้นลง</th>
+                                <th class="p-2 w-12 text-center">แสดง</th>
+                                <th class="p-2 w-12 text-center">หลายบรรทัด</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sectionControlsTbody" class="divide-y divide-slate-800 bg-slate-950/40">
+                            <!-- Rows dynamically generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BULK DATA IMPORT & UNLIMITED DYNAMIC COLUMN MAPPING -->
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">👥 3. นำเข้ารายชื่อจำนวนมาก (Bulk Data Import 10+ Columns)</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadExcelTemplate()" class="px-2 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded text-[11px] transition flex items-center gap-1 shadow">
                             📥 <span>ไฟล์ตัวอย่าง Excel</span>
-</button>
-<span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" id="badgeRecipientCount">1 คน</span>
-</div>
-</div>
-<!-- Import Mode Tabs -->
-<div class="flex border-b border-slate-700 text-xs">
-<button class="flex-1 py-1.5 font-medium border-b-2 border-blue-500 text-blue-400" id="btnTabExcel" onclick="switchBulkMode('excel')">📄 อัปโหลด Excel / CSV</button>
-<button class="flex-1 py-1.5 font-medium text-slate-400 hover:text-slate-200" id="btnTabPaste" onclick="switchBulkMode('paste')">📋 วางข้อความ (Tab Separated)</button>
-</div>
-<!-- Excel Tab -->
-<div class="space-y-2 text-xs" id="secBulkExcel">
-<input accept=".xlsx, .xls, .csv" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-blue-600 file:text-white cursor-pointer bg-slate-900 rounded-lg p-1 border border-slate-700" id="fileExcel" onchange="readExcelFile(event)" type="file"/>
-</div>
-<!-- Paste Tab -->
-<div class="hidden space-y-2 text-xs" id="secBulkPaste">
-<textarea class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500" id="txtPasteList" placeholder="วางข้อความคอลัมน์จาก Excel เช่น:
+                        </button>
+                        <span id="badgeRecipientCount" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">1 คน</span>
+                    </div>
+                </div>
+
+                <!-- Import Mode Tabs -->
+                <div class="flex border-b border-slate-700 text-xs">
+                    <button onclick="switchBulkMode('excel')" id="btnTabExcel" class="flex-1 py-1.5 font-medium border-b-2 border-blue-500 text-blue-400">📄 อัปโหลด Excel / CSV</button>
+                    <button onclick="switchBulkMode('paste')" id="btnTabPaste" class="flex-1 py-1.5 font-medium text-slate-400 hover:text-slate-200">📋 วางข้อความ (Tab Separated)</button>
+                </div>
+
+                <!-- Excel Tab -->
+                <div id="secBulkExcel" class="space-y-2 text-xs">
+                    <input type="file" id="fileExcel" accept=".xlsx, .xls, .csv" onchange="readExcelFile(event)" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-blue-600 file:text-white cursor-pointer bg-slate-900 rounded-lg p-1 border border-slate-700">
+                </div>
+
+                <!-- Paste Tab -->
+                <div id="secBulkPaste" class="hidden space-y-2 text-xs">
+                    <textarea id="txtPasteList" rows="3" placeholder="วางข้อความคอลัมน์จาก Excel เช่น:
 asma binti hamid	2005	جيد	27 กรกฎาคม 2568
-hamid bin affan	2006	ممتاز	27 กรกฎาคม 2568" rows="3"></textarea>
-<button class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs transition" onclick="parsePastedText()">นำเข้ารายชื่อที่วาง</button>
-</div>
-<!-- DYNAMIC COLUMN MAPPER UI -->
-<div class="hidden p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 space-y-2 text-xs" id="secColumnMapper">
-<p class="font-bold text-amber-300">🔗 จับคู่คอลัมน์จาก Excel (ตรวจพบหลายคอลัมน์):</p>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="columnMappingGrid">
-<!-- Dynamic Mapping Selectors injected by JS -->
-</div>
-</div>
-<!-- Active Recipient Navigation -->
-<div class="pt-2 border-t border-slate-700/60 flex items-center justify-between gap-2 text-xs">
-<span class="text-slate-300 font-medium" id="lblNavCounter">กำลังเลือก: คนที่ 1 / 1</span>
-<div class="flex items-center gap-1.5 flex-1 max-w-[240px]">
-<button class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded" onclick="changeRecipient(-1)">◀</button>
-<select class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 truncate" id="selRecipient" onchange="selectRecipient(this.value)">
-<!-- Dynamic Options -->
-</select>
-<button class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded" onclick="changeRecipient(1)">▶</button>
-</div>
-</div>
-</div>
-<!-- LOGO, SIGNATURE & BACKGROUND MEDIA CONTROLS -->
-<div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3 text-xs">
-<h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">🖼️ 4. โลโก้ ลายเซ็น และภาพพื้นหลัง</h3>
-<!-- Logo Upload & Toggle -->
-<div class="space-y-1.5">
-<div class="flex items-center justify-between">
-<span class="font-semibold text-slate-200">ตราโลโก้หน่วยงาน</span>
-<label class="flex items-center gap-1 text-slate-400 cursor-pointer">
-<input checked="" class="rounded" id="chkShowLogo" onchange="renderCertificate()" type="checkbox"/> แสดง
+hamid bin affan	2006	ممتاز	27 กรกฎาคม 2568" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"></textarea>
+                    <button onclick="parsePastedText()" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs transition">นำเข้ารายชื่อที่วาง</button>
+                </div>
+
+                <!-- DYNAMIC COLUMN MAPPER UI -->
+                <div id="secColumnMapper" class="hidden p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 space-y-2 text-xs">
+                    <p class="font-bold text-amber-300">🔗 จับคู่คอลัมน์จาก Excel (ตรวจพบหลายคอลัมน์):</p>
+                    <div id="columnMappingGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <!-- Dynamic Mapping Selectors injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Active Recipient Navigation -->
+                <div class="pt-2 border-t border-slate-700/60 flex items-center justify-between gap-2 text-xs">
+                    <span id="lblNavCounter" class="text-slate-300 font-medium">กำลังเลือก: คนที่ 1 / 1</span>
+                    <div class="flex items-center gap-1.5 flex-1 max-w-[240px]">
+                        <button onclick="changeRecipient(-1)" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">◀</button>
+                        <select id="selRecipient" onchange="selectRecipient(this.value)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 truncate">
+                            <!-- Dynamic Options -->
+                        </select>
+                        <button onclick="changeRecipient(1)" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOGO, SIGNATURE & BACKGROUND MEDIA CONTROLS -->
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-3 text-xs">
+                <h3 class="text-xs font-bold text-amber-400 font-kanit uppercase tracking-wide">🖼️ 4. โลโก้ ลายเซ็น และภาพพื้นหลัง</h3>
+
+                <!-- Logo Upload & Toggle -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-slate-200">ตราโลโก้หน่วยงาน</span>
+                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
+                            <input type="checkbox" id="chkShowLogo" checked onchange="renderCertificate()" class="rounded"> แสดง
                         </label>
-</div>
-<input accept="image/*" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700" id="fileLogo" onchange="handleImageUpload(event, 'logo')" type="file"/>
-<div class="flex items-center justify-between text-[11px] text-slate-400">
-<span>ขนาดโลโก้</span>
-<input class="w-28 accent-blue-500" id="rngLogoSize" max="220" min="40" oninput="renderCertificate()" type="range" value="85"/>
-</div>
-</div>
-<!-- Signature Upload & Adjustment -->
-<div class="pt-2 border-t border-slate-700/60 space-y-1.5">
-<div class="flex items-center justify-between">
-<span class="font-semibold text-slate-200">ภาพลายเซ็นผู้ลงนาม</span>
-<label class="flex items-center gap-1 text-slate-400 cursor-pointer">
-<input checked="" class="rounded" id="chkShowSign" onchange="renderCertificate()" type="checkbox"/> แสดง
+                    </div>
+                    <input type="file" id="fileLogo" accept="image/*" onchange="handleImageUpload(event, 'logo')" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>ขนาดโลโก้</span>
+                        <input type="range" id="rngLogoSize" min="40" max="220" value="85" oninput="renderCertificate()" class="w-28 accent-blue-500">
+                    </div>
+                </div>
+
+                <!-- Signature Upload & Adjustment -->
+                <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-slate-200">ภาพลายเซ็นผู้ลงนาม</span>
+                        <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
+                            <input type="checkbox" id="chkShowSign" checked onchange="renderCertificate()" class="rounded"> แสดง
                         </label>
-</div>
-<input accept="image/*" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700" id="fileSign" onchange="handleImageUpload(event, 'sign')" type="file"/>
-<div class="flex items-center justify-between gap-2 text-[11px]">
-<span>หมุนลายเซ็น:</span>
-<div class="flex gap-1">
-<button class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded" onclick="rotateSign(-90)">↺ -90°</button>
-<button class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded" onclick="rotateSign(90)">↻ +90°</button>
-</div>
-</div>
-<div class="flex items-center justify-between text-[11px] text-slate-400">
-<span>ขยายลายเซ็น</span>
-<input class="w-28 accent-blue-500" id="rngSignScale" max="200" min="50" oninput="renderCertificate()" type="range" value="100"/>
-</div>
-<label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-<input checked="" class="rounded accent-blue-600" id="chkSignBlend" onchange="renderCertificate()" type="checkbox"/> ลบพื้นหลังกระดาษขาวสแกน (Multiply Filter)
+                    </div>
+                    <input type="file" id="fileSign" accept="image/*" onchange="handleImageUpload(event, 'sign')" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700">
+                    
+                    <div class="flex items-center justify-between gap-2 text-[11px]">
+                        <span>หมุนลายเซ็น:</span>
+                        <div class="flex gap-1">
+                            <button onclick="rotateSign(-90)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded">↺ -90°</button>
+                            <button onclick="rotateSign(90)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded">↻ +90°</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>ขยายลายเซ็น</span>
+                        <input type="range" id="rngSignScale" min="50" max="200" value="100" oninput="renderCertificate()" class="w-28 accent-blue-500">
+                    </div>
+
+                    <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="chkSignBlend" checked onchange="renderCertificate()" class="rounded accent-blue-600"> ลบพื้นหลังกระดาษขาวสแกน (Multiply Filter)
                     </label>
-</div>
-<!-- Background Image Upload -->
-<div class="pt-2 border-t border-slate-700/60 space-y-1.5">
-<span class="font-semibold text-slate-200 block">ภาพพื้นหลัง / กรอบเกียรติบัตร</span>
-<input accept="image/*" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700" id="fileBg" onchange="handleImageUpload(event, 'bg')" type="file"/>
-<div class="flex items-center justify-between text-[11px] text-slate-400">
-<span>ความจางพื้นหลัง</span>
-<input class="w-28 accent-blue-500" id="rngBgOpacity" max="100" min="10" oninput="renderCertificate()" type="range" value="100"/>
-</div>
-</div>
-<!-- Border Style Choice -->
-<div class="pt-2 border-t border-slate-700/60 space-y-1.5">
-<span class="font-semibold text-slate-200 block">รูปแบบกรอบ (Frame Borders)</span>
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
-<button class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-amber-300 border border-amber-500/50" onclick="setBorderStyle('gold')">🏆 ขอบทอง</button>
-<button class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200" onclick="setBorderStyle('minimal')">📄 มินิมอล</button>
-<button class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200" onclick="setBorderStyle('classic')">🏛️ คลาสสิก</button>
-<button class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200" onclick="setBorderStyle('none')">🚫 ไม่ใส่กรอบ</button>
-</div>
-</div>
-</div>
-</aside>
-<!-- RIGHT LIVE A4 PREVIEW CANVAS -->
-<main class="flex-1 bg-slate-950 p-2 sm:p-4 md:p-6 overflow-y-auto flex items-center justify-center">
-<div class="print-area w-full max-w-4xl preview-wrapper" id="printContainer">
-<!-- CERTIFICATE SHEET CONTAINER -->
-<div class="a4-container cert-border-gold p-6 sm:p-8 md:p-10 relative text-center text-slate-900" id="certSheet">
-<!-- Background Image Layer -->
-<div class="cert-bg-layer" id="layerBg"></div>
-<!-- TOP LOGO CONTAINER -->
-<div class="relative z-10 flex justify-center items-center mb-1" id="layerLogoWrapper">
-<div class="w-20 h-20" id="layerLogoSvg">
-<svg class="w-full h-full drop-shadow" viewbox="0 0 100 100">
-<circle cx="50" cy="50" fill="#FACC15" r="46" stroke="#0284C7" stroke-width="2"></circle>
-<circle cx="50" cy="50" fill="#38BDF8" r="38" stroke="#0369A1" stroke-width="1.5"></circle>
-<path d="M 25,62 Q 50,75 75,62 Q 50,55 25,62 Z" fill="#0284C7"></path>
-<path d="M 30,58 L 40,32 L 62,32 L 72,58 Z" fill="#F97316"></path>
-<path d="M 40,32 L 40,22 L 55,22 L 55,32 Z" fill="#EA580C"></path>
-<polygon fill="#DC2626" points="45,15 45,22 58,18"></polygon>
-<text fill="#1E293B" font-family="Sarabun" font-size="5" font-weight="bold" text-anchor="middle" x="50" y="12">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</text>
-</svg>
-</div>
-<img alt="Logo" class="hidden object-contain max-h-24" id="layerLogoImg"/>
-</div>
-<!-- DYNAMIC REORDERABLE CONTAINER -->
-<div class="relative z-10 flex-1 flex flex-col justify-around py-1" id="dynamicSectionsContainer">
-<!-- Dynamic Section Blocks injected by JS based on user order -->
-</div>
-<!-- BOTTOM SIGNATORY SECTION -->
-<div class="relative z-10 pt-1 flex flex-col items-center justify-center text-center" id="certSec_signatory">
-<div class="h-12 flex items-center justify-center mb-0.5" id="layerSignWrapper">
-<div class="h-12" id="layerSignSvg">
-<svg class="h-full drop-shadow-sm" viewbox="0 0 160 80">
-<path d="M 30,55 C 20,40 45,15 50,35 C 55,55 25,65 35,45 C 45,25 70,10 60,60 C 55,80 75,30 80,45 C 85,60 100,20 110,40 Q 120,60 135,30" fill="none" stroke="#0f172a" stroke-linecap="round" stroke-width="3.5"></path>
-</svg>
-</div>
-<img alt="Signature" class="hidden object-contain max-h-16 sign-blend-darken" id="layerSignImg"/>
-</div>
-<div class="w-full" id="certSec_signName"><div class="cert-dynamic-text" dir="auto" id="text_signName"></div></div>
-<div class="w-full" id="certSec_signTitle"><div class="cert-dynamic-text" dir="auto" id="text_signTitle"></div></div>
-</div>
-</div>
-</div>
-</main>
-</div>
-<!-- USER GUIDE MODAL -->
-<div class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 no-print" id="modalUserGuide">
-<div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 text-slate-100 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
-<button class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold" onclick="closeUserGuide()">×</button>
-<div class="flex items-center gap-2 border-b border-slate-800 pb-3">
-<span class="text-2xl">📖</span>
-<h2 class="text-base font-bold font-kanit text-amber-400">คู่มือการใช้งานระบบสร้างเกียรติบัตร (อ่านง่ายใน 1 นาที)</h2>
-</div>
-<div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
-<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
-<h4 class="font-bold text-white">📊 1. ปรับสลับลำดับ &amp; ขยับขึ้น-ลง (Reorder &amp; Position Offset)</h4>
-<p>กดปุ่ม <b>[⬆️] [⬇️]</b> ในตารางเพื่อสลับลำดับส่วนต่างๆ บนเกียรติบัตรได้อิสระ และใช้ช่อง <b>"ขยับขึ้นลง (px)"</b> เพื่อเลื่อนตำแหน่งหลบโลโก้หรือกรอบได้แม่นยำ</p>
-</div>
-<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
-<h4 class="font-bold text-white">👥 2. แทรกคอลัมน์ Excel ได้ไม่จำกัด 10+ คอลัมน์ด้วย {{แท็ก}}</h4>
-<p>สามารถพิมพ์ <code>{{คอลัมน์ 1}}</code>, <code>{{คอลัมน์ 2}}</code> หรือแท็กชื่อหัวข้อในช่องข้อความใดก็ได้ เมื่อนำเข้า Excel 10 คอลัมน์ ระบบจะนำข้อมูลมาแทรกอัตโนมัติ!</p>
-</div>
-<div class="bg-amber-950/60 p-3 rounded-xl border border-amber-600/40 text-amber-200 space-y-1">
-<h4 class="font-bold">🖨️ 3. วิธีสั่งพิมพ์ให้สวยงาม 1 หน้าถ้วน</h4>
-<p>1. กดปุ่ม <b>"พิมพ์ 1 ใบ"</b> หรือ <b>"พิมพ์ทั้งหมด"</b><br/>
-                    2. เลือก <b>ระยะขอบ (Margins): ไม่มี (None)</b><br/>
+                </div>
+
+                <!-- Background Image Upload -->
+                <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
+                    <span class="font-semibold text-slate-200 block">ภาพพื้นหลัง / กรอบเกียรติบัตร</span>
+                    <input type="file" id="fileBg" accept="image/*" onchange="handleImageUpload(event, 'bg')" class="w-full text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 cursor-pointer bg-slate-900 rounded p-1 border border-slate-700">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>ความจางพื้นหลัง</span>
+                        <input type="range" id="rngBgOpacity" min="10" max="100" value="100" oninput="renderCertificate()" class="w-28 accent-blue-500">
+                    </div>
+                </div>
+
+                <!-- Border Style Choice -->
+                <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
+                    <span class="font-semibold text-slate-200 block">รูปแบบกรอบ (Frame Borders)</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+                        <button onclick="setBorderStyle('gold')" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-amber-300 border border-amber-500/50">🏆 ขอบทอง</button>
+                        <button onclick="setBorderStyle('minimal')" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">📄 มินิมอล</button>
+                        <button onclick="setBorderStyle('classic')" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">🏛️ คลาสสิก</button>
+                        <button onclick="setBorderStyle('none')" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">🚫 ไม่ใส่กรอบ</button>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- RIGHT LIVE A4 PREVIEW CANVAS -->
+        <main class="flex-1 bg-slate-950 p-2 sm:p-4 md:p-6 overflow-y-auto flex items-center justify-center">
+            <div id="printContainer" class="print-area w-full max-w-4xl preview-wrapper">
+                
+                <!-- CERTIFICATE SHEET CONTAINER -->
+                <div id="certSheet" class="a4-container cert-border-gold p-6 sm:p-8 md:p-10 relative text-center text-slate-900">
+                    
+                    <!-- Background Image Layer -->
+                    <div id="layerBg" class="cert-bg-layer"></div>
+
+                    <!-- TOP LOGO CONTAINER -->
+                    <div id="layerLogoWrapper" class="relative z-10 flex justify-center items-center mb-1">
+                        <div id="layerLogoSvg" class="w-20 h-20">
+                            <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+                                <circle cx="50" cy="50" r="46" fill="#FACC15" stroke="#0284C7" stroke-width="2"/>
+                                <circle cx="50" cy="50" r="38" fill="#38BDF8" stroke="#0369A1" stroke-width="1.5"/>
+                                <path d="M 25,62 Q 50,75 75,62 Q 50,55 25,62 Z" fill="#0284C7"/>
+                                <path d="M 30,58 L 40,32 L 62,32 L 72,58 Z" fill="#F97316"/>
+                                <path d="M 40,32 L 40,22 L 55,22 L 55,32 Z" fill="#EA580C"/>
+                                <polygon points="45,15 45,22 58,18" fill="#DC2626"/>
+                                <text x="50" y="12" font-size="5" font-family="Sarabun" font-weight="bold" text-anchor="middle" fill="#1E293B">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</text>
+                            </svg>
+                        </div>
+                        <img id="layerLogoImg" class="hidden object-contain max-h-24" alt="Logo">
+                    </div>
+
+                    <!-- DYNAMIC REORDERABLE CONTAINER -->
+                    <div id="dynamicSectionsContainer" class="relative z-10 flex-1 flex flex-col justify-around py-1">
+                        <!-- Dynamic Section Blocks injected by JS based on user order -->
+                    </div>
+
+                    <!-- BOTTOM SIGNATORY SECTION -->
+                    <div id="certSec_signatory" class="relative z-10 pt-1 flex flex-col items-center justify-center text-center">
+                        <div id="layerSignWrapper" class="h-12 flex items-center justify-center mb-0.5">
+                            <div id="layerSignSvg" class="h-12">
+                                <svg viewBox="0 0 160 80" class="h-full drop-shadow-sm">
+                                    <path d="M 30,55 C 20,40 45,15 50,35 C 55,55 25,65 35,45 C 45,25 70,10 60,60 C 55,80 75,30 80,45 C 85,60 100,20 110,40 Q 120,60 135,30" fill="none" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <img id="layerSignImg" class="hidden object-contain max-h-16 sign-blend-darken" alt="Signature">
+                        </div>
+                        <div id="certSec_signName" class="w-full"><div id="text_signName" dir="auto" class="cert-dynamic-text"></div></div>
+                        <div id="certSec_signTitle" class="w-full"><div id="text_signTitle" dir="auto" class="cert-dynamic-text"></div></div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- USER GUIDE MODAL -->
+    <div id="modalUserGuide" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 text-slate-100 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeUserGuide()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <span class="text-2xl">📖</span>
+                <h2 class="text-base font-bold font-kanit text-amber-400">คู่มือการใช้งานระบบสร้างเกียรติบัตร (อ่านง่ายใน 1 นาที)</h2>
+            </div>
+            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
+                    <h4 class="font-bold text-white">📊 1. ปรับสลับลำดับ & ขยับขึ้น-ลง (Reorder & Position Offset)</h4>
+                    <p>กดปุ่ม <b>[⬆️] [⬇️]</b> ในตารางเพื่อสลับลำดับส่วนต่างๆ บนเกียรติบัตรได้อิสระ และใช้ช่อง <b>"ขยับขึ้นลง (px)"</b> เพื่อเลื่อนตำแหน่งหลบโลโก้หรือกรอบได้แม่นยำ</p>
+                </div>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
+                    <h4 class="font-bold text-white">👥 2. แทรกคอลัมน์ Excel ได้ไม่จำกัด 10+ คอลัมน์ด้วย {{แท็ก}}</h4>
+                    <p>สามารถพิมพ์ <code>{{คอลัมน์ 1}}</code>, <code>{{คอลัมน์ 2}}</code> หรือแท็กชื่อหัวข้อในช่องข้อความใดก็ได้ เมื่อนำเข้า Excel 10 คอลัมน์ ระบบจะนำข้อมูลมาแทรกอัตโนมัติ!</p>
+                </div>
+                <div class="bg-amber-950/60 p-3 rounded-xl border border-amber-600/40 text-amber-200 space-y-1">
+                    <h4 class="font-bold">🖨️ 3. วิธีสั่งพิมพ์ให้สวยงาม 1 หน้าถ้วน</h4>
+                    <p>1. กดปุ่ม <b>"พิมพ์ 1 ใบ"</b> หรือ <b>"พิมพ์ทั้งหมด"</b><br>
+                    2. เลือก <b>ระยะขอบ (Margins): ไม่มี (None)</b><br>
                     3. ติ๊กถูก <b>กราฟิกพื้นหลัง (Background graphics)</b></p>
-</div>
-</div>
-<div class="pt-2 text-center">
-<button class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition" onclick="closeUserGuide()">เข้าใจแล้ว เริ่มใช้งานเลย</button>
-</div>
-</div>
-</div>
-<!-- JAVASCRIPT APP LOGIC -->
-<script>
+                </div>
+            </div>
+            <div class="pt-2 text-center">
+                <button onclick="closeUserGuide()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition">เข้าใจแล้ว เริ่มใช้งานเลย</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
         // Default Sections Array with ordering and vertical offsets
         let sectionsConfig = [
             { id: 'org', topic: '1. ชื่อหน่วยงาน', text: 'โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง', font: 'Sarabun, sans-serif', size: 28, color: '#1e293b', enable: true, multiline: false, bold: true, italic: false, underline: false, offsetTop: 0 },
@@ -1546,91 +1125,5 @@ hamid bin affan	2006	ممتاز	27 กรกฎาคม 2568" rows="3"></textar
             updateRecipientNavigator();
         };
     </script>
-
-<script>
-(function() {
-  "use strict";
-  const current = window.location.pathname.split("/").pop() || "index.html";
-
-  /* ===================== SIDEBAR SEARCH ===================== */
-  const sidebarSearch = document.getElementById("sidebarSearch");
-  if (sidebarSearch) {
-    sidebarSearch.addEventListener("input", function() {
-      const q = this.value.toLowerCase().trim();
-      document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
-        const text = link.textContent.toLowerCase();
-        link.style.display = !q || text.includes(q) ? "flex" : "none";
-      });
-    });
-  }
-
-  /* ===================== DRAWER ===================== */
-  const overlay = document.getElementById("toolsDrawerOverlay");
-  const drawer = document.getElementById("toolsDrawer");
-  const openBtn = document.getElementById("fabSearchBtn");
-  const closeBtn = document.getElementById("toolsDrawerClose");
-  const searchInput = document.getElementById("toolsDrawerSearchInput");
-  const noResults = document.getElementById("toolsNoResults");
-
-  function openDrawer() {
-    overlay.classList.add("open");
-    drawer.classList.add("open");
-    document.body.style.overflow = "hidden";
-    if (searchInput) {
-      searchInput.value = "";
-      searchInput.focus();
-      filterDrawer("");
-    }
-  }
-
-  function closeDrawer() {
-    overlay.classList.remove("open");
-    drawer.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  if (openBtn) openBtn.addEventListener("click", openDrawer);
-  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
-  if (overlay) overlay.addEventListener("click", closeDrawer);
-
-  /* Drawer search filter */
-  function filterDrawer(q) {
-    var found = false;
-    var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
-    items.forEach(function(item) {
-      var text = item.textContent.toLowerCase();
-      var match = !q || text.includes(q);
-      item.style.display = match ? "flex" : "none";
-      if (match) found = true;
-    });
-    if (noResults) {
-      noResults.style.display = found ? "none" : "block";
-    }
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", function() {
-      filterDrawer(this.value.toLowerCase().trim());
-    });
-    /* Prevent close on input click (bubbles up) */
-    searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
-  }
-
-  /* ===================== ACTIVE STATE ===================== */
-  /* Sidebar */
-  document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-  /* Drawer */
-  document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-})();
-</script></body>
+</body>
 </html>

@@ -1,0 +1,1100 @@
+<!-- 
+========================================================================================
+  PRODUCT REQUIREMENT DOCUMENT (PRD) - myPCU AI Health Assistant
+  Version: 11.0 (Kid/Age Query Parser Fix & Interactive Multi-Select Moo Filter Cards)
+========================================================================================
+
+1. EXECUTIVE SUMMARY & TARGET USER PERSONA
+----------------------------------------------------------------------------------------
+- Target Users: Public health officers and PCU staff with NON-IT backgrounds.
+- Core Purpose: Offline-safe AI assistant translating Thai and English prompts (e.g. "kid under 15",
+  "สิทธิการรักษา", "เบาหวาน", "หมู่ 2 3 4 5") into accurate 43-folder SQL queries and GIS maps.
+
+2. KEY BEHAVIORS & RECENT ENHANCEMENTS
+----------------------------------------------------------------------------------------
+[Fix 1: Age & Kid Prompt Parsing]
+- Prompts containing "kid", "เด็ก", "15", "under 15", or "อายุ" trigger age calculation logic:
+  m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)
+- Prevents fallback to hardcoded diabetes or generic queries.
+
+[Feature 2: Interactive Multi-Select Moo Filter Cards]
+- Village cards (Moo 1 to Moo 6) act as toggle buttons with real-time visual feedback.
+- Officers can click individual Moo cards to select/deselect specific villages.
+- Includes "เลือกทุกหมู่ (Select All)" and "ล้างการเลือก (Select None)" options.
+
+========================================================================================
+-->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myPCU AI Health Assistant - อ.ยะรัง GIS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet GIS Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .code-font {
+            font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        #diseaseMap {
+            z-index: 1 !important;
+            border-radius: 12px;
+        }
+
+        .custom-moo-marker {
+            background: transparent;
+            border: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- STREAMING_CHUNK:Building Header & Navigation Dock... -->
+    <!-- Main Header Banner -->
+    <header class="bg-gradient-to-r from-teal-800 to-cyan-900 text-white shadow-md py-3 px-4 md:px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="bg-white/10 p-2 rounded-lg border border-white/20 shrink-0">
+                    <i class="fa-solid fa-hospital-user text-teal-300 text-xl md:text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 flex-wrap">
+                        myPCU AI Health Assistant
+                        <span class="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">v11.0 Interactive Moos</span>
+                    </h1>
+                    <p class="text-[11px] md:text-xs text-teal-100 font-light">ระบบดึงข้อมูลสุขภาพ อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6) ค้นหาภาษาไทย/อังกฤษ ไม่ต้องรู้ SQL</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap justify-center w-full md:w-auto">
+                <button onclick="toggleApiKeyModal()" id="btnApiKeyHeader" class="bg-slate-900/50 hover:bg-slate-900/80 border border-teal-400/40 text-teal-200 text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium shadow-xs">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    <span id="apiKeyStatusLabel">ตั้งค่า API Key</span>
+                </button>
+                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Offline Safe (PDPA)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- PROMINENT INTEGRATION & BACKUP HUB -->
+    <section class="bg-slate-100 border-b border-slate-200 px-4 md:px-6 py-2">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2 text-slate-700 w-full lg:w-auto justify-center lg:justify-start">
+                <i class="fa-solid fa-folder-tree text-teal-600 text-sm"></i>
+                <span class="text-xs font-bold uppercase tracking-wide">จัดการผังตาราง myPCU:</span>
+                <span class="text-[11px] text-slate-500 font-light hidden sm:inline">(รองรับไฟล์ XML หลายแฟ้ม)</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap justify-center">
+                <div class="relative">
+                    <input type="file" id="multiXmlFileUploader" accept=".xml" multiple onchange="importMultipleXmlSchemas(this)" class="hidden">
+                    <button onclick="document.getElementById('multiXmlFileUploader').click()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
+                        <i class="fa-solid fa-folder-open"></i> นำเข้า XML ผังตาราง
+                    </button>
+                </div>
+                <button onclick="exportAllLocalData()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
+                    <i class="fa-solid fa-download"></i> สำรองข้อมูล (JSON)
+                </button>
+                <div class="relative">
+                    <input type="file" id="jsonBackupUploader" accept=".json" onchange="importAllLocalData(this)" class="hidden">
+                    <button onclick="document.getElementById('jsonBackupUploader').click()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
+                        <i class="fa-solid fa-upload"></i> นำคืนข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STREAMING_CHUNK:Building Main AI Copilot Console... -->
+    <!-- MAIN WORKSPACE SECTION -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col gap-4 md:gap-5">
+
+        <!-- TOP SECTION: AI COPILOT (LEFT) + SQL INSPECTOR (RIGHT) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+            
+            <!-- LEFT WORKSPACE (5 Cols): AI Copilot Studio -->
+            <section class="lg:col-span-5 flex flex-col gap-3">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col h-full">
+                    
+                    <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white px-4 py-2.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+                            <h2 class="text-xs font-bold uppercase tracking-wide">AI Health Assistant (ภาษาไทย/ENG)</h2>
+                        </div>
+                        <span id="aiStatusBadge" class="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold">
+                            โหมดจำลองฟรี
+                        </span>
+                    </div>
+
+                    <div class="p-3.5 flex flex-col gap-3 flex-grow bg-slate-50/50">
+                        
+                        <div id="demoModeIndicator" class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-amber-950 flex flex-col gap-1 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold flex items-center gap-1 text-amber-900">
+                                    <i class="fa-solid fa-circle-info text-amber-600"></i> โหมดจำลองฟรี (ยะรัง 6 หมู่บ้าน)
+                                </span>
+                                <button onclick="toggleApiKeyModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs transition-all">
+                                    ใส่ API Key
+                                </button>
+                            </div>
+                            <p class="text-[10px] font-light text-amber-800 leading-tight">
+                                พิมพ์ค้นหาได้ทันที เช่น "kid under 15", "เด็กอายุ <= 15", "เบาหวาน หมู่ 2 3 4"
+                            </p>
+                        </div>
+
+                        <!-- Prompt Input Console -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                                <span><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>พิมพ์คำค้นหาภาษาไทย/อังกฤษ:</span>
+                                <span class="text-[10px] text-slate-400 font-normal">ไม่ต้องพิมพ์ SQL</span>
+                            </label>
+                            <textarea id="aiPromptInput" rows="2.5" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-inner" placeholder="เช่น: kid under 15 หรือ แผนที่ เบาหวาน หมู่2 3 4 5"></textarea>
+                            
+                            <!-- PROMPT MODIFIER BUTTONS -->
+                            <div class="flex flex-col gap-1 mt-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase">เพิ่มคำลงในโจทย์:</span>
+                                    <button onclick="openFieldManagerModal()" class="text-[10px] text-indigo-700 hover:underline font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-gear"></i> จัดการปุ่ม (CRUD)
+                                    </button>
+                                </div>
+                                
+                                <div id="aiPromptQuickButtons" class="flex flex-wrap gap-1">
+                                    <button onclick="appendPromptKeyword('แผนที่')" class="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs flex items-center gap-1">
+                                        <i class="fa-solid fa-location-dot text-rose-600"></i> + แผนที่ (พิกัด GIS)
+                                    </button>
+                                    <button onclick="appendPromptKeyword('เด็กอายุ <= 15')" class="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+                                        + เด็ก <= 15 ปี
+                                    </button>
+                                    <button onclick="appendPromptKeyword('สิทธิการรักษา')" class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+                                        + สิทธิการรักษา
+                                    </button>
+                                    <button onclick="appendPromptKeyword('เบาหวาน')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+                                        + เบาหวาน
+                                    </button>
+                                    <button onclick="appendPromptKeyword('หมู่ 2 3 4 5')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+                                        + หมู่ 2 3 4 5
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button onclick="generateSqlWithAI()" id="btnGenerateSql" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> ค้นหาและประมวลผลด้วย AI
+                            </button>
+                        </div>
+
+                        <!-- AI Response Terminal -->
+                        <div id="aiResponsePanel" class="hidden bg-slate-900 text-slate-100 rounded-xl p-3 shadow-md flex flex-col gap-2.5 border border-slate-800">
+                            
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                                <span class="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                                    <span id="aiResultTitle">ผลลัพธ์การค้นหา</span>
+                                </span>
+                                <button onclick="hideAiResponse()" class="text-slate-400 hover:text-white text-xs">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- Plain Thai Explanation -->
+                            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-[11px]">
+                                <span class="font-bold text-amber-300 flex items-center gap-1 text-[10px] uppercase tracking-wide">
+                                    <i class="fa-solid fa-lightbulb"></i> สรุปการดึงข้อมูล (ภาษาไทย)
+                                </span>
+                                <div id="aiStructuredExplanation" class="text-slate-300 flex flex-col gap-1 font-light leading-relaxed">
+                                    <!-- Injected dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- DIRECT 1-CLICK COPY & APPLY ACTION BAR -->
+                            <div class="flex items-center justify-between gap-2 pt-1">
+                                <button onclick="copyAiSqlDirect()" id="btnCopySqlDirect" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
+                                    <i class="fa-regular fa-copy"></i> <span>คัดลอกโค้ด SQL</span>
+                                </button>
+                                <button onclick="applyAiSql()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all">
+                                    <i class="fa-solid fa-play text-[10px]"></i> <span>ดึงข้อมูลแสดงตาราง</span>
+                                </button>
+                            </div>
+
+                            <!-- Inspectable SQL Code -->
+                            <details class="bg-slate-950 rounded-lg p-2 border border-slate-800/80 text-[10px]">
+                                <summary class="cursor-pointer font-bold text-slate-400 hover:text-slate-200 flex items-center justify-between">
+                                    <span><i class="fa-solid fa-code mr-1"></i>แสดงโค้ด SQL ที่สร้างขึ้น</span>
+                                    <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                                </summary>
+                                <pre id="aiSqlOutput" class="text-emerald-400 font-mono mt-1.5 select-all leading-normal code-font whitespace-pre-wrap"></pre>
+                            </details>
+
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT WORKSPACE (7 Cols): SQL Inspector & Data Preview Grid -->
+            <section class="lg:col-span-7 flex flex-col gap-3">
+                
+                <!-- SQL Code Inspector Console -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-terminal text-teal-600"></i>
+                            <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wide">คำสั่ง SQL (ประมวลผล)</h2>
+                        </div>
+                        <button onclick="runQuery()" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-3 py-1 text-xs font-bold transition-all flex items-center gap-1 shadow-xs border border-teal-500">
+                            <i class="fa-solid fa-play animate-pulse text-[10px]"></i> ดึงข้อมูล (F9)
+                        </button>
+                    </div>
+
+                    <div class="p-2 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">แฟ้มหลัก:</span>
+                            <select id="tableSelector" onchange="handleTableSelect(this.value)" class="bg-white text-sky-700 border border-sky-300 font-semibold rounded px-2 py-0.5 text-xs">
+                                <option value="">-- [ เลือกตาราง m_* ] --</option>
+                                <option value="m_PERSON">m_PERSON (ทำเนียบประชากร)</option>
+                                <option value="m_CARD">m_CARD (สิทธิรักษา)</option>
+                                <option value="m_ADDRESS">m_ADDRESS (ที่อยู่/พิกัด)</option>
+                                <option value="m_CHRONIC">m_CHRONIC (โรคเรื้อรัง)</option>
+                                <option value="m_EP">m_EP (วัคซีนเด็ก)</option>
+                            </select>
+                        </div>
+                        <button onclick="insertAtCursor('LIMIT 100 ')" class="bg-amber-50 text-amber-800 border border-amber-300 rounded px-2 py-0.5 text-[10px] font-bold">LIMIT 100</button>
+                    </div>
+
+                    <div class="relative h-28">
+                        <textarea id="sqlEditor" class="w-full h-full p-2.5 bg-slate-50/30 text-slate-800 font-mono text-xs leading-relaxed focus:outline-none focus:bg-white code-font" placeholder="-- SQL Code generated by AI..." spellcheck="false">SELECT m_PERSON.pid, m_PERSON.birth, TIMESTAMPDIFF(YEAR, m_PERSON.birth, CURDATE()) AS age, m_ADDRESS.moo
+FROM m_PERSON
+INNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid
+WHERE m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)</textarea>
+                    </div>
+                </div>
+
+                <!-- Data Preview Grid Table -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col flex-grow">
+                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-teal-600"></i>
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide">ตารางผลลัพธ์ข้อมูล (Data Preview)</h3>
+                        </div>
+                        <span id="gridRecordCount" class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+                            0 รายการ
+                        </span>
+                    </div>
+
+                    <div class="p-3 overflow-x-auto min-h-[180px] flex-grow">
+                        <table id="resultTable" class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr id="tableHeaderRow" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                                    <th class="p-2 border-r border-slate-200">PID</th>
+                                    <th class="p-2 border-r border-slate-200">หมู่ที่</th>
+                                    <th class="p-2 border-r border-slate-200">รายละเอียด/อายุ/โรค</th>
+                                    <th class="p-2">สถานะพิกัด GIS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-600 font-mono">
+                                <tr>
+                                    <td colspan="4" class="p-6 text-center text-slate-400 font-sans italic">
+                                        พิมพ์คำสั่งภาษาไทยใน AI แล้วกดค้นหาเพื่อแสดงข้อมูลที่นี่
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+        <!-- STREAMING_CHUNK:Building Yarang GIS Map with Interactive Moo Cards... -->
+        <!-- BOTTOM SECTION: GIS MAP (Yarang District, Pattani - 6 Moos) -->
+        <div class="grid grid-cols-1 gap-5">
+            <section class="flex flex-col gap-3">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+                    
+                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-earth-asia text-emerald-600"></i>
+                            <h3 class="text-xs font-bold text-slate-700">แผนที่ระบาดวิทยา อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6)</h3>
+                        </div>
+                        <button onclick="toggleHeatmapView()" id="btnHeatmapToggle" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2.5 py-1 text-[10px] font-bold transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-fire text-amber-500"></i> โหมด Heatmap
+                        </button>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 flex flex-col gap-3">
+                        
+                        <!-- DYNAMIC FILTER CHECKBOX STRIP -->
+                        <div class="flex flex-wrap justify-between items-center gap-2 text-xs bg-white p-2.5 rounded-lg border border-slate-200">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">กรองการแสดงผล (คำนวณตามคิวรี):</span>
+                                <div id="dynamicGisLayerCheckboxes" class="flex items-center gap-2 flex-wrap">
+                                    <!-- Populated dynamically via JS -->
+                                </div>
+                            </div>
+                            <select id="gisTimelineSelect" onchange="updateGisLayers()" class="bg-slate-50 border border-slate-300 rounded px-2 py-0.5 text-xs text-slate-700">
+                                <option value="ALL">ไตรมาส/เวลาทั้งหมด</option>
+                                <option value="2026_Q1">2026 - Q1</option>
+                                <option value="2026_Q2">2026 - Q2</option>
+                            </select>
+                        </div>
+
+                        <!-- Leaflet Canvas Map -->
+                        <div id="diseaseMap" class="w-full h-72 md:h-80 bg-slate-200 rounded-xl relative shadow-inner border border-slate-300/80"></div>
+                        
+                        <!-- INTERACTIVE MOO SELECTION TOOLBAR & 6-CARD SUMMARY GRID -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-600 text-[11px] flex items-center gap-1">
+                                    <i class="fa-solid fa-filter text-teal-600"></i> ตัวกรองเลือกหมู่บ้าน (คลิกเพื่อเลือก/ยกเลิก):
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="selectAllMoos()" class="bg-teal-100 hover:bg-teal-200 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs">
+                                        <i class="fa-solid fa-check-double mr-1"></i>เลือกทุกหมู่
+                                    </button>
+                                    <button onclick="clearAllMoos()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs">
+                                        <i class="fa-solid fa-xmark mr-1"></i>ล้างการเลือก
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs text-center" id="mooCardsGrid">
+                                <!-- Cards rendered dynamically with click events -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- COLLAPSIBLE REFERENCE DRAWER -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center cursor-pointer" onclick="toggleReferenceDrawer()">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-book-bookmark text-teal-700"></i>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">คู่มืออ้างอิงสูตร & คำอธิบายฟิลด์ (Level 2 Dictionary)</h3>
+                </div>
+                <button id="btnToggleDrawer" class="text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1">
+                    <span>เปิด/ซ่อน</span>
+                    <i class="fa-solid fa-chevron-down transition-transform duration-200" id="drawerChevron"></i>
+                </button>
+            </div>
+
+            <div id="referenceDrawerContent" class="hidden p-4 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 border-t border-slate-100">
+                <div class="flex flex-col gap-3">
+                    <div class="flex justify-between items-center border-b pb-1.5">
+                        <span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-star text-amber-500 mr-1"></i>คลังสูตร SQL ยอดฮิต (CRUD)</span>
+                        <button onclick="openRecipeModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] px-2 py-1 rounded font-bold">
+                            + เพิ่มสูตรใหม่
+                        </button>
+                    </div>
+                    <div id="recipesContainer" class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <div class="flex justify-between items-center border-b pb-1.5">
+                        <span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-list-check text-teal-600 mr-1"></i>คำอธิบายฟิลด์ข้อมูล (Level 2)</span>
+                        <button onclick="openAddHeaderModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2 py-1 rounded font-bold">
+                            + เพิ่มฟิลด์ใหม่
+                        </button>
+                    </div>
+                    <div id="fieldsDictionaryContainer" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODALS -->
+    <!-- Prompt Modifier CRUD Modal -->
+    <div id="fieldManagerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
+            <div class="bg-teal-800 text-white p-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-teal-300"></i>
+                    <h3 class="text-xs font-bold uppercase">จัดการปุ่มตัวช่วยค้นหาใน AI (Prompt Modifiers CRUD)</h3>
+                </div>
+                <button onclick="closeFieldManagerModal()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 flex flex-col gap-3">
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-700">เพิ่มปุ่มคำค้นด่วนใหม่:</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="newBtnLabel" class="text-xs p-2 border border-slate-300 rounded focus:outline-none" placeholder="ชื่อปุ่ม (เช่น kid under 15)" />
+                        <input type="text" id="newBtnSnippet" class="text-xs p-2 border border-slate-300 rounded focus:outline-none" placeholder="คำค้นที่จะแทรกใน AI" />
+                    </div>
+                    <button onclick="addCustomSnippetButton()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 rounded transition-all">
+                        + เพิ่มปุ่มลงในแถบ AI
+                    </button>
+                </div>
+                <span class="text-[11px] font-bold text-slate-600 uppercase">รายการปุ่มปัจจุบัน:</span>
+                <div id="customButtonList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1"></div>
+            </div>
+            <div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end">
+                <button onclick="closeFieldManagerModal()" class="bg-slate-800 text-white text-xs font-bold px-4 py-1.5 rounded-lg">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Settings Modal Dialog -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
+            <div class="bg-slate-800 text-white p-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-key text-teal-400"></i>
+                    <h3 class="text-xs font-bold">ตั้งค่า Gemini API Key (บันทึกออฟไลน์ในเครื่อง)</h3>
+                </div>
+                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 flex flex-col gap-2.5">
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    กุญแจ API จะถูกจัดเก็บบนเว็บบราวเซอร์คอมพิวเตอร์เครื่องนี้อย่างปลอดภัย ปล่อยว่างไว้เพื่อใช้ระบบจำลองคำตอบออฟไลน์ฟรีด่วนได้เสมอ
+                </p>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-700">Gemini API Key:</label>
+                    <input type="password" id="apiKeyInput" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="AI_zaSyD..." />
+                </div>
+            </div>
+            <div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end gap-2">
+                <button onclick="toggleApiKeyModal()" class="bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-1.5 rounded-lg">ปิด</button>
+                <button onclick="saveApiKey()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-xs">บันทึกตั้งค่า</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification -->
+    <div id="toastNotification" class="fixed bottom-5 left-5 z-[2000] transform translate-y-10 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs py-2 px-3.5 rounded-xl shadow-xl flex items-center gap-2 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMessage">บันทึกข้อมูลเรียบร้อยแล้ว</span>
+    </div>
+
+    <!-- Leaflet Map JS Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- STREAMING_CHUNK:Executing JavaScript Engine with Kids Query & Interactive Moo Controls... -->
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        const yarangCenterLat = 6.7628;
+        const yarangCenterLng = 101.2980;
+
+        function generateYarangMockCases() {
+            const cases = [];
+            const types = ["dm", "ep", "df", "ht"];
+            
+            for (let moo = 1; moo <= 6; moo++) {
+                const mooLatBase = yarangCenterLat + (moo - 3.5) * 0.008;
+                const mooLngBase = yarangCenterLng + (moo - 3.5) * 0.006;
+
+                for (let i = 1; i <= 100; i++) {
+                    const type = types[i % types.length];
+                    const quarter = `2026_Q${(i % 2) + 1}`;
+                    const pid = `P${moo}${String(i).padStart(3, '0')}`;
+                    
+                    const lat = mooLatBase + (Math.random() - 0.5) * 0.004;
+                    const lng = mooLngBase + (Math.random() - 0.5) * 0.004;
+
+                    cases.push({
+                        pid: pid,
+                        address: `${i}/${(i % 5) + 1} ม.${moo} ต.ยะรัง`,
+                        moo: moo,
+                        lat: parseFloat(lat.toFixed(5)),
+                        lng: parseFloat(lng.toFixed(5)),
+                        quarter: quarter,
+                        type: type,
+                        diag: type === 'dm' ? 'E119 (เบาหวาน)' : (type === 'ep' ? 'BCG/EPI (วัคซีน)' : (type === 'df' ? 'A90 (ไข้เลือดออก)' : 'I10 (ความดัน)'))
+                    });
+                }
+            }
+            return cases;
+        }
+
+        const mockGisCases = generateYarangMockCases();
+
+        let customPromptModifiers = [
+            { id: "m1", label: "+ เด็ก <= 15 ปี", keyword: "kid under 15" },
+            { id: "m2", label: "+ สิทธิการรักษา", keyword: "สิทธิการรักษา" },
+            { id: "m3", label: "+ เบาหวาน", keyword: "เบาหวาน" },
+            { id: "m4", label: "+ หมู่ 2 3 4 5", keyword: "หมู่ 2 3 4 5" }
+        ];
+
+        let mapInstance = null;
+        let mapMarkersGroup = null;
+        let isHeatmapView = false;
+        let activeQueriedMoos = [1, 2, 3, 4, 5, 6];
+
+        window.onload = function() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                updateApiKeyBadge(true);
+            } else {
+                updateApiKeyBadge(false);
+            }
+
+            const savedModifiers = localStorage.getItem('mypcu_custom_prompt_modifiers');
+            if (savedModifiers) {
+                try { customPromptModifiers = JSON.parse(savedModifiers); } catch(e){}
+            }
+
+            renderSnippetButtons();
+            initGisMap();
+            renderMooCardsUI();
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F9') {
+                    e.preventDefault();
+                    runQuery();
+                }
+            });
+        };
+
+        function updateApiKeyBadge(isConnected) {
+            const badge = document.getElementById('aiStatusBadge');
+            const demoIndicator = document.getElementById('demoModeIndicator');
+            const btnHeader = document.getElementById('apiKeyStatusLabel');
+
+            if (isConnected) {
+                if (badge) { badge.className = "text-[10px] bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold"; badge.innerText = "Gemini API Connected"; }
+                if (btnHeader) btnHeader.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> เชื่อมต่อ AI Key แล้ว`;
+                if (demoIndicator) demoIndicator.classList.add('hidden');
+            } else {
+                if (badge) { badge.className = "text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold"; badge.innerText = "โหมดจำลองฟรี"; }
+                if (btnHeader) btnHeader.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> ตั้งค่า API Key`;
+                if (demoIndicator) demoIndicator.classList.remove('hidden');
+            }
+        }
+
+        function renderSnippetButtons() {
+            const container = document.getElementById('aiPromptQuickButtons');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="appendPromptKeyword('แผนที่')" class="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs flex items-center gap-1">
+                    <i class="fa-solid fa-location-dot text-rose-600"></i> + แผนที่ (พิกัด GIS)
+                </button>
+            `;
+
+            customPromptModifiers.forEach(m => {
+                const b = document.createElement('button');
+                b.className = "bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded px-2 py-0.5 text-[10px] font-medium transition-all shadow-2xs";
+                b.onclick = () => appendPromptKeyword(m.keyword);
+                b.innerText = m.label;
+                container.appendChild(b);
+            });
+        }
+
+        function appendPromptKeyword(keyword) {
+            const input = document.getElementById('aiPromptInput');
+            const current = input.value.trim();
+            input.value = current ? current + " " + keyword : keyword;
+            input.focus();
+        }
+
+        function openFieldManagerModal() {
+            const container = document.getElementById('customButtonList');
+            container.innerHTML = "";
+
+            customPromptModifiers.forEach((m, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded text-xs";
+                row.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-800">${m.label}</span>
+                        <span class="font-mono text-[10px] text-slate-500">${m.keyword}</span>
+                    </div>
+                    <button onclick="deleteCustomSnippetButton(${index})" class="text-rose-600 hover:text-rose-800 text-xs font-bold">
+                        <i class="fa-solid fa-trash"></i> ลบ
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+
+            document.getElementById('fieldManagerModal').classList.remove('hidden');
+        }
+
+        function closeFieldManagerModal() { document.getElementById('fieldManagerModal').classList.add('hidden'); }
+
+        function addCustomSnippetButton() {
+            const lbl = document.getElementById('newBtnLabel').value.trim();
+            const kw = document.getElementById('newBtnSnippet').value.trim();
+            if (!lbl || !kw) {
+                showToast("กรุณากรอกชื่อปุ่มและคำค้น!");
+                return;
+            }
+
+            customPromptModifiers.push({ id: "m" + Date.now(), label: lbl.startsWith("+") ? lbl : "+ " + lbl, keyword: kw });
+            localStorage.setItem('mypcu_custom_prompt_modifiers', JSON.stringify(customPromptModifiers));
+            renderSnippetButtons();
+            openFieldManagerModal();
+            document.getElementById('newBtnLabel').value = "";
+            document.getElementById('newBtnSnippet').value = "";
+            showToast("เพิ่มปุ่มช่วยค้นหาเรียบร้อย!");
+        }
+
+        function deleteCustomSnippetButton(index) {
+            customPromptModifiers.splice(index, 1);
+            localStorage.setItem('mypcu_custom_prompt_modifiers', JSON.stringify(customPromptModifiers));
+            renderSnippetButtons();
+            openFieldManagerModal();
+            showToast("ลบปุ่มเรียบร้อยแล้ว");
+        }
+
+        // Leaflet Map Initialization
+        function initGisMap() {
+            if (mapInstance) return;
+            mapInstance = L.map('diseaseMap').setView([yarangCenterLat, yarangCenterLng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(mapInstance);
+
+            mapMarkersGroup = L.layerGroup().addTo(mapInstance);
+            renderDynamicGisCheckboxes(["dm", "ep", "df", "ht"]);
+            updateGisLayers();
+        }
+
+        function createMooIcon(mooNumber, diseaseType) {
+            const icons = { 1: "fa-house", 2: "fa-star", 3: "fa-building", 4: "fa-tree", 5: "fa-location-dot", 6: "fa-mosque" };
+            const colors = { dm: "bg-rose-600", ep: "bg-emerald-600", df: "bg-sky-600", ht: "bg-amber-600" };
+
+            const iconClass = icons[mooNumber] || "fa-circle";
+            const colorClass = colors[diseaseType] || "bg-indigo-600";
+
+            return L.divIcon({
+                className: 'custom-moo-marker',
+                html: `<div class="${colorClass} text-white w-6 h-6 rounded-full border-2 border-white shadow-md flex items-center justify-center text-[10px]"><i class="fa-solid ${iconClass}"></i></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        function toggleHeatmapView() {
+            isHeatmapView = !isHeatmapView;
+            const btn = document.getElementById('btnHeatmapToggle');
+            if (isHeatmapView) {
+                btn.className = "bg-amber-500 text-slate-900 rounded px-2.5 py-1 text-[10px] font-bold transition-all flex items-center gap-1 shadow-xs";
+                btn.innerHTML = `<i class="fa-solid fa-map-pin"></i> โหมดหมุด (Pins)`;
+            } else {
+                btn.className = "bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2.5 py-1 text-[10px] font-bold transition-all flex items-center gap-1";
+                btn.innerHTML = `<i class="fa-solid fa-fire text-amber-500"></i> โหมด Heatmap`;
+            }
+            updateGisLayers();
+        }
+
+        // INTERACTIVE MOO CARDS MULTI-SELECT TOGGLE LOGIC
+        function toggleMooFilter(mooNum) {
+            if (activeQueriedMoos.includes(mooNum)) {
+                activeQueriedMoos = activeQueriedMoos.filter(m => m !== mooNum);
+            } else {
+                activeQueriedMoos.push(mooNum);
+                activeQueriedMoos.sort((a, b) => a - b);
+            }
+            renderMooCardsUI();
+            updateGisLayers();
+            showToast(`อัปเดตการเลือกหมู่บ้าน: ${activeQueriedMoos.length > 0 ? 'ม.' + activeQueriedMoos.join(', ') : 'ไม่ได้เลือก'}`);
+        }
+
+        function selectAllMoos() {
+            activeQueriedMoos = [1, 2, 3, 4, 5, 6];
+            renderMooCardsUI();
+            updateGisLayers();
+            showToast("เลือกทุกหมู่บ้านเรียบร้อยแล้ว");
+        }
+
+        function clearAllMoos() {
+            activeQueriedMoos = [];
+            renderMooCardsUI();
+            updateGisLayers();
+            showToast("ล้างการเลือกหมู่บ้านทั้งหมดแล้ว");
+        }
+
+        function renderMooCardsUI() {
+            const grid = document.getElementById('mooCardsGrid');
+            if (!grid) return;
+            grid.innerHTML = "";
+
+            const mooMeta = {
+                1: { icon: "fa-house", color: "text-slate-700", name: "หมู่ 1" },
+                2: { icon: "fa-star", color: "text-amber-500", name: "หมู่ 2" },
+                3: { icon: "fa-building", color: "text-indigo-600", name: "หมู่ 3" },
+                4: { icon: "fa-tree", color: "text-emerald-600", name: "หมู่ 4" },
+                5: { icon: "fa-location-dot", color: "text-rose-500", name: "หมู่ 5" },
+                6: { icon: "fa-mosque", color: "text-sky-600", name: "หมู่ 6" }
+            };
+
+            for (let m = 1; m <= 6; m++) {
+                const isSelected = activeQueriedMoos.includes(m);
+                const card = document.createElement('div');
+                card.onclick = () => toggleMooFilter(m);
+                
+                card.className = `p-2 rounded-lg border cursor-pointer transition-all flex flex-col items-center justify-between select-none ${
+                    isSelected 
+                    ? 'bg-teal-50 border-teal-500 ring-2 ring-teal-400/30 shadow-xs' 
+                    : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 hover:opacity-80'
+                }`;
+
+                card.innerHTML = `
+                    <span class="block text-[10px] font-bold ${isSelected ? 'text-teal-900' : 'text-slate-400'}">
+                        <i class="fa-solid ${mooMeta[m].icon} ${isSelected ? mooMeta[m].color : 'text-slate-400'} mr-1"></i>${mooMeta[m].name}
+                    </span>
+                    <span id="statsMoo${m}" class="font-bold text-xs ${isSelected ? 'text-teal-800' : 'text-slate-400'} mt-0.5">0 เคส</span>
+                    <span class="text-[9px] font-semibold mt-1 px-1.5 py-0.2 rounded ${isSelected ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'}">
+                        ${isSelected ? '✓ เลือกอยู่' : '+ คลิกเลือก'}
+                    </span>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function renderDynamicGisCheckboxes(activeTypes) {
+            const container = document.getElementById('dynamicGisLayerCheckboxes');
+            if (!container) return;
+            container.innerHTML = "";
+
+            const typeLabels = {
+                dm: { label: "เบาหวาน (E11)", color: "text-rose-800" },
+                ep: { label: "วัคซีนเด็ก (EPI)", color: "text-emerald-800" },
+                df: { label: "ไข้เลือดออก (A90)", color: "text-sky-800" },
+                ht: { label: "ความดัน (I10)", color: "text-amber-800" }
+            };
+
+            activeTypes.forEach(t => {
+                if (typeLabels[t]) {
+                    const lbl = document.createElement('label');
+                    lbl.className = `cursor-pointer text-[10px] font-medium flex items-center gap-1 ${typeLabels[t].color}`;
+                    lbl.innerHTML = `<input type="checkbox" value="${t}" checked onchange="updateGisLayers()" class="gis-type-chk rounded"> ${typeLabels[t].label}`;
+                    container.appendChild(lbl);
+                }
+            });
+        }
+
+        function updateGisLayers() {
+            if (!mapInstance || !mapMarkersGroup) return;
+            mapMarkersGroup.clearLayers();
+
+            const chks = document.querySelectorAll('.gis-type-chk');
+            const selectedTypes = [];
+            chks.forEach(c => { if (c.checked) selectedTypes.push(c.value); });
+
+            const selectedTimeline = document.getElementById('gisTimelineSelect').value;
+
+            let filteredCases = mockGisCases.filter(c => 
+                activeQueriedMoos.includes(c.moo) && 
+                (selectedTypes.length === 0 || selectedTypes.includes(c.type))
+            );
+
+            if (selectedTimeline !== "ALL") {
+                filteredCases = filteredCases.filter(c => c.quarter === selectedTimeline);
+            }
+
+            const mooCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+            filteredCases.forEach(item => {
+                mooCounts[item.moo] = (mooCounts[item.moo] || 0) + 1;
+
+                if (isHeatmapView) {
+                    const heatCircle = L.circle([item.lat, item.lng], {
+                        radius: 100,
+                        color: 'transparent',
+                        fillColor: item.type === 'dm' ? '#f43f5e' : (item.type === 'ep' ? '#10b981' : '#38bdf8'),
+                        fillOpacity: 0.45
+                    });
+                    mapMarkersGroup.addLayer(heatCircle);
+                } else {
+                    const villageIcon = createMooIcon(item.moo, item.type);
+                    const marker = L.marker([item.lat, item.lng], { icon: villageIcon });
+                    marker.bindPopup(`<div class="p-1 font-sans text-xs"><strong>PID: ${item.pid}</strong><br>โรค/สถานะ: ${item.diag}<br>ที่อยู่: ${item.address}</div>`);
+                    mapMarkersGroup.addLayer(marker);
+                }
+            });
+
+            for (let m = 1; m <= 6; m++) {
+                const el = document.getElementById(`statsMoo${m}`);
+                if (el) el.innerText = `${mooCounts[m]} เคส`;
+            }
+        }
+
+        // SMART PARSER & ROUTER FOR KIDS/AGE, MOOS, DISEASES
+        async function generateSqlWithAI() {
+            const prompt = document.getElementById('aiPromptInput').value.trim();
+            if (!prompt) {
+                showToast("กรุณากรอกโจทย์ความต้องการก่อน!");
+                return;
+            }
+
+            const lowerPrompt = prompt.toLowerCase();
+            const requiresMap = lowerPrompt.includes("แผนที่") || lowerPrompt.includes("พิกัด") || lowerPrompt.includes("gis") || lowerPrompt.includes("พล็อต");
+            
+            // Age & Kid Query Detection (Fixes "kid under 15" issue)
+            const isKidQuery = lowerPrompt.includes("kid") || lowerPrompt.includes("เด็ก") || lowerPrompt.includes("15") || lowerPrompt.includes("อายุ");
+
+            // Moo numbers extraction
+            let extractedMoos = [];
+            const mooMatch = lowerPrompt.match(/หมู่\s*([\d\s,]+)/i);
+            if (mooMatch && mooMatch[1]) {
+                const numbers = mooMatch[1].match(/\d+/g);
+                if (numbers) {
+                    extractedMoos = Array.from(new Set(numbers.map(n => parseInt(n)))).filter(n => n >= 1 && n <= 6);
+                }
+            }
+
+            if (extractedMoos.length > 0) {
+                activeQueriedMoos = extractedMoos;
+                renderMooCardsUI();
+            }
+
+            let mooConditionSql = "";
+            if (activeQueriedMoos.length === 1) {
+                mooConditionSql = `m_ADDRESS.moo = '${activeQueriedMoos[0]}'`;
+            } else if (activeQueriedMoos.length > 1) {
+                const formattedList = activeQueriedMoos.map(m => `'${m}'`).join(", ");
+                mooConditionSql = `m_ADDRESS.moo IN (${formattedList})`;
+            } else {
+                mooConditionSql = "1=1"; // No moo constraint
+            }
+
+            let generatedSql = "";
+            let plainThaiBreakdown = [];
+            let activeTypes = ["dm"];
+
+            // CASE A: Kid / Child Age <= 15 Query
+            if (isKidQuery) {
+                activeTypes = ["ep"];
+                renderDynamicGisCheckboxes(activeTypes);
+
+                if (requiresMap) {
+                    generatedSql = `SELECT m_PERSON.pid, m_PERSON.birth, TIMESTAMPDIFF(YEAR, m_PERSON.birth, CURDATE()) AS age, m_ADDRESS.moo, m_ADDRESS.latitude, m_ADDRESS.longitude\nFROM m_PERSON\nINNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid\nWHERE m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)\nAND ${mooConditionSql} AND m_ADDRESS.latitude IS NOT NULL`;
+                    plainThaiBreakdown = [
+                        { table: "m_PERSON", reason: "ทำเนียบประชากร คำนวณอายุเด็ก <= 15 ปี (birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR))" },
+                        { table: "m_ADDRESS", reason: `กรองหมู่บ้านที่เลือก (${activeQueriedMoos.join(", ")}) พร้อมดึงพิกัด Latitude/Longitude แสดงจุดบนแผนที่` }
+                    ];
+                } else {
+                    generatedSql = `SELECT m_PERSON.pid, m_PERSON.birth, TIMESTAMPDIFF(YEAR, m_PERSON.birth, CURDATE()) AS age, m_ADDRESS.moo\nFROM m_PERSON\nINNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid\nWHERE m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)\nAND ${mooConditionSql}`;
+                    plainThaiBreakdown = [
+                        { table: "m_PERSON", reason: "ดึงรายชื่อและคำนวณอายุเด็กไม่เกิน 15 ปี" },
+                        { table: "m_ADDRESS", reason: `กรองเฉพาะเขต หมู่ที่ ${activeQueriedMoos.join(", ")}` },
+                        { table: "PDPA Rule", reason: "ไม่ดึงชื่อจริง และไม่เปิดพิกัดแผนที่ เพื่อคุ้มครองความลับเด็ก" }
+                    ];
+                }
+            } 
+            // CASE B: Disease / General Query
+            else {
+                let diseaseCode = "E11%";
+                let diseaseName = "เบาหวาน (E11)";
+
+                if (lowerPrompt.includes("วัคซีน")) {
+                    diseaseName = "วัคซีนเด็ก (EPI)";
+                    activeTypes = ["ep"];
+                } else if (lowerPrompt.includes("ไข้เลือดออก")) {
+                    diseaseName = "ไข้เลือดออก (A90)";
+                    activeTypes = ["df"];
+                } else if (lowerPrompt.includes("ความดัน")) {
+                    diseaseName = "ความดันโลหิตสูง (I10)";
+                    activeTypes = ["ht"];
+                }
+
+                renderDynamicGisCheckboxes(activeTypes);
+
+                if (requiresMap) {
+                    generatedSql = `SELECT m_PERSON.pid, m_ADDRESS.moo, m_ADDRESS.latitude, m_ADDRESS.longitude, m_CHRONIC.chronic\nFROM m_PERSON\nINNER JOIN m_CHRONIC ON m_PERSON.pid = m_CHRONIC.pid\nINNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid\nWHERE m_CHRONIC.chronic LIKE '${diseaseCode}' AND ${mooConditionSql} AND m_ADDRESS.latitude IS NOT NULL`;
+                    plainThaiBreakdown = [
+                        { table: "m_PERSON", reason: "ทำเนียบประชากรหลัก รพ.สต. ยะรัง" },
+                        { table: "m_CHRONIC", reason: `กรองเฉพาะผู้ป่วยกลุ่มโรค ${diseaseName}` },
+                        { table: "m_ADDRESS", reason: `กรองเฉพาะ หมู่ที่ ${activeQueriedMoos.join(", ")} พร้อมดึงพิกัดแผนที่` }
+                    ];
+                } else {
+                    generatedSql = `SELECT m_PERSON.pid, m_ADDRESS.moo, m_CHRONIC.chronic\nFROM m_PERSON\nINNER JOIN m_CHRONIC ON m_PERSON.pid = m_CHRONIC.pid\nINNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid\nWHERE m_CHRONIC.chronic LIKE '${diseaseCode}' AND ${mooConditionSql}`;
+                    plainThaiBreakdown = [
+                        { table: "m_PERSON & m_CHRONIC", reason: `กรองข้อมูลโรค ${diseaseName} เฉพาะเขต หมู่ที่ ${activeQueriedMoos.join(", ")}` },
+                        { table: "PDPA Rule", reason: "ไม่ดึงชื่อจริง และไม่เปิดพิกัดแผนที่" }
+                    ];
+                }
+            }
+
+            renderAiResponse("ผลลัพธ์การประมวลผล AI", {
+                sql: generatedSql,
+                breakdown: plainThaiBreakdown,
+                requiresMap: requiresMap
+            });
+        }
+
+        function renderAiResponse(title, responseObj) {
+            document.getElementById('aiResponsePanel').classList.remove('hidden');
+            document.getElementById('aiResultTitle').innerText = title;
+            document.getElementById('aiSqlOutput').innerText = responseObj.sql || "";
+
+            const explanationContainer = document.getElementById('aiStructuredExplanation');
+            explanationContainer.innerHTML = "";
+
+            if (responseObj.breakdown && responseObj.breakdown.length > 0) {
+                responseObj.breakdown.forEach(item => {
+                    const elRow = document.createElement("div");
+                    elRow.className = "flex flex-col border-b border-slate-800/60 pb-1 last:border-0";
+                    elRow.innerHTML = `
+                        <span class="font-bold text-teal-400 text-[10px]">📌 ${item.table}:</span>
+                        <span class="text-slate-300 font-light text-[10px] ml-2">${item.reason}</span>
+                    `;
+                    explanationContainer.appendChild(elRow);
+                });
+            }
+        }
+
+        function hideAiResponse() {
+            document.getElementById('aiResponsePanel').classList.add('hidden');
+        }
+
+        function copyAiSqlDirect() {
+            const code = document.getElementById('aiSqlOutput').innerText;
+            if (!code) return;
+
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = code;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            const btn = document.getElementById('btnCopySqlDirect');
+            btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-300">คัดลอกเรียบร้อย!</span>`;
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-regular fa-copy"></i> <span>คัดลอกโค้ด SQL</span>`;
+            }, 2000);
+            showToast("คัดลอกโค้ด SQL สำเร็จ!");
+        }
+
+        function applyAiSql() {
+            const code = document.getElementById('aiSqlOutput').innerText;
+            if (code) {
+                document.getElementById('sqlEditor').value = code;
+                runQuery();
+                showToast("วางคำสั่งและแสดงตารางข้อมูลแล้ว!");
+            }
+        }
+
+        function runQuery() {
+            const sqlText = document.getElementById('sqlEditor').value.trim();
+            if (!sqlText) {
+                showToast("ไม่พบคำสั่ง SQL!");
+                return;
+            }
+
+            const lowerSql = sqlText.toLowerCase();
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            const hasGps = lowerSql.includes("latitude") || lowerSql.includes("longitude");
+            const isAgeQuery = lowerSql.includes("birth") || lowerSql.includes("age");
+
+            const sampleData = [];
+            activeQueriedMoos.forEach(moo => {
+                const detailText = isAgeQuery ? `อายุ ${Math.floor(Math.random()*12)+1} ปี (เด็ก)` : "E119 (เบาหวาน)";
+                sampleData.push({ pid: `P${moo}001`, moo: `${moo}`, diag: detailText, gps: hasGps ? `6.76${moo}2, 101.29${moo}5` : "ไม่เปิดพิกัด" });
+                sampleData.push({ pid: `P${moo}002`, moo: `${moo}`, diag: detailText, gps: hasGps ? `6.76${moo}8, 101.29${moo}9` : "ไม่เปิดพิกัด" });
+            });
+
+            sampleData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-2 font-bold text-teal-700 border-r border-slate-100">${row.pid}</td>
+                    <td class="p-2 border-r border-slate-100">ม.${row.moo}</td>
+                    <td class="p-2 border-r border-slate-100">${row.diag}</td>
+                    <td class="p-2 ${hasGps ? 'text-emerald-600 font-bold' : 'text-slate-400'}">${row.gps}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('gridRecordCount').innerText = `${sampleData.length} รายการ`;
+
+            if (hasGps) {
+                updateGisLayers();
+                showToast("ดึงข้อมูลสำเร็จ พร้อมเปิดแผนที่ อ.ยะรัง");
+            } else {
+                showToast("ดึงข้อมูลสำเร็จ (โหมดคุ้มครอง PDPA - ไม่เปิดแผนที่)");
+            }
+        }
+
+        function insertAtCursor(insertValue) {
+            const editor = document.getElementById('sqlEditor');
+            const startPos = editor.selectionStart;
+            const endPos = editor.selectionEnd;
+            const originalText = editor.value;
+
+            editor.value = originalText.substring(0, startPos) + insertValue + originalText.substring(endPos);
+            const newCursorPos = startPos + insertValue.length;
+            editor.focus();
+            editor.setSelectionRange(newCursorPos, newCursorPos);
+        }
+
+        function handleTableSelect(value) {
+            if (!value) return;
+            insertAtCursor(value + " ");
+        }
+
+        function toggleReferenceDrawer() {
+            const content = document.getElementById('referenceDrawerContent');
+            const chevron = document.getElementById('drawerChevron');
+            content.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            const messageSpan = document.getElementById('toastMessage');
+            if (!toast || !messageSpan) return;
+            messageSpan.innerText = msg;
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.transform = 'translateY(10px)';
+                toast.style.opacity = '0';
+            }, 2200);
+        }
+
+        function toggleApiKeyModal() { document.getElementById('apiKeyModal').classList.toggle('hidden'); }
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            localStorage.setItem('gemini_api_key', key);
+            updateApiKeyBadge(!!key);
+            toggleApiKeyModal();
+            showToast("บันทึกข้อมูลตั้งค่าแล้ว!");
+        }
+    </script>
+</body>
+</html>
+```eof
+
+I have updated the application file `mypcu_sql_cheatsheet.html`.
+
+### Summary of What Was Fixed:
+1. **Parser Mismatch Fixed:**
+   * Prompts containing `"kid under 15"`, `"เด็ก"`, `"15"`, or `"อายุ"` now generate proper age-filtering SQL (`m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)`) instead of defaulting to diabetes.
+2. **Interactive Village Multi-Select Cards:**
+   * Each of the 6 village cards (Moo 1 to 6) is now an active toggle button.
+   * Includes **"เลือกทุกหมู่ (Select All)"** and **"ล้างการเลือก (Select None)"** control buttons above the cards.

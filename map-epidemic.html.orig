@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="th">
 <head>
-<meta charset="utf-8"/>
-<title>ระบบบริหารจัดการทะเบียนระบาดวิทยา รพ.สต.ยะรัง (เวอร์ชันแก้ไขตัวกรองและแผนที่)</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>
+    <meta charset="UTF-8">
+    <title>ระบบบริหารจัดการทะเบียนระบาดวิทยา รพ.สต.ยะรัง (เวอร์ชันแก้ไขตัวกรองและแผนที่)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
@@ -43,566 +42,115 @@
         .toast-error { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #dc2626; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 90%; display: none; }
         .toast-success { background: #16a34a; }
     </style>
-<style>/* ============================================================
-   RESPONSIVE NAVIGATION (Injected)
-   Mobile: Fixed bottom bar (Search, Home, Note)
-   Desktop: Collapsible sidebar (collapse on idle, expand on hover)
-   Search drawer: slide-up with search bar at bottom (sticky)
-   ============================================================ */
-:root {
-  --nav-height: 64px;
-  --nav-width: 260px;
-  --nav-collapsed: 56px;
-  --tool-brand: #6366f1;
-  --tool-brand-hover: #4f46e5;
-  --tool-brand-light: #e0e7ff;
-  --tool-brand-text: #312e81;
-  --bg-base: #0f172a;
-  --bg-card: #1e293b;
-  --bg-elevated: #334155;
-  --bg-hover: #475569;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --border-focus: #6366f1;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --transition: 150ms ease;
-  --z-nav: 1000;
-}
-html.light {
-  --bg-base: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-elevated: #f1f5f9;
-  --bg-hover: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
-}
-
-/* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
-.tools-fab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: var(--z-nav);
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  height: var(--nav-height);
-  padding: 0.25rem 0.5rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-}
-.tools-fab .fab-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: var(--text-secondary);
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-md);
-  font-size: 1.25rem;
-  min-width: 56px;
-  min-height: 48px;
-  transition: all var(--transition);
-  flex: 1;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  position: relative;
-}
-.tools-fab .fab-btn span {
-  font-size: 0.625rem;
-  margin-top: 0.125rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.tools-fab .fab-btn:hover,
-.tools-fab .fab-btn:active {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.tools-fab .fab-home {
-  color: var(--tool-brand);
-  font-size: 1.5rem;
-  flex: 1.3;
-  background: var(--tool-brand-light);
-  border-radius: 40px;
-  margin: 0 0.5rem;
-  min-height: 44px;
-}
-.tools-fab .fab-home:hover {
-  color: var(--tool-brand-text);
-  background: var(--tool-brand);
-}
-
-/* ===== SEARCH DRAWER (slide-up, search at bottom) ===== */
-.tools-drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: calc(var(--z-nav) + 1);
-  backdrop-filter: blur(4px);
-}
-.tools-drawer-overlay.open {
-  display: block;
-}
-.tools-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: calc(var(--z-nav) + 2);
-  background: var(--bg-card);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  max-height: 75vh;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
-}
-.tools-drawer.open {
-  transform: translateY(0);
-}
-.tools-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-.tools-drawer-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-.tools-drawer-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-elevated);
-  border: none;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.1rem;
-}
-.tools-drawer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 1rem;
-  overflow-y: auto;
-  flex: 1;
-}
-.tools-drawer-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.25rem;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  color: var(--text-secondary);
-  transition: all var(--transition);
-}
-.tools-drawer-item:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-.tools-drawer-item.active {
-  background: var(--tool-brand-light);
-  color: var(--tool-brand-text);
-}
-.tools-drawer-item .icon {
-  font-size: 1.5rem;
-}
-.tools-drawer-item .label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-/* Search bar at bottom of drawer - sticky */
-.tools-drawer-search-wrap {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  background: var(--bg-card);
-  padding: 0.75rem;
-  border-top: 1px solid var(--border-color);
-  z-index: 2;
-}
-.tools-drawer-search-wrap input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-size: 1rem;
-  outline: none;
-  box-sizing: border-box;
-}
-.tools-drawer-search-wrap input:focus {
-  border-color: var(--border-focus);
-}
-.tools-drawer-search-wrap input::placeholder {
-  color: var(--text-muted);
-}
-
-/* No results */
-.tools-drawer-no-results {
-  display: none;
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-/* ===== DESKTOP SIDEBAR (collapsible) ===== */
-@media (min-width: 768px) {
-  .tools-fab { display: none; }
-
-  .tools-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: var(--z-nav);
-    background: var(--bg-card);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-sm);
-    width: var(--nav-collapsed);
-    transition: width 0.2s ease;
-    overflow: hidden;
-  }
-  .tools-sidebar:hover {
-    width: var(--nav-width);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* Header / brand */
-  .tools-sidebar-header {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    min-height: 52px;
-  }
-  .tools-sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 700;
-    font-size: 1rem;
-  }
-  .tools-sidebar-brand .brand-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-brand .brand-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-brand .brand-text {
-    opacity: 1;
-  }
-
-  /* Search in sidebar */
-  .tools-sidebar-search {
-    width: 100%;
-    background: var(--bg-elevated);
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 0.5rem;
-    color: var(--text-primary);
-    font-size: 0.825rem;
-    outline: none;
-    box-sizing: border-box;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-search {
-    opacity: 1;
-  }
-  .tools-sidebar-search:focus {
-    border-color: var(--border-focus);
-  }
-  .tools-sidebar-search::placeholder {
-    color: var(--text-muted);
-  }
-
-  /* Nav links */
-  .tools-sidebar-nav {
-    flex: 1;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    overflow-y: auto;
-  }
-  .tools-sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.625rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    transition: all var(--transition);
-    white-space: nowrap;
-    min-height: 40px;
-  }
-  .tools-sidebar-link:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-  }
-  .tools-sidebar-link.active {
-    background: var(--tool-brand-light);
-    color: var(--tool-brand-text);
-    font-weight: 600;
-  }
-  .tools-sidebar-link .icon {
-    font-size: 1.2rem;
-    min-width: 24px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-link .link-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tools-sidebar:hover .tools-sidebar-link .link-text {
-    opacity: 1;
-  }
-
-  /* Scrollbar styling */
-  .tools-sidebar-nav::-webkit-scrollbar {
-    width: 4px;
-  }
-  .tools-sidebar-nav::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 2px;
-  }
-
-  /* Content offset - auto adjusts with sidebar width */
-  body {
-    padding-left: var(--nav-collapsed);
-    transition: padding-left 0.2s ease;
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-}
-</style><style>
-/* Ensure content not hidden behind bottom nav on mobile */
-@media (max-width: 767px) {
-  body {padding-bottom: calc(var(--nav-height) + 1rem); }
-  main {padding-bottom: calc(var(--nav-height) + 1rem); }
-  .container, .tool-main, #main-content, [role="main"] {
-    padding-bottom: calc(var(--nav-height) + 1rem) !important;
-  }
-  /* Hide page's own bottom bar on mobile - we provide the nav */
-  [data-has-own-bottom-bar] nav.fixed.bottom-0,
-  [data-has-own-bottom-bar] nav[class*="bottom-0"],
-  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
-    display: none !important;
-  }
-}
-@media (min-width: 768px) {
-  body {padding-left: var(--nav-collapsed); }
-  main, .container, .tool-main, #main-content, [role="main"] {
-    margin-left: var(--nav-collapsed);
-    max-width: calc(100% - var(--nav-collapsed));
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-  body:has(.tools-sidebar:hover) main,
-  body:has(.tools-sidebar:hover) .container,
-  body:has(.tools-sidebar:hover) .tool-main,
-  body:has(.tools-sidebar:hover) #main-content,
-  body:has(.tools-sidebar:hover) [role="main"] {
-    margin-left: var(--nav-width);
-    max-width: calc(100% - var(--nav-width));
-  }
-}
-</style></head>
-<body><!-- ===== Responsive Navigation ===== -->
-<!-- Mobile: 3-button bottom bar -->
-<nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
-<button aria-label="ค้นหา" class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา">
-    🔍<span>ค้นหา</span>
-</button>
-<a aria-label="หน้าหลัก" class="fab-btn fab-home" href="index.html" title="หน้าหลัก">
-    🏠<span>หน้าหลัก</span>
-</a>
-<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
-    📝<span>รายงานด่วน</span>
-</a>
-</nav>
-<!-- Search Drawer (slide-up) -->
-<div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
-<div class="tools-drawer" id="toolsDrawer">
-<div class="tools-drawer-header">
-<h3>🔍 ค้นหาเครื่องมือ</h3>
-<button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
-</div>
-<div class="tools-drawer-grid" id="toolsDrawerGrid">
-<a class="tools-drawer-item" href="envelope-printer.html"><span class="icon">✉️</span><span class="label">Envelope Printer</span></a>
-<a class="tools-drawer-item" href="autocorrect.html"><span class="icon">⌨️</span><span class="label">AHK AutoCorrect</span></a>
-<a class="tools-drawer-item active" href="map-epidemic.html"><span class="icon">📊</span><span class="label">Epidemiology Map</span></a>
-<a class="tools-drawer-item" href="base64-decoder.html"><span class="icon">🦫</span><span class="label">Base64 Decoder</span></a>
-<a class="tools-drawer-item" href="thai-recovery.html"><span class="icon">🔤</span><span class="label">Thai Recovery</span></a>
-<a class="tools-drawer-item" href="ink-planner.html"><span class="icon">🖨️</span><span class="label">Ink Planner</span></a>
-<a class="tools-drawer-item" href="inventory-analytics.html"><span class="icon">📦</span><span class="label">Inventory</span></a>
-<a class="tools-drawer-item" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label">Certificate Builder</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label">myPCU SQL Simulator</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label">myPCU AI SQL</span></a>
-<a class="tools-drawer-item" href="health-gis-app.html"><span class="icon">🏥</span><span class="label">Health GIS</span></a>
-<a class="tools-drawer-item" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label">GPS Tracker</span></a>
-<a class="tools-drawer-item" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label">VHV Voice Report</span></a>
-<a class="tools-drawer-item" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label">Yarang PCC</span></a>
-<div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
-</div>
-<div class="tools-drawer-search-wrap">
-<input autocomplete="off" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
-</div>
-</div>
-<!-- Desktop sidebar -->
-<aside aria-label="เครื่องมือนำทาง" class="tools-sidebar" role="navigation">
-<div class="tools-sidebar-header">
-<a class="tools-sidebar-brand" href="index.html">
-<span class="brand-icon">🛠️</span>
-<span class="brand-text">Zyde's Tools</span>
-</a>
-</div>
-<div class="tools-sidebar-nav">
-<input autocomplete="off" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
-<a class="tools-sidebar-link" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text">Envelope Printer</span></a>
-<a class="tools-sidebar-link" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text">AHK AutoCorrect</span></a>
-<a class="tools-sidebar-link active" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text">Epidemiology Map</span></a>
-<a class="tools-sidebar-link" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text">Base64 Decoder</span></a>
-<a class="tools-sidebar-link" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text">Thai Recovery</span></a>
-<a class="tools-sidebar-link" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text">Ink Planner</span></a>
-<a class="tools-sidebar-link" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text">Inventory</span></a>
-<a class="tools-sidebar-link" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text">Certificate Builder</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text">myPCU SQL Simulator</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text">myPCU AI SQL</span></a>
-<a class="tools-sidebar-link" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text">Health GIS</span></a>
-<a class="tools-sidebar-link" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text">GPS Tracker</span></a>
-<a class="tools-sidebar-link" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text">VHV Voice Report</span></a>
-<a class="tools-sidebar-link" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text">Yarang PCC</span></a>
-</div>
-</aside>
+</head>
+<body>
 <div class="toast-error" id="toastMsg"></div>
+
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
 
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">📊 Epidemiology Map</span>
+</div>
 
-<div class="header-zone">
-<div>
-<h2>📊 ศูนย์จัดการข้อมูลทะเบียนพิกัดระบาดวิทยา รพ.สต.ยะรัง</h2>
-<p style="font-size: 11px; opacity: 0.8;">ซ่อมระบบตัวกรองทำงานฉับไว ล้างป้ายเตือนบ้าน 1/12 ซ้ำ และเพิ่มปุ่มแผนที่เปิดแท็บใหม่ความเร็วสูง</p>
-</div>
-<div style="font-size: 12px; background: #115e59; padding: 6px 12px; border-radius: 6px; font-weight: bold;">🔒 ข้อมูลปลอดภัย ประมวลผลบนเครื่องคุณ</div>
-</div>
-<div class="control-zone">
-<div class="form-group">
-<label>📁 1. นำเข้าไฟล์ทะเบียนระบาดจาก MyPCU:</label>
-<input accept=".xlsx, .xls" id="excelInput" type="file"/>
-</div>
-<div class="form-group">
-<label>📍 2. ตัวกรองเลือกหมู่บ้าน:</label>
-<select id="mooFilter" onchange="applySystemFilters()">
-<option value="all">🔍 แสดงข้อมูลรวมทุกหมู่บ้าน</option>
-</select>
-</div>
-<div class="form-group">
-<label>⚠️ 3. ตัวกรองคัดแยกสถานะพิกัด:</label>
-<select id="statusFilter" onchange="applySystemFilters()">
-<option value="all">🔍 แสดงสถานะข้อมูลทั้งหมด</option>
-<option value="normal">✔️ พิกัดปกติ / พิกัดแนะนำดี</option>
-<option value="duplicate">⚠️ พิกัดซ้ำจุดเดิม (Cluster)</option>
-<option value="guessed">⚠️ พิกัดระบบสุ่มเดาให้</option>
-</select>
-</div>
-<div class="form-group">
-<label>📄 แถวต่อหน้า:</label>
-<select id="rowsSelect" onchange="changeRowsPerPage()">
-<option value="25">25 แถว</option>
-<option value="50">50 แถว</option>
-<option value="100">100 แถว</option>
-<option value="all">แสดงทั้งหมด (Show All)</option>
-</select>
-</div>
-<button class="btn btn-export" onclick="exportCleanData()" style="height: 33px;">📥 ส่งออกรายงานสะอาด (CSV)</button>
-</div>
-<div class="map-action-bar">
-<span style="font-size: 13px; font-weight: bold; color: #475569;">⚡ ส่องแผนที่ด่วนตามกลุ่มที่คัดกรองปัจจุบัน:</span>
-<button class="btn btn-map-tab btn-multipin" onclick="openCombinedMapTab('multipin')">🌐 ปุ่มที่ 1: ดูหมุดกระจายรายบ้าน (Multipin)</button>
-<button class="btn btn-map-tab btn-heatmap" onclick="openCombinedMapTab('heatmap')">🔥 ปุ่มที่ 2: ดูแผนที่ความร้อนระบาดวิทยา (Heatmap)</button>
-</div>
-<div class="main-container">
-<div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #475569;">
+    <div class="header-zone">
+        <div>
+            <h2>📊 ศูนย์จัดการข้อมูลทะเบียนพิกัดระบาดวิทยา รพ.สต.ยะรัง</h2>
+            <p style="font-size: 11px; opacity: 0.8;">ซ่อมระบบตัวกรองทำงานฉับไว ล้างป้ายเตือนบ้าน 1/12 ซ้ำ และเพิ่มปุ่มแผนที่เปิดแท็บใหม่ความเร็วสูง</p>
+        </div>
+        <div style="font-size: 12px; background: #115e59; padding: 6px 12px; border-radius: 6px; font-weight: bold;">🔒 ข้อมูลปลอดภัย ประมวลผลบนเครื่องคุณ</div>
+    </div>
+
+    <div class="control-zone">
+        <div class="form-group">
+            <label>📁 1. นำเข้าไฟล์ทะเบียนระบาดจาก MyPCU:</label>
+            <input type="file" id="excelInput" accept=".xlsx, .xls">
+        </div>
+        <div class="form-group">
+            <label>📍 2. ตัวกรองเลือกหมู่บ้าน:</label>
+            <select id="mooFilter" onchange="applySystemFilters()">
+                <option value="all">🔍 แสดงข้อมูลรวมทุกหมู่บ้าน</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>⚠️ 3. ตัวกรองคัดแยกสถานะพิกัด:</label>
+            <select id="statusFilter" onchange="applySystemFilters()">
+                <option value="all">🔍 แสดงสถานะข้อมูลทั้งหมด</option>
+                <option value="normal">✔️ พิกัดปกติ / พิกัดแนะนำดี</option>
+                <option value="duplicate">⚠️ พิกัดซ้ำจุดเดิม (Cluster)</option>
+                <option value="guessed">⚠️ พิกัดระบบสุ่มเดาให้</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>📄 แถวต่อหน้า:</label>
+            <select id="rowsSelect" onchange="changeRowsPerPage()">
+                <option value="25">25 แถว</option>
+                <option value="50">50 แถว</option>
+                <option value="100">100 แถว</option>
+                <option value="all">แสดงทั้งหมด (Show All)</option>
+            </select>
+        </div>
+        <button class="btn btn-export" onclick="exportCleanData()" style="height: 33px;">📥 ส่งออกรายงานสะอาด (CSV)</button>
+    </div>
+
+    <div class="map-action-bar">
+        <span style="font-size: 13px; font-weight: bold; color: #475569;">⚡ ส่องแผนที่ด่วนตามกลุ่มที่คัดกรองปัจจุบัน:</span>
+        <button class="btn btn-map-tab btn-multipin" onclick="openCombinedMapTab('multipin')">🌐 ปุ่มที่ 1: ดูหมุดกระจายรายบ้าน (Multipin)</button>
+        <button class="btn btn-map-tab btn-heatmap" onclick="openCombinedMapTab('heatmap')">🔥 ปุ่มที่ 2: ดูแผนที่ความร้อนระบาดวิทยา (Heatmap)</button>
+    </div>
+
+    <div class="main-container">
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #475569;">
             จำนวนเคสที่ผ่านตัวกรองปัจจุบัน: <span id="totalTxt" style="color:#0f766e; font-size:14px;">0</span> ราย
         </div>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr>
-<th width="90">ส่องเดี่ยว</th>
-<th onclick="toggleSort('pid')">เลขบุคคล (PID) ⇅</th>
-<th onclick="sortTable('house')">บ้านเลขที่ (HOUSE) ⇅</th>
-<th onclick="sortTable('village')">หมู่ที่ (VILLAGE) ⇅</th>
-<th>ละติจูด (LATITUDE)</th>
-<th>ลองจิจูด (LONGITUDE)</th>
-<th onclick="toggleSort('status')">การตรวจสอบเชิงระบาดวิทยา (Cluster) ⇅</th>
-</tr>
-</thead>
-<tbody id="tableBody">
-<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 40px 0;">กรุณาเลือกไฟล์ Excel ด้านบนเพื่อเปิดระบบคำนวณและฟังก์ชันแผนที่คู่</td></tr>
-</tbody>
-</table>
-</div>
-<div class="nav-bar">
-<button class="btn" onclick="changePage(-1)">&lt; ก่อนหน้า</button>
-<span id="pageInfo">หน้าที่ 1 / 1</span>
-<button class="btn" onclick="changePage(1)">ถัดไป &gt;</button>
-</div>
-</div>
-<script>
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="90">ส่องเดี่ยว</th>
+                        <th onclick="toggleSort('pid')">เลขบุคคล (PID) ⇅</th>
+                        <th onclick="sortTable('house')">บ้านเลขที่ (HOUSE) ⇅</th>
+                        <th onclick="sortTable('village')">หมู่ที่ (VILLAGE) ⇅</th>
+                        <th>ละติจูด (LATITUDE)</th>
+                        <th>ลองจิจูด (LONGITUDE)</th>
+                        <th onclick="toggleSort('status')">การตรวจสอบเชิงระบาดวิทยา (Cluster) ⇅</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="7" style="text-align:center; color:#64748b; padding: 40px 0;">กรุณาเลือกไฟล์ Excel ด้านบนเพื่อเปิดระบบคำนวณและฟังก์ชันแผนที่คู่</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="nav-bar">
+            <button class="btn" onclick="changePage(-1)">< ก่อนหน้า</button>
+            <span id="pageInfo">หน้าที่ 1 / 1</span>
+            <button class="btn" onclick="changePage(1)">ถัดไป ></button>
+        </div>
+    </div>
+
+    <script>
         let masterDataset = [];
         let filteredDataset = [];
         let currentPage = 1;
@@ -974,91 +522,5 @@ html.light {
             showSuccess('✅ พร้อมใช้งาน เลือกไฟล์ Excel เพื่อเริ่มต้น');
         }
     </script>
-
-<script>
-(function() {
-  "use strict";
-  const current = window.location.pathname.split("/").pop() || "index.html";
-
-  /* ===================== SIDEBAR SEARCH ===================== */
-  const sidebarSearch = document.getElementById("sidebarSearch");
-  if (sidebarSearch) {
-    sidebarSearch.addEventListener("input", function() {
-      const q = this.value.toLowerCase().trim();
-      document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
-        const text = link.textContent.toLowerCase();
-        link.style.display = !q || text.includes(q) ? "flex" : "none";
-      });
-    });
-  }
-
-  /* ===================== DRAWER ===================== */
-  const overlay = document.getElementById("toolsDrawerOverlay");
-  const drawer = document.getElementById("toolsDrawer");
-  const openBtn = document.getElementById("fabSearchBtn");
-  const closeBtn = document.getElementById("toolsDrawerClose");
-  const searchInput = document.getElementById("toolsDrawerSearchInput");
-  const noResults = document.getElementById("toolsNoResults");
-
-  function openDrawer() {
-    overlay.classList.add("open");
-    drawer.classList.add("open");
-    document.body.style.overflow = "hidden";
-    if (searchInput) {
-      searchInput.value = "";
-      searchInput.focus();
-      filterDrawer("");
-    }
-  }
-
-  function closeDrawer() {
-    overlay.classList.remove("open");
-    drawer.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  if (openBtn) openBtn.addEventListener("click", openDrawer);
-  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
-  if (overlay) overlay.addEventListener("click", closeDrawer);
-
-  /* Drawer search filter */
-  function filterDrawer(q) {
-    var found = false;
-    var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
-    items.forEach(function(item) {
-      var text = item.textContent.toLowerCase();
-      var match = !q || text.includes(q);
-      item.style.display = match ? "flex" : "none";
-      if (match) found = true;
-    });
-    if (noResults) {
-      noResults.style.display = found ? "none" : "block";
-    }
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", function() {
-      filterDrawer(this.value.toLowerCase().trim());
-    });
-    /* Prevent close on input click (bubbles up) */
-    searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
-  }
-
-  /* ===================== ACTIVE STATE ===================== */
-  /* Sidebar */
-  document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-  /* Drawer */
-  document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-})();
-</script></body>
+</body>
 </html>

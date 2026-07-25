@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ระบบจัดเก็บพิกัด อสม. (Health GIS Standalone)</title>
+  
+  <!-- PWA & Mobile Optimization Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#059669">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+
+  <!-- Tailwind CSS & Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- XLSX Export & Import Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    body { 
+      font-family: 'Sukhumvit Set', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .big-btn {
+      min-height: 56px;
+      font-size: 1.1rem;
+    }
+    .big-input {
+      min-height: 48px;
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen pb-16 select-none">
+
+  <!-- Header Bar -->
+  <header class="bg-emerald-600 text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-house-medical text-2xl text-amber-300"></i>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">พิกัดบ้าน อสม.</h1>
+          <p class="text-xs text-emerald-100">สำรวจรายหมู่บ้าน (ออฟไลน์ 100%)</p>
+        </div>
+      </div>
+      <button onclick="openAdminModal()" class="text-xs bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 border border-emerald-400/30 shadow-sm">
+        <i class="fa-solid fa-user-shield text-amber-300"></i> รพ.สต.
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 pt-3 space-y-3">
+
+    <!-- DATA MANAGEMENT BAR (Import / Export) -->
+    <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+      <div class="flex justify-between items-center text-xs">
+        <span class="font-bold text-slate-700 flex items-center gap-1.5">
+          <i class="fa-solid fa-folder-open text-amber-500 text-sm"></i>
+          <span>จัดการไฟล์บ้านในความดูแล</span>
+        </span>
+        <span id="storageCount" class="text-[11px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full">0 หลังในเครื่อง</span>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2">
+        <label for="importCsvFile" class="py-2.5 px-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 flex items-center justify-center gap-1.5 cursor-pointer text-center transition">
+          <i class="fa-solid fa-file-import text-blue-600 text-sm"></i>
+          <span>📥 นำเข้าไฟล์บ้าน</span>
+        </label>
+        <input type="file" id="importCsvFile" accept=".csv,.json,.xlsx" onchange="importHouseFile(event)" class="hidden">
+
+        <button onclick="exportOsmDataToLine()" class="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-paper-plane text-amber-300 text-sm"></i>
+          <span>📤 ส่งข้อมูลเข้า LINE</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- USER FORM VIEW -->
+    <div id="userView" class="space-y-3">
+      
+      <!-- ONE-SMART-BUTTON SECTION -->
+      <div class="bg-gradient-to-br from-emerald-600 to-teal-800 text-white rounded-2xl p-4 shadow-md space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center shrink-0 border border-amber-300/40">
+            <i class="fa-solid fa-crosshairs text-amber-300 text-xl animate-pulse"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">อยู่หน้าบ้านแล้ว? กดปุ่มนี้เลย</h3>
+            <p class="text-xs text-emerald-100">ดึงพิกัด GPS & ค้นหาบ้านตรงหน้าให้อัตโนมัติ</p>
+          </div>
+        </div>
+        
+        <button type="button" onclick="handleSmartGPS()" id="btnSmartGPS"
+          class="w-full py-3.5 px-4 bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-900 font-extrabold rounded-xl shadow-lg flex items-center justify-center gap-2 transition text-base big-btn">
+          <i class="fa-solid fa-bullseye text-xl text-slate-900"></i>
+          <span id="btnText">📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่</span>
+        </button>
+
+        <button type="button" onclick="enableNewHouseMode()" 
+          class="w-full py-2 px-3 bg-teal-900/50 hover:bg-teal-900/80 text-emerald-100 text-xs font-bold rounded-xl border border-teal-500/40 flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-plus-circle text-amber-300"></i>
+          <span>พบบ้านใหม่นอกระบบ? (กดตรงนี้เพื่อเพิ่ม)</span>
+        </button>
+      </div>
+
+      <!-- GPS ALERT & PROXIMITY INFO BOX -->
+      <div id="gpsAlertBox" class="hidden p-3.5 rounded-2xl text-xs font-medium border shadow-sm"></div>
+
+      <!-- MAIN FORM CARD -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3.5">
+        
+        <form id="gisForm" onsubmit="handleFormSubmit(event)" class="space-y-3.5">
+          
+          <!-- Volunteer Name & Phone -->
+          <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ อสม. <span class="text-rose-500">*</span></label>
+              <input type="text" id="osmName" required placeholder="ชื่อ-นามสกุล" onchange="saveOsmProfile()"
+                class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
+              <input type="tel" id="osmPhone" required placeholder="08X-XXX-XXXX" onchange="saveOsmProfile()"
+                class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold">
+            </div>
+          </div>
+
+          <!-- Moo & House Number -->
+          <div class="grid grid-cols-5 gap-2">
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">หมู่ที่ <span class="text-rose-500">*</span></label>
+              <select id="mooNo" required onchange="onAddressChange()"
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base font-bold bg-white big-input">
+                <option value="1">หมู่ 1</option>
+                <option value="2">หมู่ 2</option>
+                <option value="3">หมู่ 3</option>
+                <option value="4">หมู่ 4</option>
+                <option value="5">หมู่ 5</option>
+                <option value="6">หมู่ 6</option>
+                <option value="7">หมู่ 7</option>
+                <option value="8">หมู่ 8</option>
+              </select>
+            </div>
+            <div class="col-span-3">
+              <label class="block text-xs font-bold text-slate-700 mb-1">บ้านเลขที่ <span class="text-rose-500">*</span></label>
+              <input type="text" id="houseNo" required placeholder="เช่น 45/2" oninput="onAddressChange()"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base font-bold big-input">
+            </div>
+          </div>
+
+          <!-- Owner Name -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อเจ้าของบ้าน / ผู้ป่วย</label>
+            <input type="text" id="ownerName" placeholder="ระบุชื่อเจ้าของบ้าน"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold">
+          </div>
+
+          <!-- Status Alert Banner -->
+          <div id="duplicateAlert" class="hidden p-3 rounded-xl text-xs flex items-start space-x-2 border"></div>
+
+          <!-- Health Tags / Target Groups -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-700">
+              <i class="fa-solid fa-heart-pulse text-rose-500"></i> สภาพผู้อยู่อาศัย / กลุ่มเป้าหมายสุขภาพ
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="ผู้ป่วยติดเตียง" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">🛏️ ผู้ป่วยติดเตียง</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="ผู้ป่วยติดบ้าน" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">🏡 ผู้ป่วยติดบ้าน</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="ผู้พิการ" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">♿ ผู้พิการ</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="ผู้สูงอายุ" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">👴 ผู้สูงอายุ (60+)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="โรคเรื้อรัง/NCDs" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">🩺 โรคเรื้อรัง</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer active:bg-emerald-100 transition">
+                <input type="checkbox" value="เสี่ยงไข้เลือดออก" class="health-tag-checkbox accent-emerald-600 w-4 h-4 rounded">
+                <span class="font-bold text-slate-800">🦟 เสี่ยงไข้เลือดออก</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Hidden GPS Fields -->
+          <div id="gpsStatus" class="text-[11px] text-center text-slate-500 font-mono font-semibold">ยังไม่ได้ดึงพิกัด</div>
+          <input type="hidden" id="latitude" required>
+          <input type="hidden" id="longitude" required>
+          <input type="hidden" id="accuracy">
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn"
+            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2 text-base big-btn">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>บันทึกลงมือถือ</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- COUNTER & MISSING HOUSE TRACKER -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-600"></i> ความคืบหน้าบ้านในหมู่
+          </h3>
+          <span id="progressText" class="text-xs font-extrabold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">0 / 0 หลัง</span>
+        </div>
+
+        <!-- Completed List -->
+        <details class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs">
+          <summary class="font-bold text-emerald-700 cursor-pointer flex justify-between items-center">
+            <span>✅ บ้านที่สำรวจแล้ว (<span id="doneCount">0</span>)</span>
+            <i class="fa-solid fa-chevron-down text-slate-400"></i>
+          </summary>
+          <ul id="doneHouseList" class="mt-2 space-y-1.5 text-slate-700 pt-2 border-t border-slate-200"></ul>
+        </details>
+
+        <!-- Missing List -->
+        <details open class="bg-amber-50 rounded-xl p-3 border border-amber-200 text-xs">
+          <summary class="font-bold text-amber-800 cursor-pointer flex justify-between items-center">
+            <span>⏳ บ้านที่ยังไม่ได้สำรวจ (<span id="missingCount">0</span>)</span>
+            <i class="fa-solid fa-chevron-down text-amber-500"></i>
+          </summary>
+          <ul id="missingHouseList" class="mt-2 space-y-1.5 text-slate-700 pt-2 border-t border-amber-200"></ul>
+        </details>
+      </div>
+
+    </div>
+
+    <!-- OFFICER / ADMIN DASHBOARD VIEW -->
+    <div id="adminView" class="hidden space-y-4">
+      
+      <!-- Officer Header & Filters -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-extrabold text-slate-800 text-base">เจ้าหน้าที่ รพ.สต. (Admin)</h2>
+            <p class="text-xs text-slate-500">สร้างไฟล์แม่แบบแยกหมู่บ้าน และรวมไฟล์รายงาน</p>
+          </div>
+          <button onclick="exitAdminView()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition">
+            <i class="fa-solid fa-xmark"></i> ปิด
+          </button>
+        </div>
+
+        <!-- Template Generator Section -->
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+          <label class="block text-xs font-bold text-emerald-900">1. สร้างไฟล์แม่แบบ CSV ให้ อสม. แยกรายหมู่:</label>
+          <div class="flex gap-2">
+            <select id="templateMooSelect" class="px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white">
+              <option value="1">หมู่ 1</option>
+              <option value="2">หมู่ 2</option>
+              <option value="3">หมู่ 3</option>
+              <option value="4">หมู่ 4</option>
+              <option value="5">หมู่ 5</option>
+              <option value="6">หมู่ 6</option>
+              <option value="7">หมู่ 7</option>
+              <option value="8">หมู่ 8</option>
+            </select>
+            <button onclick="downloadMooTemplateCSV()" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-file-csv text-sm"></i> ดาวน์โหลดแม่แบบ CSV
+            </button>
+          </div>
+          <p class="text-[10px] text-emerald-700">ส่งไฟล์ CSV นี้ให้ อสม. ในกลุ่ม LINE เพื่อกด "นำเข้าไฟล์บ้าน"</p>
+        </div>
+
+        <!-- Multiple File Aggregator -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-800">2. นำเข้าไฟล์รายงาน (.json/.xlsx) จาก อสม. หลายท่าน:</label>
+          <input type="file" id="officerImportFiles" multiple accept=".json,.xlsx,.csv" onchange="importMultipleOsmFiles(event)" class="text-xs text-slate-600 w-full">
+        </div>
+
+        <button onclick="exportMasterExcel()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-file-excel text-sm"></i> ส่งออก Master Excel รวมทุกหมู่บ้าน
+        </button>
+      </div>
+
+      <!-- Master Record Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
+          <span>รายการบ้านทั้งหมดในระบบ</span>
+          <span id="adminTotalCount" class="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded">0 หลัง</span>
+        </div>
+        <div class="max-h-[50vh] overflow-y-auto divide-y divide-slate-100 text-xs" id="adminRecordList">
+          <div class="p-4 text-center text-slate-400">ยังไม่มีข้อมูล โปรดนำเข้าไฟล์รายงาน</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- PASSWORD MODAL FOR OFFICER ACCESS -->
+  <div id="adminPasswordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-5 max-w-xs w-full shadow-2xl space-y-3 text-center">
+      <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <h3 class="font-extrabold text-slate-800 text-base">รหัสผ่าน เจ้าหน้าที่ รพ.สต.</h3>
+      <p class="text-xs text-slate-500">กรอกรหัสผ่านเพื่อเข้าหน้าแอดมิน</p>
+      <input type="password" id="adminPasswordInput" placeholder="รหัสผ่าน (เริ่มต้น: 1234)"
+        class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="closeAdminModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">ยกเลิก</button>
+        <button type="button" onclick="verifyAdminPassword()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
+    <i id="toastIcon" class="fa-solid fa-circle-info text-emerald-400"></i>
+    <span id="toastMsg" class="font-medium">แจ้งเตือน</span>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD_DEFAULT = "1234";
+    let my25Houses = [];
+    let masterAggregatedHouses = [];
+
+    // Default mock data for testing if local storage is empty
+    const sampleVillageData = [
+      { moo: '1', houseNo: '10/1', owner: 'นายสมชาย ดีมาก', done: false, lat: '', lng: '', healthTags: [] },
+      { moo: '1', houseNo: '10/2', owner: 'นางมาลี มีสุข', done: false, lat: '', lng: '', healthTags: [] },
+      { moo: '1', houseNo: '10/3', owner: 'นายวิชัย สุขใจ', done: false, lat: '', lng: '', healthTags: [] },
+      { moo: '1', houseNo: '11', owner: 'นางสมศรี ใจดี', done: false, lat: '', lng: '', healthTags: [] }
+    ];
+
+    window.onload = function() {
+      loadSavedProfile();
+      loadStoredHouses();
+    };
+
+    function loadSavedProfile() {
+      const name = localStorage.getItem('osm_name');
+      const phone = localStorage.getItem('osm_phone');
+      if (name) document.getElementById('osmName').value = name;
+      if (phone) document.getElementById('osmPhone').value = phone;
+    }
+
+    function saveOsmProfile() {
+      localStorage.setItem('osm_name', document.getElementById('osmName').value.trim());
+      localStorage.setItem('osm_phone', document.getElementById('osmPhone').value.trim());
+    }
+
+    function loadStoredHouses() {
+      const saved = localStorage.getItem('my_assigned_houses');
+      if (saved) {
+        try { my25Houses = JSON.parse(saved); } catch(e) { my25Houses = sampleVillageData; }
+      } else {
+        my25Houses = sampleVillageData;
+      }
+      updateUI();
+    }
+
+    function saveStoredHouses() {
+      localStorage.setItem('my_assigned_houses', JSON.stringify(my25Houses));
+      updateUI();
+    }
+
+    // Import CSV/JSON File
+    function importHouseFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          if (file.name.endsWith('.json')) {
+            my25Houses = JSON.parse(evt.target.result);
+          } else {
+            // CSV Parser
+            const lines = evt.target.result.split('\n');
+            my25Houses = [];
+            for (let i = 1; i < lines.length; i++) {
+              if (!lines[i].trim()) continue;
+              const cols = lines[i].split(',');
+              if (cols.length >= 2) {
+                my25Houses.push({
+                  moo: cols[0].trim().replace(/"/g, ''),
+                  houseNo: cols[1].trim().replace(/"/g, ''),
+                  owner: cols[2] ? cols[2].trim().replace(/"/g, '') : 'ไม่ระบุเจ้าของ',
+                  done: false, lat: '', lng: '', healthTags: []
+                });
+              }
+            }
+          }
+          saveStoredHouses();
+          showToast(`นำเข้าข้อมูลสำเร็จ ${my25Houses.length} หลัง`, 'success');
+        } catch(err) {
+          alert('รูปแบบไฟล์ไม่ถูกต้อง โปรดใช้ไฟล์ CSV หรือ JSON');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Export Data for LINE
+    function exportOsmDataToLine() {
+      if (my25Houses.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
+
+      const osmName = document.getElementById('osmName').value || 'อสม';
+      const fileName = `ผลสำรวจ_หมู่${my25Houses[0]?.moo || ''}_${osmName}_${new Date().toISOString().slice(0,10)}.json`;
+      
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(my25Houses, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", fileName);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+
+      showToast('ดาวน์โหลดไฟล์ผลสำรวจเรียบร้อย!', 'success');
+    }
+
+    // One-Smart-Button GPS Handler
+    function handleSmartGPS() {
+      const btnText = document.getElementById('btnText');
+      const alertBox = document.getElementById('gpsAlertBox');
+      const status = document.getElementById('gpsStatus');
+
+      btnText.innerText = "กำลังวัดตำแหน่ง GPS...";
+      alertBox.classList.remove('hidden');
+      alertBox.className = "p-3.5 rounded-2xl text-xs bg-sky-50 text-sky-900 border border-sky-200 shadow-sm";
+      alertBox.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <strong>กำลังจับสัญญาณ GPS และค้นหาบ้านใกล้เคียง...</strong>`;
+
+      if (!navigator.geolocation) {
+        alert("อุปกรณ์นี้ไม่รองรับสัญญาณ GPS");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const acc = Math.round(pos.coords.accuracy);
+
+          document.getElementById('latitude').value = lat.toFixed(6);
+          document.getElementById('longitude').value = lng.toFixed(6);
+          document.getElementById('accuracy').value = acc;
+
+          btnText.innerText = "📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่";
+          status.innerText = `พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${acc} ม.)`;
+
+          if (acc > 30) {
+            alertBox.className = "p-3.5 rounded-2xl text-xs bg-amber-50 text-amber-900 border border-amber-300 shadow-sm";
+            alertBox.innerHTML = `⚠️ <strong>สัญญาณ GPS ไม่ชัดเจน (ความคลาดเคลื่อน ±${acc} เมตร)</strong><br>กรุณาเดินออกมายืนกลางแจ้งเพื่อความแม่นยำสูงสุด`;
+            return;
+          }
+
+          const nearest = findNearestHouse(lat, lng, my25Houses);
+
+          if (nearest && nearest.house) {
+            document.getElementById('mooNo').value = nearest.house.moo;
+            document.getElementById('houseNo').value = nearest.house.houseNo;
+            document.getElementById('ownerName').value = nearest.house.owner || '';
+            onAddressChange();
+
+            let recalcText = "";
+            if (nearest.distanceMeters > 30) {
+              recalcText = `<br><span class="text-emerald-700 font-bold">🙏 ขอบคุณครับ! ตำแหน่งบ้านนี้ในระบบเดิมเคยคลาดเคลื่อนไป ${nearest.distanceMeters} เมตร (ระบบได้อัปเดตใหม่แล้ว)</span>`;
+            }
+
+            alertBox.className = "p-3.5 rounded-2xl text-xs bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-sm";
+            alertBox.innerHTML = `🎯 <strong>พบบ้านที่ใกล้ที่สุด!</strong> คุณยืนอยู่หน้า <strong>หมู่ ${nearest.house.moo} บ้านเลขที่ ${nearest.house.houseNo}</strong> (${nearest.house.owner || 'ไม่ระบุเจ้าของ'}) ${recalcText}`;
+          } else {
+            alertBox.className = "p-3.5 rounded-2xl text-xs bg-blue-50 text-blue-900 border border-blue-200 shadow-sm";
+            alertBox.innerHTML = `📍 <strong>ดึงพิกัดสำเร็จ (±${acc} เมตร)</strong> ไม่พบบ้านตรงกันในรัศมีใกล้เคียง สามารถพิมพ์เลขที่บ้านเองได้ทันที`;
+          }
+        },
+        (err) => {
+          btnText.innerText = "📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่";
+          alertBox.className = "p-3.5 rounded-2xl text-xs bg-rose-50 text-rose-800 border border-rose-200 shadow-sm";
+          alertBox.innerHTML = "❌ ไม่สามารถจับพิกัด GPS ได้ โปรดตรวจสอบการเปิด Location Services บนอุปกรณ์";
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+      );
+    }
+
+    function enableNewHouseMode() {
+      const currentMoo = document.getElementById('mooNo').value || "1";
+      const houseInput = prompt("กรุณากรอกบ้านเลขที่ใหม่ที่ไม่พบในระบบ:");
+      if (houseInput && houseInput.trim()) {
+        document.getElementById('mooNo').value = currentMoo;
+        document.getElementById('houseNo').value = houseInput.trim();
+        document.getElementById('ownerName').value = '';
+        onAddressChange();
+        showToast(`เพิ่มบ้านใหม่เลขที่ ${houseInput.trim()} เรียบร้อยแล้ว`, 'info');
+      }
+    }
+
+    function findNearestHouse(uLat, uLng, houses) {
+      let closest = null;
+      let minDistance = 999999;
+
+      houses.forEach(h => {
+        if (h.lat && h.lng) {
+          const dist = getDistanceMeters(uLat, uLng, parseFloat(h.lat), parseFloat(h.lng));
+          if (dist < minDistance) {
+            minDistance = dist;
+            closest = h;
+          }
+        }
+      });
+
+      return { house: closest, distanceMeters: Math.round(minDistance) };
+    }
+
+    function getDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      saveOsmProfile();
+
+      const moo = document.getElementById('mooNo').value;
+      const house = document.getElementById('houseNo').value.trim();
+      const owner = document.getElementById('ownerName').value.trim();
+      const lat = document.getElementById('latitude').value;
+      const lng = document.getElementById('longitude').value;
+      const healthTags = Array.from(document.querySelectorAll('.health-tag-checkbox:checked')).map(cb => cb.value);
+
+      if (!lat || !lng) {
+        alert("กรุณากดปุ่มดึงพิกัดตำแหน่งบ้านก่อนส่งข้อมูล");
+        return;
+      }
+
+      const idx = my25Houses.findIndex(h => String(h.moo) === String(moo) && String(h.houseNo) === String(house));
+      if (idx >= 0) {
+        my25Houses[idx].done = true;
+        my25Houses[idx].lat = lat;
+        my25Houses[idx].lng = lng;
+        my25Houses[idx].owner = owner || my25Houses[idx].owner;
+        my25Houses[idx].healthTags = healthTags;
+      } else {
+        my25Houses.push({ moo, houseNo: house, owner: owner || 'บ้านเพิ่มใหม่', done: true, lat, lng, healthTags });
+      }
+
+      saveStoredHouses();
+      showToast(`บันทึกบ้านเลขที่ ${house} หมู่ ${moo} สำเร็จ!`, 'success');
+      resetForm();
+    }
+
+    function resetForm() {
+      document.getElementById('houseNo').value = '';
+      document.getElementById('ownerName').value = '';
+      document.getElementById('latitude').value = '';
+      document.getElementById('longitude').value = '';
+      document.getElementById('accuracy').value = '';
+      document.getElementById('gpsStatus').innerText = 'ยังไม่ได้ดึงพิกัด';
+      document.getElementById('gpsAlertBox').className = "hidden";
+      document.getElementById('duplicateAlert').className = "hidden";
+      document.querySelectorAll('.health-tag-checkbox').forEach(cb => cb.checked = false);
+    }
+
+    function onAddressChange() {
+      const moo = document.getElementById('mooNo').value.trim();
+      const house = document.getElementById('houseNo').value.trim();
+      const alertBox = document.getElementById('duplicateAlert');
+
+      if (!moo || !house) {
+        alertBox.className = "hidden";
+        return;
+      }
+
+      const match = my25Houses.find(h => String(h.moo) === String(moo) && String(h.houseNo) === String(house));
+      if (match) {
+        if (match.owner && !document.getElementById('ownerName').value) {
+          document.getElementById('ownerName').value = match.owner;
+        }
+
+        if (match.done || match.lat) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-start space-x-2 bg-amber-50 border border-amber-300 text-amber-900 font-medium";
+          alertBox.innerHTML = `<div><strong class="text-sm block">ℹ️ บ้านหลังนี้มีพิกัดในระบบแล้ว</strong><p class="mt-0.5">พิกัดเดิม: ${match.lat}, ${match.lng}</p></div>`;
+        } else {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-start space-x-2 bg-emerald-50 border border-emerald-300 text-emerald-900 font-medium";
+          alertBox.innerHTML = `<div><strong class="text-sm block">✅ พบบ้านเป้าหมาย (ยังไม่ได้สำรวจ)</strong><p class="mt-0.5">เจ้าของ: ${match.owner || 'ไม่ระบุชื่อ'}</p></div>`;
+        }
+      } else {
+        alertBox.className = "p-3 rounded-xl text-xs flex items-start space-x-2 bg-sky-50 border border-sky-300 text-sky-900 font-medium";
+        alertBox.innerHTML = `<div><strong class="text-sm block">➕ บ้านนี้นอกระบบ</strong><p class="mt-0.5">ระบบจะบันทึกเป็นบ้านเพิ่มใหม่ให้โดยอัตโนมัติ</p></div>`;
+      }
+    }
+
+    function updateUI() {
+      const done = my25Houses.filter(h => h.done || h.lat);
+      const missing = my25Houses.filter(h => !h.done && !h.lat);
+
+      document.getElementById('storageCount').innerText = `${my25Houses.length} หลังในเครื่อง`;
+      document.getElementById('progressText').innerText = `${done.length} / ${my25Houses.length} หลัง`;
+      document.getElementById('doneCount').innerText = done.length;
+      document.getElementById('missingCount').innerText = missing.length;
+
+      document.getElementById('doneHouseList').innerHTML = done.map(h => `
+        <li class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200">
+          <span>✅ หมู่ ${h.moo} บ้านเลขที่ ${h.houseNo} (${h.owner || 'ไม่ระบุเจ้าของ'})</span>
+          <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">เรียบร้อย</span>
+        </li>
+      `).join('') || '<li class="text-slate-400">ยังไม่มีรายการที่ทำเสร็จ</li>';
+
+      document.getElementById('missingHouseList').innerHTML = missing.map(h => `
+        <li onclick="selectHouse('${h.moo}', '${h.houseNo}')" class="flex justify-between items-center bg-white p-2 rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-100/50 transition">
+          <span>⏳ หมู่ ${h.moo} บ้านเลขที่ ${h.houseNo} (${h.owner || 'ไม่ระบุเจ้าของ'})</span>
+          <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">กดเลือก</span>
+        </li>
+      `).join('') || '<li class="text-emerald-800 font-bold">🎉 สำรวจครบถ้วนทุกหลังในหมู่นี้แล้ว!</li>';
+    }
+
+    function selectHouse(moo, houseNo) {
+      document.getElementById('mooNo').value = moo;
+      document.getElementById('houseNo').value = houseNo;
+      onAddressChange();
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+    }
+
+    // Officer Admin Modal Functions
+    function openAdminModal() { document.getElementById('adminPasswordModal').classList.remove('hidden'); }
+    function closeAdminModal() { document.getElementById('adminPasswordModal').classList.add('hidden'); }
+    
+    function verifyAdminPassword() {
+      if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD_DEFAULT) {
+        closeAdminModal();
+        document.getElementById('userView').classList.add('hidden');
+        document.getElementById('adminView').classList.remove('hidden');
+      } else {
+        alert('รหัสผ่านไม่ถูกต้อง');
+      }
+    }
+
+    function exitAdminView() {
+      document.getElementById('adminView').classList.add('hidden');
+      document.getElementById('userView').classList.remove('hidden');
+    }
+
+    // Generate CSV Template for Officer
+    function downloadMooTemplateCSV() {
+      const selectedMoo = document.getElementById('templateMooSelect').value;
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFFMoo,HouseNo,OwnerName\n";
+      
+      // Generating sample houses for selected Moo
+      for (let i = 1; i <= 20; i++) {
+        csvContent += `"${selectedMoo}","${i}","ตัวอย่างเจ้าของบ้าน ${i}"\n`;
+      }
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `แม่แบบบ้าน_หมู่${selectedMoo}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`สร้างไฟล์แม่แบบ หมู่ ${selectedMoo} เรียบร้อย`, 'success');
+    }
+
+    function importMultipleOsmFiles(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      masterAggregatedHouses = [];
+      let loadedCount = 0;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (Array.isArray(data)) {
+              masterAggregatedHouses.push(...data);
+            }
+          } catch(err) {}
+          
+          loadedCount++;
+          if (loadedCount === files.length) {
+            renderAdminMasterTable();
+            showToast(`รวมไฟล์ข้อมูลสำเร็จทั้งหมด ${masterAggregatedHouses.length} หลัง`, 'success');
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    function renderAdminMasterTable() {
+      const container = document.getElementById('adminRecordList');
+      document.getElementById('adminTotalCount').innerText = `${masterAggregatedHouses.length} หลัง`;
+
+      if (masterAggregatedHouses.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400">ยังไม่มีข้อมูล โปรดเลือกไฟล์จาก อสม.</div>`;
+        return;
+      }
+
+      container.innerHTML = masterAggregatedHouses.map(h => `
+        <div class="p-3 hover:bg-slate-50 transition flex justify-between items-start text-xs">
+          <div>
+            <strong class="text-slate-800">หมู่ ${h.moo} บ้านเลขที่ ${h.houseNo}</strong>
+            <p class="text-slate-500">${h.owner || 'ไม่ระบุชื่อ'}</p>
+            ${h.healthTags && h.healthTags.length > 0 ? `<div class="text-[10px] text-emerald-700 font-semibold mt-0.5">${h.healthTags.join(', ')}</div>` : ''}
+          </div>
+          <span class="${(h.done || h.lat) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} text-[10px] font-bold px-2 py-0.5 rounded">
+            ${(h.done || h.lat) ? 'สำรวจแล้ว' : 'ตกสำรวจ'}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function exportMasterExcel() {
+      if (masterAggregatedHouses.length === 0) return alert("ไม่มีข้อมูลสำหรับส่งออก");
+      
+      const ws = XLSX.utils.json_to_sheet(masterAggregatedHouses);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "MasterVillageData");
+      
+      XLSX.writeFile(wb, `รายงานพิกัดและสุขภาพทุกหมู่บ้าน_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = msg;
+      if (type === 'success') toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+      else if (type === 'error') toastIcon.className = "fa-solid fa-circle-xmark text-rose-400";
+      else toastIcon.className = "fa-solid fa-circle-info text-sky-400";
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

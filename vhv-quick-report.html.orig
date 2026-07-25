@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-
 <html lang="th">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ระบบรายงาน อสม. ด่วน (VHV Voice Report)</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงาน อสม. ด่วน (VHV Voice Report)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
         tailwind.config = {
             theme: {
                 extend: {
@@ -32,7 +32,7 @@
             }
         }
     </script>
-<style>
+    <style>
         body {
             font-family: 'Sarabun', sans-serif;
             background-color: #f8fafc;
@@ -77,8 +77,9 @@
             }
         }
     </style>
-<!-- Firebase Modular SDK -->
-<script type="module">
+
+    <!-- Firebase Modular SDK -->
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -125,890 +126,529 @@
             console.warn("Firebase fallback:", e);
         }
     </script>
-<style>/* ============================================================
-   RESPONSIVE NAVIGATION (Injected)
-   Mobile: Fixed bottom bar (Search, Home, Note)
-   Desktop: Collapsible sidebar (collapse on idle, expand on hover)
-   Search drawer: slide-up with search bar at bottom (sticky)
-   ============================================================ */
-:root {
-  --nav-height: 64px;
-  --nav-width: 260px;
-  --nav-collapsed: 56px;
-  --tool-brand: #6366f1;
-  --tool-brand-hover: #4f46e5;
-  --tool-brand-light: #e0e7ff;
-  --tool-brand-text: #312e81;
-  --bg-base: #0f172a;
-  --bg-card: #1e293b;
-  --bg-elevated: #334155;
-  --bg-hover: #475569;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --border-focus: #6366f1;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --transition: 150ms ease;
-  --z-nav: 1000;
-}
-html.light {
-  --bg-base: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-elevated: #f1f5f9;
-  --bg-hover: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
-}
-
-/* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
-.tools-fab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: var(--z-nav);
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  height: var(--nav-height);
-  padding: 0.25rem 0.5rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-}
-.tools-fab .fab-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: var(--text-secondary);
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-md);
-  font-size: 1.25rem;
-  min-width: 56px;
-  min-height: 48px;
-  transition: all var(--transition);
-  flex: 1;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  position: relative;
-}
-.tools-fab .fab-btn span {
-  font-size: 0.625rem;
-  margin-top: 0.125rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.tools-fab .fab-btn:hover,
-.tools-fab .fab-btn:active {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.tools-fab .fab-home {
-  color: var(--tool-brand);
-  font-size: 1.5rem;
-  flex: 1.3;
-  background: var(--tool-brand-light);
-  border-radius: 40px;
-  margin: 0 0.5rem;
-  min-height: 44px;
-}
-.tools-fab .fab-home:hover {
-  color: var(--tool-brand-text);
-  background: var(--tool-brand);
-}
-
-/* ===== SEARCH DRAWER (slide-up, search at bottom) ===== */
-.tools-drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: calc(var(--z-nav) + 1);
-  backdrop-filter: blur(4px);
-}
-.tools-drawer-overlay.open {
-  display: block;
-}
-.tools-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: calc(var(--z-nav) + 2);
-  background: var(--bg-card);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  max-height: 75vh;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
-}
-.tools-drawer.open {
-  transform: translateY(0);
-}
-.tools-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-.tools-drawer-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-.tools-drawer-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-elevated);
-  border: none;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.1rem;
-}
-.tools-drawer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 1rem;
-  overflow-y: auto;
-  flex: 1;
-}
-.tools-drawer-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.25rem;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  color: var(--text-secondary);
-  transition: all var(--transition);
-}
-.tools-drawer-item:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-.tools-drawer-item.active {
-  background: var(--tool-brand-light);
-  color: var(--tool-brand-text);
-}
-.tools-drawer-item .icon {
-  font-size: 1.5rem;
-}
-.tools-drawer-item .label {
-  font-size: 0.625rem;
-  font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-/* Search bar at bottom of drawer - sticky */
-.tools-drawer-search-wrap {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  background: var(--bg-card);
-  padding: 0.75rem;
-  border-top: 1px solid var(--border-color);
-  z-index: 2;
-}
-.tools-drawer-search-wrap input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-size: 1rem;
-  outline: none;
-  box-sizing: border-box;
-}
-.tools-drawer-search-wrap input:focus {
-  border-color: var(--border-focus);
-}
-.tools-drawer-search-wrap input::placeholder {
-  color: var(--text-muted);
-}
-
-/* No results */
-.tools-drawer-no-results {
-  display: none;
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-/* ===== DESKTOP SIDEBAR (collapsible) ===== */
-@media (min-width: 768px) {
-  .tools-fab { display: none; }
-
-  .tools-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: var(--z-nav);
-    background: var(--bg-card);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-sm);
-    width: var(--nav-collapsed);
-    transition: width 0.2s ease;
-    overflow: hidden;
-  }
-  .tools-sidebar:hover {
-    width: var(--nav-width);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* Header / brand */
-  .tools-sidebar-header {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    min-height: 52px;
-  }
-  .tools-sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 700;
-    font-size: 1rem;
-  }
-  .tools-sidebar-brand .brand-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-brand .brand-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-brand .brand-text {
-    opacity: 1;
-  }
-
-  /* Search in sidebar */
-  .tools-sidebar-search {
-    width: 100%;
-    background: var(--bg-elevated);
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 0.5rem;
-    color: var(--text-primary);
-    font-size: 0.825rem;
-    outline: none;
-    box-sizing: border-box;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-  .tools-sidebar:hover .tools-sidebar-search {
-    opacity: 1;
-  }
-  .tools-sidebar-search:focus {
-    border-color: var(--border-focus);
-  }
-  .tools-sidebar-search::placeholder {
-    color: var(--text-muted);
-  }
-
-  /* Nav links */
-  .tools-sidebar-nav {
-    flex: 1;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    overflow-y: auto;
-  }
-  .tools-sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.625rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    transition: all var(--transition);
-    white-space: nowrap;
-    min-height: 40px;
-  }
-  .tools-sidebar-link:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-  }
-  .tools-sidebar-link.active {
-    background: var(--tool-brand-light);
-    color: var(--tool-brand-text);
-    font-weight: 600;
-  }
-  .tools-sidebar-link .icon {
-    font-size: 1.2rem;
-    min-width: 24px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .tools-sidebar-link .link-text {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tools-sidebar:hover .tools-sidebar-link .link-text {
-    opacity: 1;
-  }
-
-  /* Scrollbar styling */
-  .tools-sidebar-nav::-webkit-scrollbar {
-    width: 4px;
-  }
-  .tools-sidebar-nav::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 2px;
-  }
-
-  /* Content offset - auto adjusts with sidebar width */
-  body {
-    padding-left: var(--nav-collapsed);
-    transition: padding-left 0.2s ease;
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-}
-</style><style>
-/* Ensure content not hidden behind bottom nav on mobile */
-@media (max-width: 767px) {
-  body {padding-bottom: calc(var(--nav-height) + 1rem + 80px); }
-  main {padding-bottom: calc(var(--nav-height) + 1rem + 80px); }
-  .container, .tool-main, #main-content, [role="main"] {
-    padding-bottom: calc(var(--nav-height) + 1rem + 80px) !important;
-  }
-  /* Hide page's own bottom bar on mobile - we provide the nav */
-  [data-has-own-bottom-bar] nav.fixed.bottom-0,
-  [data-has-own-bottom-bar] nav[class*="bottom-0"],
-  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
-    display: none !important;
-  }
-}
-@media (min-width: 768px) {
-  body {padding-left: var(--nav-collapsed); }
-  main, .container, .tool-main, #main-content, [role="main"] {
-    margin-left: var(--nav-collapsed);
-    max-width: calc(100% - var(--nav-collapsed));
-  }
-  body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
-  }
-  body:has(.tools-sidebar:hover) main,
-  body:has(.tools-sidebar:hover) .container,
-  body:has(.tools-sidebar:hover) .tool-main,
-  body:has(.tools-sidebar:hover) #main-content,
-  body:has(.tools-sidebar:hover) [role="main"] {
-    margin-left: var(--nav-width);
-    max-width: calc(100% - var(--nav-width));
-  }
-}
-</style></head>
-<body class="bg-slate-100 min-h-screen text-slate-800 pb-28" data-has-own-bottom-bar="true"><!-- ===== Responsive Navigation ===== -->
-<!-- Mobile: 3-button bottom bar -->
-<nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
-<button aria-label="ค้นหา" class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา">
-    🔍<span>ค้นหา</span>
-</button>
-<a aria-label="หน้าหลัก" class="fab-btn fab-home" href="index.html" title="หน้าหลัก">
-    🏠<span>หน้าหลัก</span>
-</a>
-<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
-    📝<span>รายงานด่วน</span>
-</a>
-</nav>
-<!-- Search Drawer (slide-up) -->
-<div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
-<div class="tools-drawer" id="toolsDrawer">
-<div class="tools-drawer-header">
-<h3>🔍 ค้นหาเครื่องมือ</h3>
-<button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
-</div>
-<div class="tools-drawer-grid" id="toolsDrawerGrid">
-<a class="tools-drawer-item" href="envelope-printer.html"><span class="icon">✉️</span><span class="label">Envelope Printer</span></a>
-<a class="tools-drawer-item" href="autocorrect.html"><span class="icon">⌨️</span><span class="label">AHK AutoCorrect</span></a>
-<a class="tools-drawer-item" href="map-epidemic.html"><span class="icon">📊</span><span class="label">Epidemiology Map</span></a>
-<a class="tools-drawer-item" href="base64-decoder.html"><span class="icon">🦫</span><span class="label">Base64 Decoder</span></a>
-<a class="tools-drawer-item" href="thai-recovery.html"><span class="icon">🔤</span><span class="label">Thai Recovery</span></a>
-<a class="tools-drawer-item" href="ink-planner.html"><span class="icon">🖨️</span><span class="label">Ink Planner</span></a>
-<a class="tools-drawer-item" href="inventory-analytics.html"><span class="icon">📦</span><span class="label">Inventory</span></a>
-<a class="tools-drawer-item" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label">Certificate Builder</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label">myPCU SQL Simulator</span></a>
-<a class="tools-drawer-item" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label">myPCU AI SQL</span></a>
-<a class="tools-drawer-item" href="health-gis-app.html"><span class="icon">🏥</span><span class="label">Health GIS</span></a>
-<a class="tools-drawer-item" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label">GPS Tracker</span></a>
-<a class="tools-drawer-item active" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label">VHV Voice Report</span></a>
-<a class="tools-drawer-item" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label">Yarang PCC</span></a>
-<div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
-</div>
-<div class="tools-drawer-search-wrap">
-<input autocomplete="off" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
-</div>
-</div>
-<!-- Desktop sidebar -->
-<aside aria-label="เครื่องมือนำทาง" class="tools-sidebar" role="navigation">
-<div class="tools-sidebar-header">
-<a class="tools-sidebar-brand" href="index.html">
-<span class="brand-icon">🛠️</span>
-<span class="brand-text">Zyde's Tools</span>
-</a>
-</div>
-<div class="tools-sidebar-nav">
-<input autocomplete="off" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
-<a class="tools-sidebar-link" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text">Envelope Printer</span></a>
-<a class="tools-sidebar-link" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text">AHK AutoCorrect</span></a>
-<a class="tools-sidebar-link" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text">Epidemiology Map</span></a>
-<a class="tools-sidebar-link" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text">Base64 Decoder</span></a>
-<a class="tools-sidebar-link" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text">Thai Recovery</span></a>
-<a class="tools-sidebar-link" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text">Ink Planner</span></a>
-<a class="tools-sidebar-link" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text">Inventory</span></a>
-<a class="tools-sidebar-link" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text">Certificate Builder</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text">myPCU SQL Simulator</span></a>
-<a class="tools-sidebar-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text">myPCU AI SQL</span></a>
-<a class="tools-sidebar-link" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text">Health GIS</span></a>
-<a class="tools-sidebar-link" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text">GPS Tracker</span></a>
-<a class="tools-sidebar-link active" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text">VHV Voice Report</span></a>
-<a class="tools-sidebar-link" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text">Yarang PCC</span></a>
-</div>
-</aside>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-28">
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
-
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🎤 VHV Voice Report</span>
+</div>
 
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
+<style>
+.tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
+.tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
+.tools-nav .nav-home:hover{background:#334155;}
+.tools-nav .nav-link{font-size:1.1rem;text-decoration:none;padding:3px 5px;border-radius:6px;opacity:0.55;transition:all .2s;}
+.tools-nav .nav-link:hover{opacity:1;background:#334155;transform:scale(1.15);}
+.tools-nav .nav-link.active{opacity:1;background:#312e81;}
+.tools-nav .nav-sep{color:#334155;font-size:0.7rem;padding:0 2px;}
+.tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+@media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
+</style>
+<div class="tools-nav">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep">|</span>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
+    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
+    <span class="nav-sep">|</span>
+    <span class="nav-title">🎤 VHV Voice Report</span>
+</div>
 
 
-<!-- Top Header (Ultra Clean) -->
-<header class="bg-vhv-700 text-white shadow-md sticky top-0 z-30">
-<div class="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
-<div class="flex items-center space-x-2">
-<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-base">
+    <!-- Top Header (Ultra Clean) -->
+    <header class="bg-vhv-700 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-base">
                     🎙️
                 </div>
-<div>
-<h1 class="font-bold text-sm leading-tight flex items-center space-x-1">
-<span>Fast Voice &amp; อสม.</span>
-<span class="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-semibold" id="roleBadge">อสม.</span>
-</h1>
-<p class="text-[10px] text-emerald-100 truncate max-w-[160px]" id="userSubTitle">กำลังโหลด...</p>
-</div>
-</div>
-<div class="flex items-center space-x-2">
-<!-- Role Switcher Button -->
-<button class="bg-emerald-800/90 hover:bg-emerald-800 border border-emerald-500/30 text-white text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1" onclick="toggleRoleView()">
-<i class="fa-solid fa-user-shield text-amber-300"></i>
-<span id="switchRoleBtnText">เจ้าหน้าที่</span>
-</button>
-<!-- Profile Avatar Button -->
-<button class="w-8 h-8 rounded-full bg-white text-vhv-700 font-bold flex items-center justify-center shadow hover:scale-105 transition text-xs border border-emerald-300" onclick="openProfileModal()" title="โปรไฟล์ / Google / ส่งออก">
-<span id="headerAvatarText">👤</span>
-</button>
-</div>
-</div>
-</header>
-<main class="max-w-2xl mx-auto px-4 pt-3 space-y-3">
-<!-- VHV MAIN VIEW -->
-<div class="space-y-3" id="vhvView">
-<!-- Offline Sync Banner -->
-<div class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-2.5 shadow-sm flex items-center justify-between" id="syncBanner">
-<div class="flex items-center space-x-2 text-amber-800 text-xs">
-<i class="fa-solid fa-cloud-arrow-up text-amber-600"></i>
-<span class="font-bold" id="pendingCountText">มี 0 รายการรอนำส่ง cloud</span>
-</div>
-<button class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-xs font-semibold shadow transition" onclick="syncPendingReports()">
+                <div>
+                    <h1 class="font-bold text-sm leading-tight flex items-center space-x-1">
+                        <span>Fast Voice & อสม.</span>
+                        <span id="roleBadge" class="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">อสม.</span>
+                    </h1>
+                    <p class="text-[10px] text-emerald-100 truncate max-w-[160px]" id="userSubTitle">กำลังโหลด...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Role Switcher Button -->
+                <button onclick="toggleRoleView()" class="bg-emerald-800/90 hover:bg-emerald-800 border border-emerald-500/30 text-white text-xs px-2.5 py-1.5 rounded-xl font-bold transition flex items-center space-x-1">
+                    <i class="fa-solid fa-user-shield text-amber-300"></i>
+                    <span id="switchRoleBtnText">เจ้าหน้าที่</span>
+                </button>
+
+                <!-- Profile Avatar Button -->
+                <button onclick="openProfileModal()" class="w-8 h-8 rounded-full bg-white text-vhv-700 font-bold flex items-center justify-center shadow hover:scale-105 transition text-xs border border-emerald-300" title="โปรไฟล์ / Google / ส่งออก">
+                    <span id="headerAvatarText">👤</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 pt-3 space-y-3">
+
+        <!-- VHV MAIN VIEW -->
+        <div id="vhvView" class="space-y-3">
+            
+            <!-- Offline Sync Banner -->
+            <div id="syncBanner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-2.5 shadow-sm flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-amber-800 text-xs">
+                    <i class="fa-solid fa-cloud-arrow-up text-amber-600"></i>
+                    <span id="pendingCountText" class="font-bold">มี 0 รายการรอนำส่ง cloud</span>
+                </div>
+                <button onclick="syncPendingReports()" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-xs font-semibold shadow transition">
                     ส่งทันที
                 </button>
-</div>
-<!-- MAIN INPUT CARD -->
-<section class="bg-white rounded-3xl p-3.5 shadow-md border border-slate-100 space-y-2.5">
-<!-- Current Mode Indicator Banner -->
-<div class="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-1.5 flex items-center justify-between text-xs" id="privacyModeBanner">
-<span class="font-bold text-amber-800 flex items-center space-x-1">
-<i class="fa-solid fa-user-lock text-amber-600" id="privacyModeIcon"></i>
-<span id="privacyModeLabel">โหมดปัจจุบัน: 🔒 โน้ตส่วนตัว</span>
-</span>
-<span class="text-[10px] text-amber-700">เปลี่ยนได้ที่แถบล่างสุด</span>
-</div>
-<!-- Textarea Transcript -->
-<div>
-<div class="flex items-center justify-between mb-1">
-<label class="text-xs font-bold text-slate-700 flex items-center space-x-1">
-<i class="fa-solid fa-align-left text-vhv-600"></i>
-<span>ข้อความที่พูด (แก้ไขได้):</span>
-</label>
-<button class="text-[11px] text-slate-400 hover:text-red-500 transition" onclick="clearTranscript()">
-<i class="fa-solid fa-trash-can"></i> ล้าง
+            </div>
+
+            <!-- MAIN INPUT CARD -->
+            <section class="bg-white rounded-3xl p-3.5 shadow-md border border-slate-100 space-y-2.5">
+                
+                <!-- Current Mode Indicator Banner -->
+                <div id="privacyModeBanner" class="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-1.5 flex items-center justify-between text-xs">
+                    <span class="font-bold text-amber-800 flex items-center space-x-1">
+                        <i id="privacyModeIcon" class="fa-solid fa-user-lock text-amber-600"></i>
+                        <span id="privacyModeLabel">โหมดปัจจุบัน: 🔒 โน้ตส่วนตัว</span>
+                    </span>
+                    <span class="text-[10px] text-amber-700">เปลี่ยนได้ที่แถบล่างสุด</span>
+                </div>
+
+                <!-- Textarea Transcript -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+                            <i class="fa-solid fa-align-left text-vhv-600"></i>
+                            <span>ข้อความที่พูด (แก้ไขได้):</span>
+                        </label>
+                        <button onclick="clearTranscript()" class="text-[11px] text-slate-400 hover:text-red-500 transition">
+                            <i class="fa-solid fa-trash-can"></i> ล้าง
                         </button>
-</div>
-<textarea class="w-full p-2.5 rounded-2xl border border-slate-200 focus:border-vhv-500 focus:ring-2 focus:ring-emerald-200 text-xs outline-none transition text-slate-800 leading-relaxed resize-none" id="reportText" placeholder="กดปุ่มพูด 🎙️ ที่แถบด้านล่าง หรือพิมพ์ข้อความที่นี่..." rows="2"></textarea>
-</div>
-<!-- Quick Phrase Shortcuts -->
-<div class="flex flex-wrap gap-1">
-<button class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg" onclick="insertQuickText('พบแหล่งลูกน้ำยุงลาย')">
+                    </div>
+                    <textarea id="reportText" rows="2" 
+                        placeholder="กดปุ่มพูด 🎙️ ที่แถบด้านล่าง หรือพิมพ์ข้อความที่นี่..." 
+                        class="w-full p-2.5 rounded-2xl border border-slate-200 focus:border-vhv-500 focus:ring-2 focus:ring-emerald-200 text-xs outline-none transition text-slate-800 leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- Quick Phrase Shortcuts -->
+                <div class="flex flex-wrap gap-1">
+                    <button onclick="insertQuickText('พบแหล่งลูกน้ำยุงลาย')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
                         🦟 ยุงลาย
                     </button>
-<button class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg" onclick="insertQuickText('เกิดอุบัติเหตุ')">
+                    <button onclick="insertQuickText('เกิดอุบัติเหตุ')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
                         🚑 อุบัติเหตุ
                     </button>
-<button class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg" onclick="insertQuickText('ผู้ป่วยติดเตียง')">
+                    <button onclick="insertQuickText('ผู้ป่วยติดเตียง')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
                         🧑‍🦽 ติดเตียง
                     </button>
-<button class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg" onclick="insertQuickText('ขยะ/น้ำเสีย')">
+                    <button onclick="insertQuickText('ขยะ/น้ำเสีย')" class="bg-slate-100 hover:bg-emerald-50 border border-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-lg">
                         🧹 สิ่งแวดล้อม
                     </button>
-</div>
-<!-- Category Selector -->
-<div class="bg-slate-50 rounded-xl px-2.5 py-1.5 border border-slate-200 flex items-center justify-between">
-<span class="text-sm" id="categoryIcon">📋</span>
-<select class="w-full text-xs bg-transparent text-slate-700 outline-none font-semibold ml-1" id="categorySelect" onchange="manualCategoryChange()">
-<option value="💡 ไอเดีย/ความคิด">💡 ไอเดีย/ความคิด</option>
-<option value="📌 งาน/To-Do">📌 งาน/To-Do</option>
-<option value="🩺 สุขภาพส่วนตัว">🩺 สุขภาพส่วนตัว</option>
-<option value="🦟 ยุงลาย/ไข้เลือดออก">🦟 ยุงลาย/ไข้เลือดออก</option>
-<option value="🚑 อุบัติเหตุ/ฉุกเฉิน">🚑 อุบัติเหตุ/ฉุกเฉิน</option>
-<option value="🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ">🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ</option>
-<option value="🧹 สิ่งแวดล้อม/ขยะ">🧹 สิ่งแวดล้อม/ขยะ</option>
-<option value="💊 ยาหมด/เวชภัณฑ์">💊 ยาหมด/เวชภัณฑ์</option>
-<option selected="" value="📋 บันทึกทั่วไป">📋 บันทึกทั่วไป</option>
-</select>
-</div>
-<!-- Media Preview Container -->
-<div class="hidden flex flex-wrap gap-2 pt-1" id="mediaPreviewContainer"></div>
-<!-- Audio Clip Preview Box (Shows when recorded) -->
-<div class="hidden bg-emerald-50 border border-emerald-200 p-2 rounded-2xl space-y-1" id="recordedAudioBox">
-<div class="flex items-center justify-between text-xs font-bold text-emerald-800">
-<span class="flex items-center space-x-1">
-<i class="fa-solid fa-file-audio text-emerald-600"></i>
-<span>เสียงที่บันทึกไว้</span>
-</span>
-<button class="text-[11px] text-slate-400 hover:text-red-500" onclick="discardRecordedAudio()">
-<i class="fa-solid fa-trash"></i> ลบเสียง
+                </div>
+
+                <!-- Category Selector -->
+                <div class="bg-slate-50 rounded-xl px-2.5 py-1.5 border border-slate-200 flex items-center justify-between">
+                    <span id="categoryIcon" class="text-sm">📋</span>
+                    <select id="categorySelect" onchange="manualCategoryChange()" class="w-full text-xs bg-transparent text-slate-700 outline-none font-semibold ml-1">
+                        <option value="💡 ไอเดีย/ความคิด">💡 ไอเดีย/ความคิด</option>
+                        <option value="📌 งาน/To-Do">📌 งาน/To-Do</option>
+                        <option value="🩺 สุขภาพส่วนตัว">🩺 สุขภาพส่วนตัว</option>
+                        <option value="🦟 ยุงลาย/ไข้เลือดออก">🦟 ยุงลาย/ไข้เลือดออก</option>
+                        <option value="🚑 อุบัติเหตุ/ฉุกเฉิน">🚑 อุบัติเหตุ/ฉุกเฉิน</option>
+                        <option value="🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ">🧑‍🦽 ผู้ป่วยติดเตียง/ผู้สูงอายุ</option>
+                        <option value="🧹 สิ่งแวดล้อม/ขยะ">🧹 สิ่งแวดล้อม/ขยะ</option>
+                        <option value="💊 ยาหมด/เวชภัณฑ์">💊 ยาหมด/เวชภัณฑ์</option>
+                        <option value="📋 บันทึกทั่วไป" selected>📋 บันทึกทั่วไป</option>
+                    </select>
+                </div>
+
+                <!-- Media Preview Container -->
+                <div id="mediaPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1"></div>
+
+                <!-- Audio Clip Preview Box (Shows when recorded) -->
+                <div id="recordedAudioBox" class="hidden bg-emerald-50 border border-emerald-200 p-2 rounded-2xl space-y-1">
+                    <div class="flex items-center justify-between text-xs font-bold text-emerald-800">
+                        <span class="flex items-center space-x-1">
+                            <i class="fa-solid fa-file-audio text-emerald-600"></i>
+                            <span>เสียงที่บันทึกไว้</span>
+                        </span>
+                        <button onclick="discardRecordedAudio()" class="text-[11px] text-slate-400 hover:text-red-500">
+                            <i class="fa-solid fa-trash"></i> ลบเสียง
                         </button>
-</div>
-<audio class="w-full h-8" controls="" id="audioPreview"></audio>
-</div>
-<!-- BIG SAVE BUTTON -->
-<button class="w-full bg-vhv-600 hover:bg-vhv-700 active:scale-[0.98] text-white py-2.5 px-4 rounded-2xl font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition" id="submitBtn" onclick="submitReport()">
-<i class="fa-solid fa-bookmark" id="submitBtnIcon"></i>
-<span id="submitBtnText">บันทึกโน้ตส่วนตัว</span>
-</button>
-<!-- Metadata Summary -->
-<div class="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5 border-t border-slate-100">
-<span class="flex items-center space-x-1">
-<i class="fa-solid fa-location-dot text-red-500"></i>
-<span class="font-mono" id="gpsText">พิกัด GPS...</span>
-</span>
-<span class="flex items-center space-x-1">
-<i class="fa-solid fa-clock text-blue-500"></i>
-<span id="timeText">--:-- น.</span>
-</span>
-</div>
-</section>
-<!-- History Section -->
-<section class="space-y-2 pt-1">
-<div class="flex items-center justify-between px-1">
-<h2 class="font-bold text-slate-800 text-sm flex items-center space-x-1.5">
-<i class="fa-solid fa-clock-rotate-left text-vhv-600"></i>
-<span>ประวัติการบันทึก</span>
-</h2>
-<div class="flex items-center space-x-1 text-xs">
-<button class="hist-tab-btn bg-vhv-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0" id="histTabAll" onclick="filterHistoryTab('ALL')">ทั้งหมด</button>
-<button class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0" id="histTabPersonal" onclick="filterHistoryTab('PERSONAL')">🔒 ส่วนตัว</button>
-<button class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0" id="histTabPublic" onclick="filterHistoryTab('PUBLIC')">📢 ส่ง รพ.สต.</button>
-<button class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0" id="histTabTrash" onclick="filterHistoryTab('TRASH')">🗑️</button>
-</div>
-</div>
-<!-- Search Input -->
-<div class="relative">
-<i class="fa-solid fa-magnifying-glass absolute left-3 top-2 text-slate-400 text-xs"></i>
-<input class="w-full pl-8 pr-3 py-1 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-vhv-500" id="searchInput" oninput="renderHistory()" placeholder="ค้นหาบันทึก..." type="text"/>
-</div>
-<div class="space-y-2.5" id="historyList">
-<div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
-<i class="fa-regular fa-clipboard text-3xl mb-2 opacity-50"></i>
-<p class="text-xs">ยังไม่มีประวัติการบันทึก</p>
-</div>
-</div>
-</section>
-</div>
-<!-- OFFICER DASHBOARD VIEW -->
-<div class="hidden space-y-3" id="officerDashboardView">
-<!-- Stat Cards -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-<div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
-<div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">📋</div>
-<div>
-<p class="text-[9px] font-bold text-slate-400 uppercase">รายงานทั้งหมด</p>
-<p class="text-base font-bold text-slate-800" id="statTotal">0</p>
-</div>
-</div>
-<div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
-<div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">🚑</div>
-<div>
-<p class="text-[9px] font-bold text-slate-400 uppercase">ฉุกเฉิน/ด่วน</p>
-<p class="text-base font-bold text-rose-600" id="statEmergency">0</p>
-</div>
-</div>
-<div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
-<div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">⏳</div>
-<div>
-<p class="text-[9px] font-bold text-slate-400 uppercase">รอดำเนินการ</p>
-<p class="text-base font-bold text-amber-600" id="statPending">0</p>
-</div>
-</div>
-<div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
-<div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">✅</div>
-<div>
-<p class="text-[9px] font-bold text-slate-400 uppercase">เสร็จสิ้นแล้ว</p>
-<p class="text-base font-bold text-emerald-600" id="statDone">0</p>
-</div>
-</div>
-</div>
-<!-- Filter Controls -->
-<div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-<div class="flex items-center justify-between">
-<span class="text-xs font-bold text-slate-700">กรองรายการรายงาน:</span>
-<button class="text-xs text-vhv-700 hover:underline" onclick="refreshOfficerFeed()">
-<i class="fa-solid fa-rotate"></i> รีเฟรช
+                    </div>
+                    <audio id="audioPreview" controls class="w-full h-8"></audio>
+                </div>
+
+                <!-- BIG SAVE BUTTON -->
+                <button id="submitBtn" onclick="submitReport()" 
+                    class="w-full bg-vhv-600 hover:bg-vhv-700 active:scale-[0.98] text-white py-2.5 px-4 rounded-2xl font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition">
+                    <i id="submitBtnIcon" class="fa-solid fa-bookmark"></i>
+                    <span id="submitBtnText">บันทึกโน้ตส่วนตัว</span>
+                </button>
+
+                <!-- Metadata Summary -->
+                <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5 border-t border-slate-100">
+                    <span class="flex items-center space-x-1">
+                        <i class="fa-solid fa-location-dot text-red-500"></i>
+                        <span id="gpsText" class="font-mono">พิกัด GPS...</span>
+                    </span>
+                    <span class="flex items-center space-x-1">
+                        <i class="fa-solid fa-clock text-blue-500"></i>
+                        <span id="timeText">--:-- น.</span>
+                    </span>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="space-y-2 pt-1">
+                <div class="flex items-center justify-between px-1">
+                    <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-vhv-600"></i>
+                        <span>ประวัติการบันทึก</span>
+                    </h2>
+                    
+                    <div class="flex items-center space-x-1 text-xs">
+                        <button onclick="filterHistoryTab('ALL')" id="histTabAll" class="hist-tab-btn bg-vhv-600 text-white font-bold px-2 py-0.5 rounded-lg shrink-0">ทั้งหมด</button>
+                        <button onclick="filterHistoryTab('PERSONAL')" id="histTabPersonal" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">🔒 ส่วนตัว</button>
+                        <button onclick="filterHistoryTab('PUBLIC')" id="histTabPublic" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">📢 ส่ง รพ.สต.</button>
+                        <button onclick="filterHistoryTab('TRASH')" id="histTabTrash" class="hist-tab-btn bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-lg shrink-0">🗑️</button>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderHistory()" placeholder="ค้นหาบันทึก..." 
+                        class="w-full pl-8 pr-3 py-1 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div id="historyList" class="space-y-2.5">
+                    <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                        <i class="fa-regular fa-clipboard text-3xl mb-2 opacity-50"></i>
+                        <p class="text-xs">ยังไม่มีประวัติการบันทึก</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- OFFICER DASHBOARD VIEW -->
+        <div id="officerDashboardView" class="hidden space-y-3">
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">📋</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">รายงานทั้งหมด</p>
+                        <p id="statTotal" class="text-base font-bold text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">🚑</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">ฉุกเฉิน/ด่วน</p>
+                        <p id="statEmergency" class="text-base font-bold text-rose-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">⏳</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">รอดำเนินการ</p>
+                        <p id="statPending" class="text-base font-bold text-amber-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">✅</div>
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">เสร็จสิ้นแล้ว</p>
+                        <p id="statDone" class="text-base font-bold text-emerald-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700">กรองรายการรายงาน:</span>
+                    <button onclick="refreshOfficerFeed()" class="text-xs text-vhv-700 hover:underline">
+                        <i class="fa-solid fa-rotate"></i> รีเฟรช
                     </button>
-</div>
-<div class="flex flex-wrap gap-1 text-xs">
-<button class="filter-btn bg-vhv-600 text-white font-bold px-2.5 py-1 rounded-xl" id="filterAll" onclick="setFilter('ALL')">ทั้งหมด</button>
-<button class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl" id="filterPending" onclick="setFilter('PENDING')">🟡 รอดำเนินการ</button>
-<button class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl" id="filterEmergency" onclick="setFilter('EMERGENCY')">🚑 ฉุกเฉิน</button>
-<button class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl" id="filterMosquito" onclick="setFilter('MOSQUITO')">🦟 ไข้เลือดออก</button>
-<button class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl" id="filterDone" onclick="setFilter('DONE')">🟢 เสร็จสิ้น</button>
-</div>
-</div>
-<!-- Officer Feed Stream -->
-<div class="space-y-2.5" id="officerReportFeed">
-<div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
-<p class="text-xs">กำลังโหลดรายงาน...</p>
-</div>
-</div>
-</div>
+                </div>
+                <div class="flex flex-wrap gap-1 text-xs">
+                    <button onclick="setFilter('ALL')" id="filterAll" class="filter-btn bg-vhv-600 text-white font-bold px-2.5 py-1 rounded-xl">ทั้งหมด</button>
+                    <button onclick="setFilter('PENDING')" id="filterPending" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🟡 รอดำเนินการ</button>
+                    <button onclick="setFilter('EMERGENCY')" id="filterEmergency" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🚑 ฉุกเฉิน</button>
+                    <button onclick="setFilter('MOSQUITO')" id="filterMosquito" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🦟 ไข้เลือดออก</button>
+                    <button onclick="setFilter('DONE')" id="filterDone" class="filter-btn bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-xl">🟢 เสร็จสิ้น</button>
+                </div>
+            </div>
+
+            <!-- Officer Feed Stream -->
+        <div id="officerReportFeed" class="space-y-2.5">
+            <div class="bg-white p-6 rounded-3xl text-center text-slate-400 border border-slate-100">
+                <p class="text-xs">กำลังโหลดรายงาน...</p>
+            </div>
+        </div>
+    </div>
+
 </main>
-<!-- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR -->
-<nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl px-2 py-1 max-w-2xl mx-auto flex items-center justify-around h-16">
-<!-- Hidden Inputs for Combined Media -->
-<input accept="image/*,video/*" class="hidden" id="combinedMediaInput" multiple="" onchange="handleCombinedMediaSelect(event)" type="file"/>
-<!-- 1. Mode Toggle (Personal / Public) -->
-<button class="flex flex-col items-center justify-center w-12 py-1 transition active:scale-95 shrink-0" id="navBarPrivacyToggleBtn" onclick="togglePrivacyFromBar()" type="button">
-<i class="fa-solid fa-user-lock text-base text-amber-600" id="navBarPrivacyIcon"></i>
-<span class="text-[9px] font-bold mt-0.5 text-amber-700" id="navBarPrivacyText">ส่วนตัว</span>
-</button>
-<!-- 2. Attach Media Button -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0" onclick="document.getElementById('combinedMediaInput').click()" type="button">
-<div class="relative">
-<i class="fa-solid fa-camera text-base"></i>
-<span class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full" id="mediaCountBadge">0</span>
-</div>
-<span class="text-[9px] font-bold mt-0.5">แนบสื่อ</span>
-</button>
-<!-- 3. CENTER RAISED CIRCULAR MIC BUTTON -->
-<div class="relative -top-5 shrink-0 flex flex-col items-center">
-<button class="w-16 h-16 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-lg hover:shadow-xl active:scale-90 transition-all duration-200 flex flex-col items-center justify-center border-4 border-slate-100 shrink-0" id="micBtn" onclick="toggleRecording()">
-<i class="fa-solid fa-microphone text-2xl" id="micIcon"></i>
-<span class="text-[9px] font-extrabold -mt-0.5" id="micBtnText">พูด</span>
-</button>
-<!-- Recording Wave Indicator -->
-<div class="hidden absolute -top-2 left-1/2 -translate-x-1/2 flex items-center space-x-1 bg-red-600 px-2 py-0.5 rounded-full shadow" id="soundWave">
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.1s"></div>
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.3s"></div>
-<div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.2s"></div>
-</div>
-</div>
-<!-- 4. DIRECT SEND / SUBMIT BUTTON -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-emerald-600 hover:text-emerald-800 transition active:scale-95 shrink-0" id="navBarSendBtn" onclick="submitReport()" type="button">
-<div class="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center shadow-sm">
-<i class="fa-solid fa-paper-plane text-xs text-emerald-700" id="navBarSendIcon"></i>
-</div>
-<span class="text-[9px] font-bold mt-0.5 text-emerald-800">ส่งข้อมูล</span>
-</button>
-<!-- 5. Profile & Settings Button -->
-<button class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0" onclick="openProfileModal()" type="button">
-<i class="fa-solid fa-circle-user text-base"></i>
-<span class="text-[9px] font-bold mt-0.5">โปรไฟล์</span>
-</button>
-</nav>
-<!-- Unified Modal: Profile, Google Account & Export Suite -->
-<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="profileModal">
-<div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
-<div class="flex items-center justify-between border-b border-slate-100 pb-2">
-<h3 class="font-bold text-base text-slate-800 flex items-center space-x-2">
-<span>👤 ข้อมูล อสม. &amp; คลาวด์</span>
-</h3>
-<button class="text-slate-400 hover:text-slate-600 text-lg" onclick="closeProfileModal()">
-<i class="fa-solid fa-xmark"></i>
-</button>
-</div>
-<!-- Profile Info Form -->
-<form class="space-y-2.5" id="profileForm" onsubmit="saveProfile(event)">
-<div>
-<label class="text-xs font-bold text-slate-700 block mb-0.5">ชื่อ-นามสกุล อสม.</label>
-<input class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500" id="profName" placeholder="เช่น สมศรี ใจดี" required="" type="text"/>
-</div>
-<div>
-<label class="text-xs font-bold text-slate-700 block mb-0.5">เบอร์โทรศัพท์ติดต่อ</label>
-<input class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500" id="profPhone" pattern="[0-9]{9,10}" placeholder="เช่น 0812345678" required="" type="tel"/>
-</div>
-<div>
-<label class="text-xs font-bold text-slate-700 block mb-0.5">หมู่ที่ / ชื่อชุมชน</label>
-<input class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500" id="profVillage" placeholder="เช่น หมู่ 3 บ้านดอนพัฒนา" required="" type="text"/>
-</div>
-<button class="w-full bg-vhv-600 hover:bg-vhv-700 text-white font-bold py-2 rounded-xl text-xs shadow transition" type="submit">
+
+    <!-- BANKING-STYLE OPTIMIZED 5-BUTTON BOTTOM ACTION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl px-2 py-1 max-w-2xl mx-auto flex items-center justify-around h-16">
+        
+        <!-- Hidden Inputs for Combined Media -->
+        <input type="file" id="combinedMediaInput" accept="image/*,video/*" multiple onchange="handleCombinedMediaSelect(event)" class="hidden">
+
+        <!-- 1. Mode Toggle (Personal / Public) -->
+        <button type="button" onclick="togglePrivacyFromBar()" id="navBarPrivacyToggleBtn" 
+            class="flex flex-col items-center justify-center w-12 py-1 transition active:scale-95 shrink-0">
+            <i id="navBarPrivacyIcon" class="fa-solid fa-user-lock text-base text-amber-600"></i>
+            <span id="navBarPrivacyText" class="text-[9px] font-bold mt-0.5 text-amber-700">ส่วนตัว</span>
+        </button>
+
+        <!-- 2. Attach Media Button -->
+        <button type="button" onclick="document.getElementById('combinedMediaInput').click()" 
+            class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0">
+            <div class="relative">
+                <i class="fa-solid fa-camera text-base"></i>
+                <span id="mediaCountBadge" class="hidden absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">0</span>
+            </div>
+            <span class="text-[9px] font-bold mt-0.5">แนบสื่อ</span>
+        </button>
+
+        <!-- 3. CENTER RAISED CIRCULAR MIC BUTTON -->
+        <div class="relative -top-5 shrink-0 flex flex-col items-center">
+            <button id="micBtn" onclick="toggleRecording()" 
+                class="w-16 h-16 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-lg hover:shadow-xl active:scale-90 transition-all duration-200 flex flex-col items-center justify-center border-4 border-slate-100 shrink-0">
+                <i id="micIcon" class="fa-solid fa-microphone text-2xl"></i>
+                <span id="micBtnText" class="text-[9px] font-extrabold -mt-0.5">พูด</span>
+            </button>
+
+            <!-- Recording Wave Indicator -->
+            <div id="soundWave" class="hidden absolute -top-2 left-1/2 -translate-x-1/2 flex items-center space-x-1 bg-red-600 px-2 py-0.5 rounded-full shadow">
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.1s"></div>
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.3s"></div>
+                <div class="w-1 bg-white rounded-full sound-wave-bar" style="animation-delay: 0.2s"></div>
+            </div>
+        </div>
+
+        <!-- 4. DIRECT SEND / SUBMIT BUTTON -->
+        <button type="button" onclick="submitReport()" id="navBarSendBtn"
+            class="flex flex-col items-center justify-center w-12 py-1 text-emerald-600 hover:text-emerald-800 transition active:scale-95 shrink-0">
+            <div class="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center shadow-sm">
+                <i id="navBarSendIcon" class="fa-solid fa-paper-plane text-xs text-emerald-700"></i>
+            </div>
+            <span class="text-[9px] font-bold mt-0.5 text-emerald-800">ส่งข้อมูล</span>
+        </button>
+
+        <!-- 5. Profile & Settings Button -->
+        <button type="button" onclick="openProfileModal()" 
+            class="flex flex-col items-center justify-center w-12 py-1 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0">
+            <i class="fa-solid fa-circle-user text-base"></i>
+            <span class="text-[9px] font-bold mt-0.5">โปรไฟล์</span>
+        </button>
+    </nav>
+
+    <!-- Unified Modal: Profile, Google Account & Export Suite -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 class="font-bold text-base text-slate-800 flex items-center space-x-2">
+                    <span>👤 ข้อมูล อสม. & คลาวด์</span>
+                </h3>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Profile Info Form -->
+            <form id="profileForm" onsubmit="saveProfile(event)" class="space-y-2.5">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">ชื่อ-นามสกุล อสม.</label>
+                    <input type="text" id="profName" required placeholder="เช่น สมศรี ใจดี" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">เบอร์โทรศัพท์ติดต่อ</label>
+                    <input type="tel" id="profPhone" required placeholder="เช่น 0812345678" pattern="[0-9]{9,10}" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-0.5">หมู่ที่ / ชื่อชุมชน</label>
+                    <input type="text" id="profVillage" required placeholder="เช่น หมู่ 3 บ้านดอนพัฒนา" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-vhv-500">
+                </div>
+
+                <button type="submit" class="w-full bg-vhv-600 hover:bg-vhv-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">
                     บันทึกข้อมูล อสม.
                 </button>
-</form>
-<!-- Google Account Cloud Sync -->
-<div class="border-t border-slate-100 pt-3 space-y-2">
-<h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
-<i class="fa-solid fa-cloud-arrow-up text-vhv-600"></i>
-<span>ซิงค์บัญชี Cloud Sync</span>
-</h4>
-<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
-<p class="font-bold text-slate-800 truncate" id="accNameDisplay">บัญชีทั่วไป (Anonymous)</p>
-<p class="text-slate-400 text-[10px] font-mono truncate" id="accTypeDisplay">ID: --</p>
-</div>
-<button class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-2 px-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-xs" onclick="signInWithGoogleAccount()" type="button">
-<svg class="w-4 h-4" viewbox="0 0 24 24">
-<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
-<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
-</svg>
-<span>เข้าสู่ระบบด้วย Google Account</span>
-</button>
-<div class="flex space-x-1.5 pt-1">
-<input class="w-full bg-slate-100 border border-slate-200 font-mono text-[11px] px-2.5 py-1.5 rounded-xl text-slate-700 outline-none" id="syncKeyInput" readonly="" type="text"/>
-<button class="bg-slate-800 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0" onclick="copySyncKey()">
+            </form>
+
+            <!-- Google Account Cloud Sync -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+                <h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-cloud-arrow-up text-vhv-600"></i>
+                    <span>ซิงค์บัญชี Cloud Sync</span>
+                </h4>
+
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
+                    <p id="accNameDisplay" class="font-bold text-slate-800 truncate">บัญชีทั่วไป (Anonymous)</p>
+                    <p id="accTypeDisplay" class="text-slate-400 text-[10px] font-mono truncate">ID: --</p>
+                </div>
+
+                <button type="button" onclick="signInWithGoogleAccount()" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-2 px-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-xs">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>เข้าสู่ระบบด้วย Google Account</span>
+                </button>
+
+                <div class="flex space-x-1.5 pt-1">
+                    <input type="text" id="syncKeyInput" readonly class="w-full bg-slate-100 border border-slate-200 font-mono text-[11px] px-2.5 py-1.5 rounded-xl text-slate-700 outline-none">
+                    <button onclick="copySyncKey()" class="bg-slate-800 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0">
                         คัดลอก Key
                     </button>
-</div>
-</div>
-<!-- Export Tools (Tech Savvy) -->
-<div class="border-t border-slate-100 pt-3 space-y-2">
-<h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
-<i class="fa-solid fa-file-export text-emerald-600"></i>
-<span>ส่งออกข้อมูล &amp; สำรองข้อมูล</span>
-</h4>
-<div class="grid grid-cols-2 gap-2 text-xs">
-<button class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1" onclick="exportToCSV()">
-<i class="fa-solid fa-file-csv text-sm"></i>
-<span>Excel CSV</span>
-</button>
-<button class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1" onclick="triggerPrintSummary()">
-<i class="fa-solid fa-print text-sm"></i>
-<span>พิมพ์/PDF</span>
-</button>
-</div>
-<div class="flex space-x-2 text-xs">
-<button class="w-1/2 bg-amber-50 text-amber-800 border border-amber-200 font-bold py-1.5 rounded-xl" onclick="exportToJSON()">
+                </div>
+            </div>
+
+            <!-- Export Tools (Tech Savvy) -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+                <h4 class="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-export text-emerald-600"></i>
+                    <span>ส่งออกข้อมูล & สำรองข้อมูล</span>
+                </h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button onclick="exportToCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-file-csv text-sm"></i>
+                        <span>Excel CSV</span>
+                    </button>
+                    <button onclick="triggerPrintSummary()" class="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-print text-sm"></i>
+                        <span>พิมพ์/PDF</span>
+                    </button>
+                </div>
+                <div class="flex space-x-2 text-xs">
+                    <button onclick="exportToJSON()" class="w-1/2 bg-amber-50 text-amber-800 border border-amber-200 font-bold py-1.5 rounded-xl">
                         💾 Backup JSON
                     </button>
-<button class="w-1/2 bg-slate-100 text-slate-700 border border-slate-200 font-bold py-1.5 rounded-xl" onclick="document.getElementById('importJsonInput').click()">
+                    <button onclick="document.getElementById('importJsonInput').click()" class="w-1/2 bg-slate-100 text-slate-700 border border-slate-200 font-bold py-1.5 rounded-xl">
                         📂 Restore JSON
                     </button>
-<input accept=".json" class="hidden" id="importJsonInput" onchange="importFromJSON(event)" type="file"/>
-</div>
-</div>
-<button class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition" onclick="closeProfileModal()" type="button">
+                    <input type="file" id="importJsonInput" accept=".json" onchange="importFromJSON(event)" class="hidden">
+                </div>
+            </div>
+
+            <button type="button" onclick="closeProfileModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
                 ปิดหน้าต่าง
             </button>
-</div>
-</div>
-<!-- Officer Auth Passcode Modal -->
-<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="officerAuthModal">
-<div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-100 text-center">
-<h3 class="font-bold text-base text-slate-800 mb-1">สำหรับเจ้าหน้าที่ รพ.สต.</h3>
-<p class="text-xs text-slate-500 mb-3">รหัสทดสอบ: 10660</p>
-<form class="space-y-2.5" onsubmit="verifyOfficerPin(event)">
-<input class="w-full px-3 py-2 rounded-xl border border-slate-200 text-center font-mono text-base outline-none focus:border-amber-500" id="officerPinInput" placeholder="กรอกรหัส PIN (10660)" required="" type="password"/>
-<div class="flex space-x-2">
-<button class="w-1/2 bg-slate-100 text-slate-600 py-1.5 rounded-xl text-xs font-bold" onclick="closeOfficerAuthModal()" type="button">ยกเลิก</button>
-<button class="w-1/2 bg-amber-600 text-white py-1.5 rounded-xl text-xs font-bold shadow" type="submit">เข้าสู่ระบบ</button>
-</div>
-</form>
-</div>
-</div>
-<!-- Officer Response Modal -->
-<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="officerModal">
-<div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100">
-<h3 class="font-bold text-base text-slate-800 mb-3">🏥 อัปเดตสถานะการช่วยเหลือ</h3>
-<div class="space-y-2 text-xs text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-2xl border" id="officerModalContent"></div>
-<form class="space-y-2.5" onsubmit="saveOfficerResponse(event)">
-<input id="modalReportId" type="hidden"/>
-<div>
-<label class="text-xs font-bold text-slate-700 block mb-1">สถานะ</label>
-<select class="w-full px-2.5 py-2 rounded-xl border text-xs font-semibold outline-none" id="modalStatusSelect">
-<option value="รอดำเนินการ">🟡 รอดำเนินการ (Pending)</option>
-<option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ (In Progress)</option>
-<option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น (Resolved)</option>
-</select>
-</div>
-<div>
-<label class="text-xs font-bold text-slate-700 block mb-1">บันทึกตอบกลับ</label>
-<textarea class="w-full px-2.5 py-1.5 rounded-xl border text-xs outline-none" id="modalOfficerNote" placeholder="เช่น ส่งทีมลงพื้นที่แล้ว..." rows="2"></textarea>
-</div>
-<div class="flex space-x-2 pt-1">
-<button class="w-1/3 bg-slate-100 text-slate-700 py-2 rounded-xl text-xs font-bold" onclick="closeOfficerModal()" type="button">ยกเลิก</button>
-<button class="w-2/3 bg-vhv-600 text-white py-2 rounded-xl text-xs font-bold shadow" type="submit">บันทึก</button>
-</div>
-</form>
-</div>
-</div>
-<!-- Lightbox Media Viewer Modal -->
-<div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" id="mediaLightboxModal" onclick="closeMediaModal()">
-<div class="relative max-w-2xl max-h-[85vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
-<button class="absolute -top-9 right-0 text-white text-2xl font-bold p-1" onclick="closeMediaModal()">
-<i class="fa-solid fa-xmark"></i>
-</button>
-<div class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl bg-black" id="lightboxContent"></div>
-</div>
-</div>
-<!-- Toast Banner -->
-<div class="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4" id="toast">
-<i class="fa-solid fa-circle-check text-emerald-400" id="toastIcon"></i>
-<span id="toastMsg">บันทึกเรียบร้อย</span>
-</div>
-<script>
+        </div>
+    </div>
+
+    <!-- Officer Auth Passcode Modal -->
+    <div id="officerAuthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-100 text-center">
+            <h3 class="font-bold text-base text-slate-800 mb-1">สำหรับเจ้าหน้าที่ รพ.สต.</h3>
+            <p class="text-xs text-slate-500 mb-3">รหัสทดสอบ: 10660</p>
+            <form onsubmit="verifyOfficerPin(event)" class="space-y-2.5">
+                <input type="password" id="officerPinInput" placeholder="กรอกรหัส PIN (10660)" required
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 text-center font-mono text-base outline-none focus:border-amber-500">
+                <div class="flex space-x-2">
+                    <button type="button" onclick="closeOfficerAuthModal()" class="w-1/2 bg-slate-100 text-slate-600 py-1.5 rounded-xl text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="w-1/2 bg-amber-600 text-white py-1.5 rounded-xl text-xs font-bold shadow">เข้าสู่ระบบ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Officer Response Modal -->
+    <div id="officerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100">
+            <h3 class="font-bold text-base text-slate-800 mb-3">🏥 อัปเดตสถานะการช่วยเหลือ</h3>
+            <div id="officerModalContent" class="space-y-2 text-xs text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-2xl border"></div>
+            <form onsubmit="saveOfficerResponse(event)" class="space-y-2.5">
+                <input type="hidden" id="modalReportId">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">สถานะ</label>
+                    <select id="modalStatusSelect" class="w-full px-2.5 py-2 rounded-xl border text-xs font-semibold outline-none">
+                        <option value="รอดำเนินการ">🟡 รอดำเนินการ (Pending)</option>
+                        <option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ (In Progress)</option>
+                        <option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น (Resolved)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">บันทึกตอบกลับ</label>
+                    <textarea id="modalOfficerNote" rows="2" placeholder="เช่น ส่งทีมลงพื้นที่แล้ว..." class="w-full px-2.5 py-1.5 rounded-xl border text-xs outline-none"></textarea>
+                </div>
+                <div class="flex space-x-2 pt-1">
+                    <button type="button" onclick="closeOfficerModal()" class="w-1/3 bg-slate-100 text-slate-700 py-2 rounded-xl text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="w-2/3 bg-vhv-600 text-white py-2 rounded-xl text-xs font-bold shadow">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lightbox Media Viewer Modal -->
+    <div id="mediaLightboxModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" onclick="closeMediaModal()">
+        <div class="relative max-w-2xl max-h-[85vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
+            <button onclick="closeMediaModal()" class="absolute -top-9 right-0 text-white text-2xl font-bold p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="lightboxContent" class="w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl bg-black"></div>
+        </div>
+    </div>
+
+    <!-- Toast Banner -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">บันทึกเรียบร้อย</span>
+    </div>
+
+    <script>
         // Global Category Dictionary
         const CATEGORIES = {
             '💡 ไอเดีย/ความคิด': { icon: '💡', keywords: ['ไอเดีย', 'คิดว่า', 'เสนอ'] },
@@ -2351,91 +1991,5 @@ html.light {
             }, 3000);
         }
     </script>
-
-<script>
-(function() {
-  "use strict";
-  const current = window.location.pathname.split("/").pop() || "index.html";
-
-  /* ===================== SIDEBAR SEARCH ===================== */
-  const sidebarSearch = document.getElementById("sidebarSearch");
-  if (sidebarSearch) {
-    sidebarSearch.addEventListener("input", function() {
-      const q = this.value.toLowerCase().trim();
-      document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
-        const text = link.textContent.toLowerCase();
-        link.style.display = !q || text.includes(q) ? "flex" : "none";
-      });
-    });
-  }
-
-  /* ===================== DRAWER ===================== */
-  const overlay = document.getElementById("toolsDrawerOverlay");
-  const drawer = document.getElementById("toolsDrawer");
-  const openBtn = document.getElementById("fabSearchBtn");
-  const closeBtn = document.getElementById("toolsDrawerClose");
-  const searchInput = document.getElementById("toolsDrawerSearchInput");
-  const noResults = document.getElementById("toolsNoResults");
-
-  function openDrawer() {
-    overlay.classList.add("open");
-    drawer.classList.add("open");
-    document.body.style.overflow = "hidden";
-    if (searchInput) {
-      searchInput.value = "";
-      searchInput.focus();
-      filterDrawer("");
-    }
-  }
-
-  function closeDrawer() {
-    overlay.classList.remove("open");
-    drawer.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  if (openBtn) openBtn.addEventListener("click", openDrawer);
-  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
-  if (overlay) overlay.addEventListener("click", closeDrawer);
-
-  /* Drawer search filter */
-  function filterDrawer(q) {
-    var found = false;
-    var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
-    items.forEach(function(item) {
-      var text = item.textContent.toLowerCase();
-      var match = !q || text.includes(q);
-      item.style.display = match ? "flex" : "none";
-      if (match) found = true;
-    });
-    if (noResults) {
-      noResults.style.display = found ? "none" : "block";
-    }
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", function() {
-      filterDrawer(this.value.toLowerCase().trim());
-    });
-    /* Prevent close on input click (bubbles up) */
-    searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
-  }
-
-  /* ===================== ACTIVE STATE ===================== */
-  /* Sidebar */
-  document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-  /* Drawer */
-  document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
-    var href = a.getAttribute("href");
-    if (href === current || (current === "index.html" && href === "index.html")) {
-      a.classList.add("active");
-    }
-  });
-})();
-</script></body>
+</body>
 </html>

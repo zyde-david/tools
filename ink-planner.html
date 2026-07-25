@@ -42,14 +42,16 @@
             box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.15);
         }
     </style>
-<style>
-/* ============================================================
+<style>/* ============================================================
    RESPONSIVE NAVIGATION (Injected)
-   Mobile: Fixed bottom bar | Desktop: Fixed left sidebar
+   Mobile: Fixed bottom bar (Search, Home, Note)
+   Desktop: Collapsible sidebar (collapse on idle, expand on hover)
+   Search drawer: slide-up with search bar at bottom (sticky)
    ============================================================ */
 :root {
-  --nav-height: 56px;
+  --nav-height: 64px;
   --nav-width: 260px;
+  --nav-collapsed: 56px;
   --tool-brand: #6366f1;
   --tool-brand-hover: #4f46e5;
   --tool-brand-light: #e0e7ff;
@@ -85,110 +87,343 @@ html.light {
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
 }
-.tools-nav {
+
+/* ===== MOBILE BOTTOM BAR (3 buttons) ===== */
+.tools-fab {
   position: fixed;
-  z-index: var(--z-nav);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  backdrop-filter: blur(8px);
-  /* Mobile: bottom bar */
   bottom: 0;
   left: 0;
   right: 0;
-  top: auto;
-  height: var(--nav-height);
+  z-index: var(--z-nav);
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
   justify-content: space-around;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border-bottom: none;
-  box-shadow: var(--shadow-lg);
+  height: var(--nav-height);
+  padding: 0.25rem 0.5rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
 }
-.tools-nav .nav-home,
-.tools-nav .nav-link {
+.tools-fab .fab-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   color: var(--text-secondary);
-  padding: 0.25rem 0.5rem;
+  padding: 0.375rem 0.75rem;
   border-radius: var(--radius-md);
   font-size: 1.25rem;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 56px;
+  min-height: 48px;
   transition: all var(--transition);
   flex: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
 }
-.tools-nav .nav-home span,
-.tools-nav .nav-link span {
-  display: none;
+.tools-fab .fab-btn span {
   font-size: 0.625rem;
   margin-top: 0.125rem;
   font-weight: 500;
   white-space: nowrap;
 }
-.tools-nav .nav-home:hover,
-.tools-nav .nav-link:hover {
+.tools-fab .fab-btn:hover,
+.tools-fab .fab-btn:active {
   color: var(--text-primary);
   background: var(--bg-elevated);
-  transform: scale(1.1);
-  text-decoration: none;
 }
-.tools-nav .nav-link.active {
+.tools-fab .fab-home {
   color: var(--tool-brand);
+  font-size: 1.5rem;
+  flex: 1.3;
   background: var(--tool-brand-light);
+  border-radius: 40px;
+  margin: 0 0.5rem;
+  min-height: 44px;
 }
+.tools-fab .fab-home:hover {
+  color: var(--tool-brand-text);
+  background: var(--tool-brand);
+}
+
+/* ===== SEARCH DRAWER (slide-up, search at bottom) ===== */
+.tools-drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: calc(var(--z-nav) + 1);
+  backdrop-filter: blur(4px);
+}
+.tools-drawer-overlay.open {
+  display: block;
+}
+.tools-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: calc(var(--z-nav) + 2);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+}
+.tools-drawer.open {
+  transform: translateY(0);
+}
+.tools-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.tools-drawer-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.tools-drawer-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+.tools-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.tools-drawer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.25rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+}
+.tools-drawer-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.tools-drawer-item.active {
+  background: var(--tool-brand-light);
+  color: var(--tool-brand-text);
+}
+.tools-drawer-item .icon {
+  font-size: 1.5rem;
+}
+.tools-drawer-item .label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+/* Search bar at bottom of drawer - sticky */
+.tools-drawer-search-wrap {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-card);
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  z-index: 2;
+}
+.tools-drawer-search-wrap input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.tools-drawer-search-wrap input:focus {
+  border-color: var(--border-focus);
+}
+.tools-drawer-search-wrap input::placeholder {
+  color: var(--text-muted);
+}
+
+/* No results */
+.tools-drawer-no-results {
+  display: none;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ===== DESKTOP SIDEBAR (collapsible) ===== */
 @media (min-width: 768px) {
-  .tools-nav {
+  .tools-fab { display: none; }
+
+  .tools-sidebar {
+    position: fixed;
     top: 0;
-    bottom: 0;
     left: 0;
-    right: auto;
-    width: var(--nav-width);
-    height: 100vh;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 1rem 0.5rem;
-    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    bottom: 0;
+    z-index: var(--z-nav);
+    background: var(--bg-card);
     border-right: 1px solid var(--border-color);
-    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    width: var(--nav-collapsed);
+    transition: width 0.2s ease;
+    overflow: hidden;
+  }
+  .tools-sidebar:hover {
+    width: var(--nav-width);
     box-shadow: var(--shadow-md);
-    overflow-y: auto;
-    gap: 0.25rem;
   }
-  .tools-nav .nav-home,
-  .tools-nav .nav-link {
-    flex-direction: row;
-    gap: 0.75rem;
-    justify-content: flex-start;
-    padding: 0.75rem 1rem;
+
+  /* Header / brand */
+  .tools-sidebar-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    min-height: 52px;
+  }
+  .tools-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 700;
     font-size: 1rem;
-    min-width: auto;
-    min-height: auto;
+  }
+  .tools-sidebar-brand .brand-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+  .tools-sidebar-brand .brand-text {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .tools-sidebar:hover .tools-sidebar-brand .brand-text {
+    opacity: 1;
+  }
+
+  /* Search in sidebar */
+  .tools-sidebar-search {
     width: 100%;
-    border-radius: var(--radius-md);
-  }
-  .tools-nav .nav-home span,
-  .tools-nav .nav-link span {
-    display: inline;
-  }
-  .tools-nav .nav-home:hover,
-  .tools-nav .nav-link:hover {
-    transform: none;
     background: var(--bg-elevated);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.825rem;
+    outline: none;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
-  .tools-nav .nav-link.active {
+  .tools-sidebar:hover .tools-sidebar-search {
+    opacity: 1;
+  }
+  .tools-sidebar-search:focus {
+    border-color: var(--border-focus);
+  }
+  .tools-sidebar-search::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Nav links */
+  .tools-sidebar-nav {
+    flex: 1;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    overflow-y: auto;
+  }
+  .tools-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    transition: all var(--transition);
+    white-space: nowrap;
+    min-height: 40px;
+  }
+  .tools-sidebar-link:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+  .tools-sidebar-link.active {
     background: var(--tool-brand-light);
     color: var(--tool-brand-text);
+    font-weight: 600;
   }
-}
-@media (min-width: 481px) and (max-width: 767px) {
-  .tools-nav { gap: 0.5rem; padding: 0.25rem 1rem; }
-  .tools-nav .nav-home,
-  .tools-nav .nav-link { font-size: 1.5rem; padding: 0.5rem 0.75rem; }
+  .tools-sidebar-link .icon {
+    font-size: 1.2rem;
+    min-width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tools-sidebar-link .link-text {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tools-sidebar:hover .tools-sidebar-link .link-text {
+    opacity: 1;
+  }
+
+  /* Scrollbar styling */
+  .tools-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  .tools-sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+  }
+
+  /* Content offset - auto adjusts with sidebar width */
+  body {
+    padding-left: var(--nav-collapsed);
+    transition: padding-left 0.2s ease;
+  }
+  body:has(.tools-sidebar:hover) {
+    padding-left: var(--nav-width);
+  }
 }
 </style><style>
 /* Ensure content not hidden behind bottom nav on mobile */
@@ -206,46 +441,94 @@ html.light {
   }
 }
 @media (min-width: 768px) {
-  body {padding-left: var(--nav-width); }
+  body {padding-left: var(--nav-collapsed); }
   main, .container, .tool-main, #main-content, [role="main"] {
+    margin-left: var(--nav-collapsed);
+    max-width: calc(100% - var(--nav-collapsed));
+  }
+  body:has(.tools-sidebar:hover) {
+    padding-left: var(--nav-width);
+  }
+  body:has(.tools-sidebar:hover) main,
+  body:has(.tools-sidebar:hover) .container,
+  body:has(.tools-sidebar:hover) .tool-main,
+  body:has(.tools-sidebar:hover) #main-content,
+  body:has(.tools-sidebar:hover) [role="main"] {
     margin-left: var(--nav-width);
     max-width: calc(100% - var(--nav-width));
   }
 }
 </style></head>
 <body class="bg-slate-100 min-h-screen py-6 px-4"><!-- ===== Responsive Navigation ===== -->
-<nav aria-label="เครื่องมือนำทาง" class="tools-nav" role="navigation">
-<a aria-label="หน้าหลัก" class="nav-home" href="index.html" title="หน้าหลัก">🏠<span>หน้าหลัก</span></a>
-<a class="nav-link" href="envelope-printer.html" title="Envelope Printer">✉️<span>Envelope Printer</span></a>
-<a class="nav-link" href="autocorrect.html" title="AHK AutoCorrect">⌨️<span>AHK AutoCorrect</span></a>
-<a class="nav-link" href="map-epidemic.html" title="Epidemiology Map">📊<span>Epidemiology Map</span></a>
-<a class="nav-link" href="base64-decoder.html" title="Base64 Decoder">🦫<span>Base64 Decoder</span></a>
-<a class="nav-link" href="thai-recovery.html" title="Thai Recovery">🔤<span>Thai Recovery</span></a>
-<a class="nav-link active" href="ink-planner.html" title="Ink Planner">🖨️<span>Ink Planner</span></a>
-<a class="nav-link" href="inventory-analytics.html" title="Inventory">📦<span>Inventory</span></a>
-<a class="nav-link" href="interactive-certificate-builder.html" title="Certificate Builder">🏆<span>Certificate Builder</span></a>
-<a class="nav-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator">🗄️<span>myPCU SQL Simulator</span></a>
-<a class="nav-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL">🧠<span>myPCU AI SQL</span></a>
-<a class="nav-link" href="health-gis-app.html" title="Health GIS">🏥<span>Health GIS</span></a>
-<a class="nav-link" href="gps-location-tracker.html" title="GPS Tracker">📍<span>GPS Tracker</span></a>
-<a class="nav-link" href="vhv-quick-report.html" title="VHV Voice Report">🎤<span>VHV Voice Report</span></a>
-<a class="nav-link" href="yarang-pcc-audit.html" title="Yarang PCC">🏥<span>Yarang PCC</span></a>
+<!-- Mobile: 3-button bottom bar -->
+<nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
+<button aria-label="ค้นหา" class="fab-btn fab-search" id="fabSearchBtn" title="ค้นหา">
+    🔍<span>ค้นหา</span>
+</button>
+<a aria-label="หน้าหลัก" class="fab-btn fab-home" href="index.html" title="หน้าหลัก">
+    🏠<span>หน้าหลัก</span>
+</a>
+<a aria-label="อสม.รายงานด่วน" class="fab-btn fab-note" href="vhv-quick-report.html" title="อสม.รายงานด่วน">
+    📝<span>รายงานด่วน</span>
+</a>
 </nav>
+<!-- Search Drawer (slide-up) -->
+<div class="tools-drawer-overlay" id="toolsDrawerOverlay"></div>
+<div class="tools-drawer" id="toolsDrawer">
+<div class="tools-drawer-header">
+<h3>🔍 ค้นหาเครื่องมือ</h3>
+<button class="tools-drawer-close" id="toolsDrawerClose">✕</button>
+</div>
+<div class="tools-drawer-grid" id="toolsDrawerGrid">
+<a class="tools-drawer-item" href="envelope-printer.html"><span class="icon">✉️</span><span class="label">Envelope Printer</span></a>
+<a class="tools-drawer-item" href="autocorrect.html"><span class="icon">⌨️</span><span class="label">AHK AutoCorrect</span></a>
+<a class="tools-drawer-item" href="map-epidemic.html"><span class="icon">📊</span><span class="label">Epidemiology Map</span></a>
+<a class="tools-drawer-item" href="base64-decoder.html"><span class="icon">🦫</span><span class="label">Base64 Decoder</span></a>
+<a class="tools-drawer-item" href="thai-recovery.html"><span class="icon">🔤</span><span class="label">Thai Recovery</span></a>
+<a class="tools-drawer-item active" href="ink-planner.html"><span class="icon">🖨️</span><span class="label">Ink Planner</span></a>
+<a class="tools-drawer-item" href="inventory-analytics.html"><span class="icon">📦</span><span class="label">Inventory</span></a>
+<a class="tools-drawer-item" href="interactive-certificate-builder.html"><span class="icon">🏆</span><span class="label">Certificate Builder</span></a>
+<a class="tools-drawer-item" href="mypcu-sql-simulator.html"><span class="icon">🗄️</span><span class="label">myPCU SQL Simulator</span></a>
+<a class="tools-drawer-item" href="mypcu-sql-cheatsheet-ai.html"><span class="icon">🧠</span><span class="label">myPCU AI SQL</span></a>
+<a class="tools-drawer-item" href="health-gis-app.html"><span class="icon">🏥</span><span class="label">Health GIS</span></a>
+<a class="tools-drawer-item" href="gps-location-tracker.html"><span class="icon">📍</span><span class="label">GPS Tracker</span></a>
+<a class="tools-drawer-item" href="vhv-quick-report.html"><span class="icon">🎤</span><span class="label">VHV Voice Report</span></a>
+<a class="tools-drawer-item" href="yarang-pcc-audit.html"><span class="icon">🏥</span><span class="label">Yarang PCC</span></a>
+<div class="tools-drawer-no-results" id="toolsNoResults">ไม่พบเครื่องมือที่ค้นหา</div>
+</div>
+<div class="tools-drawer-search-wrap">
+<input autocomplete="off" id="toolsDrawerSearchInput" placeholder="พิมพ์ชื่อเครื่องมือ..." type="text"/>
+</div>
+</div>
+<!-- Desktop sidebar -->
+<aside aria-label="เครื่องมือนำทาง" class="tools-sidebar" role="navigation">
+<div class="tools-sidebar-header">
+<a class="tools-sidebar-brand" href="index.html">
+<span class="brand-icon">🛠️</span>
+<span class="brand-text">Zyde's Tools</span>
+</a>
+</div>
+<div class="tools-sidebar-nav">
+<input autocomplete="off" class="tools-sidebar-search" id="sidebarSearch" placeholder="ค้นหา..." type="text"/>
+<a class="tools-sidebar-link" href="envelope-printer.html" title="Envelope Printer"><span class="icon">✉️</span><span class="link-text">Envelope Printer</span></a>
+<a class="tools-sidebar-link" href="autocorrect.html" title="AHK AutoCorrect"><span class="icon">⌨️</span><span class="link-text">AHK AutoCorrect</span></a>
+<a class="tools-sidebar-link" href="map-epidemic.html" title="Epidemiology Map"><span class="icon">📊</span><span class="link-text">Epidemiology Map</span></a>
+<a class="tools-sidebar-link" href="base64-decoder.html" title="Base64 Decoder"><span class="icon">🦫</span><span class="link-text">Base64 Decoder</span></a>
+<a class="tools-sidebar-link" href="thai-recovery.html" title="Thai Recovery"><span class="icon">🔤</span><span class="link-text">Thai Recovery</span></a>
+<a class="tools-sidebar-link active" href="ink-planner.html" title="Ink Planner"><span class="icon">🖨️</span><span class="link-text">Ink Planner</span></a>
+<a class="tools-sidebar-link" href="inventory-analytics.html" title="Inventory"><span class="icon">📦</span><span class="link-text">Inventory</span></a>
+<a class="tools-sidebar-link" href="interactive-certificate-builder.html" title="Certificate Builder"><span class="icon">🏆</span><span class="link-text">Certificate Builder</span></a>
+<a class="tools-sidebar-link" href="mypcu-sql-simulator.html" title="myPCU SQL Simulator"><span class="icon">🗄️</span><span class="link-text">myPCU SQL Simulator</span></a>
+<a class="tools-sidebar-link" href="mypcu-sql-cheatsheet-ai.html" title="myPCU AI SQL"><span class="icon">🧠</span><span class="link-text">myPCU AI SQL</span></a>
+<a class="tools-sidebar-link" href="health-gis-app.html" title="Health GIS"><span class="icon">🏥</span><span class="link-text">Health GIS</span></a>
+<a class="tools-sidebar-link" href="gps-location-tracker.html" title="GPS Tracker"><span class="icon">📍</span><span class="link-text">GPS Tracker</span></a>
+<a class="tools-sidebar-link" href="vhv-quick-report.html" title="VHV Voice Report"><span class="icon">🎤</span><span class="link-text">VHV Voice Report</span></a>
+<a class="tools-sidebar-link" href="yarang-pcc-audit.html" title="Yarang PCC"><span class="icon">🏥</span><span class="link-text">Yarang PCC</span></a>
+</div>
+</aside>
 <script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
 
-<div class="tools-nav">
-<a class="nav-home" href="index.html" title="หน้าหลัก">🏠</a>
-<span class="nav-sep">|</span>
-<a class="nav-link" href="envelope-printer.html" title="✉️ Envelope Printer">✉️</a>
-<a class="nav-link" href="autocorrect.html" title="⌨️ AHK AutoCorrect">⌨️</a>
-<a class="nav-link" href="map-epidemic.html" title="📊 Epidemiology Map">📊</a>
-<a class="nav-link" href="base64-decoder.html" title="🦫 Base64 Decoder">🦫</a>
-<a class="nav-link" href="thai-recovery.html" title="🔤 Thai Recovery">🔤</a>
-<a class="nav-link" href="ink-planner.html" title="🖨️ Ink Planner">🖨️</a>
-<a class="nav-link" href="inventory-analytics.html" title="📦 Inventory">📦</a>
-<span class="nav-sep">|</span>
-<span class="nav-title">🖨️ Ink Planner</span>
-</div>
+
 <div class="max-w-6xl mx-auto space-y-6">
 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
 <div>
@@ -720,14 +1003,88 @@ html.light {
         window.onload = function() { renderAll(); onGlobalPaperChange(); };
     </script>
 
-<!-- ===== Nav Active State ===== -->
 <script>
 (function() {
-  const current = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.nav-link').forEach(a => {
-    const href = a.getAttribute('href');
-    if (href === current || (current === 'index.html' && href === 'index.html')) {
-      a.classList.add('active');
+  "use strict";
+  const current = window.location.pathname.split("/").pop() || "index.html";
+
+  /* ===================== SIDEBAR SEARCH ===================== */
+  const sidebarSearch = document.getElementById("sidebarSearch");
+  if (sidebarSearch) {
+    sidebarSearch.addEventListener("input", function() {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll(".tools-sidebar-link").forEach(function(link) {
+        const text = link.textContent.toLowerCase();
+        link.style.display = !q || text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  /* ===================== DRAWER ===================== */
+  const overlay = document.getElementById("toolsDrawerOverlay");
+  const drawer = document.getElementById("toolsDrawer");
+  const openBtn = document.getElementById("fabSearchBtn");
+  const closeBtn = document.getElementById("toolsDrawerClose");
+  const searchInput = document.getElementById("toolsDrawerSearchInput");
+  const noResults = document.getElementById("toolsNoResults");
+
+  function openDrawer() {
+    overlay.classList.add("open");
+    drawer.classList.add("open");
+    document.body.style.overflow = "hidden";
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+      filterDrawer("");
+    }
+  }
+
+  function closeDrawer() {
+    overlay.classList.remove("open");
+    drawer.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  if (openBtn) openBtn.addEventListener("click", openDrawer);
+  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+  if (overlay) overlay.addEventListener("click", closeDrawer);
+
+  /* Drawer search filter */
+  function filterDrawer(q) {
+    var found = false;
+    var items = document.querySelectorAll("#toolsDrawerGrid .tools-drawer-item");
+    items.forEach(function(item) {
+      var text = item.textContent.toLowerCase();
+      var match = !q || text.includes(q);
+      item.style.display = match ? "flex" : "none";
+      if (match) found = true;
+    });
+    if (noResults) {
+      noResults.style.display = found ? "none" : "block";
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function() {
+      filterDrawer(this.value.toLowerCase().trim());
+    });
+    /* Prevent close on input click (bubbles up) */
+    searchInput.addEventListener("click", function(e) { e.stopPropagation(); });
+  }
+
+  /* ===================== ACTIVE STATE ===================== */
+  /* Sidebar */
+  document.querySelectorAll(".tools-sidebar-link").forEach(function(a) {
+    var href = a.getAttribute("href");
+    if (href === current || (current === "index.html" && href === "index.html")) {
+      a.classList.add("active");
+    }
+  });
+  /* Drawer */
+  document.querySelectorAll(".tools-drawer-item").forEach(function(a) {
+    var href = a.getAttribute("href");
+    if (href === current || (current === "index.html" && href === "index.html")) {
+      a.classList.add("active");
     }
   });
 })();
