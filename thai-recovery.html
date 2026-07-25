@@ -1,9 +1,153 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool) - เครื่องมือใน Zyde's Toolbox">
+  <title>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</title>
+
+  <!-- ===== Design Tokens ===== -->
+  <style>
+    :root {
+      /* ---- Color: Brand ---- */
+      --tool-brand: #6366f1;
+      --tool-brand-hover: #4f46e5;
+      --tool-brand-light: #e0e7ff;
+      --tool-brand-text: #312e81;
+      --tool-brand-text-light: #a5b4fc;
+
+      /* ---- Color: Semantic ---- */
+      --tool-success: #22c55e;
+      --tool-success-hover: #16a34a;
+      --tool-warn: #f59e0b;
+      --tool-warn-hover: #d97706;
+      --tool-danger: #ef4444;
+      --tool-danger-hover: #dc2626;
+      --tool-info: #38bdf8;
+      --tool-info-hover: #0ea5e9;
+
+      /* ---- Color: Base (Dark Default) ---- */
+      --bg-base: #0f172a;
+      --bg-card: #1e293b;
+      --bg-elevated: #334155;
+      --bg-hover: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --border-focus: #6366f1;
+      --border-light: #475569;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 9999px;
+      --transition: 150ms ease;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+      --nav-height: 48px;
+
+      /* ---- Z-Index Scale ---- */
+      --z-nav: 100;
+      --z-sticky: 200;
+      --z-modal: 1000;
+      --z-toast: 2000;
+    }
+
+    /* ---- Light Mode Override ---- */
+    html.light {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-elevated: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #6366f1;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+    }
+
+    /* ---- Base Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--tool-brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* ---- Skip Link ---- */
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem;
+      background: var(--tool-brand); color: white;
+      padding: 0.5rem 1rem; border-radius: var(--radius-md);
+      z-index: var(--z-toast);
+      transition: top var(--transition);
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ---- Top Navigation Bar ---- */
+    .tools-nav {
+      position: sticky; top: 0; z-index: var(--z-nav);
+      background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+      height: var(--nav-height);
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0 1rem; flex-wrap: wrap;
+      backdrop-filter: blur(8px);
+    }
+    .tools-nav .nav-home {
+      font-size: 1.25rem; text-decoration: none;
+      padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+      color: var(--text-primary); transition: background var(--transition);
+    }
+    .tools-nav .nav-home:hover { background: var(--bg-elevated); text-decoration: none; }
+    .tools-nav .nav-sep { color: var(--border-color); font-size: 0.75rem; padding: 0 0.25rem; }
+    .tools-nav .nav-link {
+      font-size: 1.125rem; text-decoration: none;
+      padding: 0.25rem 0.375rem; border-radius: var(--radius-md);
+      opacity: 0.55; transition: all var(--transition);
+    }
+    .tools-nav .nav-link:hover { opacity: 1; background: var(--bg-elevated); transform: scale(1.15); text-decoration: none; }
+    .tools-nav .nav-link.active { opacity: 1; background: var(--tool-brand-light); }
+    .tools-nav .nav-title {
+      margin-left: auto; font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 140px;
+    }
+    @media (max-width: 480px) {
+      .tools-nav { gap: 0.25rem; padding: 0 0.5rem; height: auto; min-height: var(--nav-height); }
+      .tools-nav .nav-link { font-size: 1rem; padding: 0.125rem 0.25rem; }
+      .tools-nav .nav-title { font-size: 0.625rem; max-width: 80px; }
+    }
+
+    /* ---- Main Content Area ---- */
+    .tool-main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; margin: 0 auto; }
+    @media (max-width: 640px) { .tool-main { padding: 1rem; } }
+
+    /* ---- Footer ---- */
+    .tool-footer { border-top: 1px solid var(--border-color); }
+
+    /* ---- Toast Container ---- */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+
+    /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
     <style>
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -67,11 +211,52 @@
             word-wrap: break-word;
         }
     </style>
+
+    <!-- ===== Auth Guard (Runs Before Body Render) ===== -->
+    <script>
+      (function() {
+        const authKey = 'zyde_auth';
+        const loginUrl = 'index.html';
+        // Allow child pages to opt-out by setting window.SKIP_AUTH = true before this script runs
+        if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
+          // Preserve return URL
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = loginUrl + '?return=' + returnUrl;
+        }
+      })();
+    </script>
 </head>
 <body>
 
-<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
-<style>
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
+
+  <!-- ===== Top Navigation Bar ===== -->
+  <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+        <a href="index.html" class="nav-link" title="หน้าหลัก">🏠</a>
+    <a href="envelope-printer.html" class="nav-link" title="Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link active" title="Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="Inventory">📦</a>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="Certificate Builder">🏆</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="myPCU SQL Simulator">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="Health GIS">🏥</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="GPS Tracker">📍</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="VHV Voice Report">🎤</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+    <span class="nav-title" id="navTitle">โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</span>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main id="main-content" class="tool-main" role="main">
+    <style>
 .tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
 .tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
 .tools-nav .nav-home:hover{background:#334155;}
@@ -82,43 +267,27 @@
 .tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
 @media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
 </style>
-<div class="tools-nav">
-    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
-    <span class="nav-sep">|</span>
-    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
-    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
-    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
-    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
-    <a href="thai-recovery.html" class="nav-link active" title="🔤 Thai Recovery">🔤</a>
-    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
-    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
-    <span class="nav-sep">|</span>
-    <span class="nav-title">🔤 Thai Recovery</span>
-</div>
+
 <div class="container">
-    <h2>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</h2>
-    
-    <div class="form-group">
-        <label for="input">1. วางข้อความต่างดาวที่นี่ (Input):</label>
-        <textarea id="input" placeholder="วางข้อความต่างดาวที่นี่..." oninput="decodeMojibake()"></textarea>
-    </div>
-
-    <div class="control-panel">
-        <div class="form-group" style="margin-bottom: 0;">
-            <label for="mode">2. เลือกโหมดการแปลง (หากยังอ่านไม่ออก ลองสลับโหมดดูครับ):</label>
-            <select id="mode" onchange="decodeMojibake()">
-                <option value="utf8-to-thai">โหมดหลัก: ข้อความแบบ UTF-8 หลุดเข้า Windows-1252 / ISO-8859-1</option>
-                <option value="tis620-raw">โหมดสำรอง: ข้อความรหัสไทยเดิม (TIS-620/Windows-874)</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label>✨ ผลลัพธ์ภาษาไทย (Output):</label>
-        <div id="output" class="output-box">วางข้อความต่างดาวด้านบน ระบบจะแปลงให้อัตโนมัติ...</div>
-    </div>
+<h2>โปรแกรมกู้คืนภาษาไทยต่างดาว (Mojibake Recovery Tool)</h2>
+<div class="form-group">
+<label for="input">1. วางข้อความต่างดาวที่นี่ (Input):</label>
+<textarea id="input" oninput="decodeMojibake()" placeholder="วางข้อความต่างดาวที่นี่..."></textarea>
 </div>
-
+<div class="control-panel">
+<div class="form-group" style="margin-bottom: 0;">
+<label for="mode">2. เลือกโหมดการแปลง (หากยังอ่านไม่ออก ลองสลับโหมดดูครับ):</label>
+<select id="mode" onchange="decodeMojibake()">
+<option value="utf8-to-thai">โหมดหลัก: ข้อความแบบ UTF-8 หลุดเข้า Windows-1252 / ISO-8859-1</option>
+<option value="tis620-raw">โหมดสำรอง: ข้อความรหัสไทยเดิม (TIS-620/Windows-874)</option>
+</select>
+</div>
+</div>
+<div class="form-group">
+<label>✨ ผลลัพธ์ภาษาไทย (Output):</label>
+<div class="output-box" id="output">วางข้อความต่างดาวด้านบน ระบบจะแปลงให้อัตโนมัติ...</div>
+</div>
+</div>
 <script>
 // ตารางแมปตัวอักษรเพื่อกู้คืน Byte ดิบที่ถูกต้องสำหรับกลุ่มสัญลักษณ์พิเศษ
 const cp1252Map = {
@@ -186,6 +355,66 @@ function decodeMojibake() {
     }
 }
 </script>
+  </main>
 
+  <!-- ===== Footer (Optional) ===== -->
+  <footer class="tool-footer" style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.75rem; border-top:1px solid var(--border-color); margin-top:auto;">
+    Zyde's Toolbox | รพ.สต.ยะรัง
+  </footer>
+
+  <!-- ===== Toast Container (Global) ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ===== Global Scripts ===== -->
+  <script>
+    // ===== Toast System =====
+    window.toast = (message, type = 'info', duration = 4000) => {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `alert alert-${type}`;
+      el.style.cssText = 'pointer-events:auto; min-width:240px; max-width:360px; box-shadow:var(--shadow-lg); animation:slideIn 0.3s ease;';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
+    };
+    // Toast animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+    `;
+    document.head.appendChild(style);
+
+    // ===== Modal Helpers =====
+    window.openModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('open'); };
+    window.closeModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('open'); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+    // ===== Auth Helpers =====
+    window.requireAuth = () => {
+      if (!sessionStorage.getItem('zyde_auth')) {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = 'index.html?return=' + returnUrl;
+        return false;
+      }
+      return true;
+    };
+    window.logout = () => { sessionStorage.removeItem('zyde_auth'); window.location.href = 'index.html'; };
+
+    // ===== Nav Active State =====
+    (function() {
+      const current = window.location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href === current || (current === 'index.html' && href === 'index.html')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+  </script>
+
+  <!-- ===== CHILD: INJECT PAGE-SPECIFIC SCRIPTS HERE ===== -->
+  
 </body>
 </html>

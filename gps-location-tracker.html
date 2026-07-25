@@ -1,19 +1,205 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ระบบจัดเก็บพิกัดบ้าน อสม. (myPCU Sync) - เครื่องมือใน Zyde's Toolbox">
   <title>ระบบจัดเก็บพิกัดบ้าน อสม. (myPCU Sync)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- ===== Design Tokens ===== -->
   <style>
+    :root {
+      /* ---- Color: Brand ---- */
+      --tool-brand: #6366f1;
+      --tool-brand-hover: #4f46e5;
+      --tool-brand-light: #e0e7ff;
+      --tool-brand-text: #312e81;
+      --tool-brand-text-light: #a5b4fc;
+
+      /* ---- Color: Semantic ---- */
+      --tool-success: #22c55e;
+      --tool-success-hover: #16a34a;
+      --tool-warn: #f59e0b;
+      --tool-warn-hover: #d97706;
+      --tool-danger: #ef4444;
+      --tool-danger-hover: #dc2626;
+      --tool-info: #38bdf8;
+      --tool-info-hover: #0ea5e9;
+
+      /* ---- Color: Base (Dark Default) ---- */
+      --bg-base: #0f172a;
+      --bg-card: #1e293b;
+      --bg-elevated: #334155;
+      --bg-hover: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --border-focus: #6366f1;
+      --border-light: #475569;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 9999px;
+      --transition: 150ms ease;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+      --nav-height: 48px;
+
+      /* ---- Z-Index Scale ---- */
+      --z-nav: 100;
+      --z-sticky: 200;
+      --z-modal: 1000;
+      --z-toast: 2000;
+    }
+
+    /* ---- Light Mode Override ---- */
+    html.light {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-elevated: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #6366f1;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+    }
+
+    /* ---- Base Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--tool-brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* ---- Skip Link ---- */
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem;
+      background: var(--tool-brand); color: white;
+      padding: 0.5rem 1rem; border-radius: var(--radius-md);
+      z-index: var(--z-toast);
+      transition: top var(--transition);
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ---- Top Navigation Bar ---- */
+    .tools-nav {
+      position: sticky; top: 0; z-index: var(--z-nav);
+      background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+      height: var(--nav-height);
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0 1rem; flex-wrap: wrap;
+      backdrop-filter: blur(8px);
+    }
+    .tools-nav .nav-home {
+      font-size: 1.25rem; text-decoration: none;
+      padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+      color: var(--text-primary); transition: background var(--transition);
+    }
+    .tools-nav .nav-home:hover { background: var(--bg-elevated); text-decoration: none; }
+    .tools-nav .nav-sep { color: var(--border-color); font-size: 0.75rem; padding: 0 0.25rem; }
+    .tools-nav .nav-link {
+      font-size: 1.125rem; text-decoration: none;
+      padding: 0.25rem 0.375rem; border-radius: var(--radius-md);
+      opacity: 0.55; transition: all var(--transition);
+    }
+    .tools-nav .nav-link:hover { opacity: 1; background: var(--bg-elevated); transform: scale(1.15); text-decoration: none; }
+    .tools-nav .nav-link.active { opacity: 1; background: var(--tool-brand-light); }
+    .tools-nav .nav-title {
+      margin-left: auto; font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 140px;
+    }
+    @media (max-width: 480px) {
+      .tools-nav { gap: 0.25rem; padding: 0 0.5rem; height: auto; min-height: var(--nav-height); }
+      .tools-nav .nav-link { font-size: 1rem; padding: 0.125rem 0.25rem; }
+      .tools-nav .nav-title { font-size: 0.625rem; max-width: 80px; }
+    }
+
+    /* ---- Main Content Area ---- */
+    .tool-main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; margin: 0 auto; }
+    @media (max-width: 640px) { .tool-main { padding: 1rem; } }
+
+    /* ---- Footer ---- */
+    .tool-footer { border-top: 1px solid var(--border-color); }
+
+    /* ---- Toast Container ---- */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+
+    /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
+    <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
     body { font-family: 'Sukhumvit Set', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif; }
     .touch-target { min-height: 54px; }
   </style>
+
+    <!-- ===== Auth Guard (Runs Before Body Render) ===== -->
+    <script>
+      (function() {
+        const authKey = 'zyde_auth';
+        const loginUrl = 'index.html';
+        // Allow child pages to opt-out by setting window.SKIP_AUTH = true before this script runs
+        if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
+          // Preserve return URL
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = loginUrl + '?return=' + returnUrl;
+        }
+      })();
+    </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-12">
-<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
-<style>
+<body>
+
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
+
+  <!-- ===== Top Navigation Bar ===== -->
+  <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+        <a href="index.html" class="nav-link" title="หน้าหลัก">🏠</a>
+    <a href="envelope-printer.html" class="nav-link" title="Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="Inventory">📦</a>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="Certificate Builder">🏆</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="myPCU SQL Simulator">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="Health GIS">🏥</a>
+    <a href="gps-location-tracker.html" class="nav-link active" title="GPS Tracker">📍</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="VHV Voice Report">🎤</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+    <span class="nav-title" id="navTitle">ระบบจัดเก็บพิกัดบ้าน อสม. (myPCU Sync)</span>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main id="main-content" class="tool-main" role="main">
+    <style>
 .tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
 .tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
 .tools-nav .nav-home:hover{background:#334155;}
@@ -24,215 +210,166 @@
 .tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
 @media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
 </style>
-<div class="tools-nav">
-    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
-    <span class="nav-sep">|</span>
-    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
-    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
-    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
-    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
-    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
-    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
-    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
-    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
-    <a href="mypcu-sql-simulator.html" class="nav-link" title="🗄️ myPCU SQL">🗄️</a>
-    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
-    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
-    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
-    <a href="gps-location-tracker.html" class="nav-link active" title="📍 GPS Tracker">📍</a>
-    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
-    <span class="nav-sep">|</span>
-    <span class="nav-title">📍 GPS Tracker</span>
+
+ Header 
+<header class="bg-emerald-600 text-white shadow-md sticky top-0 z-50">
+<div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+<div class="flex items-center space-x-2">
+<i class="fa-solid fa-map-location-dot text-2xl text-amber-300"></i>
+<div>
+<h1 class="font-bold text-lg leading-tight">ระบบบันทึกพิกัดหลังบ้าน</h1>
+<p class="text-xs text-emerald-100">สำหรับ อสม. ลงพื้นที่จัดเก็บตำแหน่ง</p>
 </div>
-
-
-  <!-- Header -->
-  <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-50">
-    <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-2">
-        <i class="fa-solid fa-map-location-dot text-2xl text-amber-300"></i>
-        <div>
-          <h1 class="font-bold text-lg leading-tight">ระบบบันทึกพิกัดหลังบ้าน</h1>
-          <p class="text-xs text-emerald-100">สำหรับ อสม. ลงพื้นที่จัดเก็บตำแหน่ง</p>
-        </div>
-      </div>
-      <button id="adminToggleBtn" onclick="toggleAdminView()" class="text-xs bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-full font-medium transition flex items-center gap-1 border border-emerald-500">
-        <i class="fa-solid fa-user-gear"></i> สรุปผล
+</div>
+<button class="text-xs bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-full font-medium transition flex items-center gap-1 border border-emerald-500" id="adminToggleBtn" onclick="toggleAdminView()">
+<i class="fa-solid fa-user-gear"></i> สรุปผล
       </button>
-    </div>
-  </header>
-
-  <main class="max-w-md mx-auto px-4 pt-4">
-
-    <!-- USER FORM VIEW -->
-    <div id="userView" class="space-y-4">
-      
-      <!-- Progress Bar / Target Status Card -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">ความคืบหน้าการเก็บข้อมูล</span>
-          <span id="progressText" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">กำลังโหลดข้อมูล...</span>
-        </div>
-        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-          <div id="progressBar" class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="mt-3 flex justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-          <span>สำรวจแล้ว: <strong id="countDone" class="text-slate-800">0</strong> หลัง</span>
-          <span>คงเหลือ: <strong id="countPending" class="text-amber-600">0</strong> หลัง</span>
-        </div>
-      </div>
-
-      <!-- Main Input Card -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
-        
-        <!-- Form Header -->
-        <div class="border-b border-slate-100 pb-2">
-          <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
-            <i class="fa-solid fa-house-user text-emerald-600"></i> บันทึกข้อมูลตำแหน่งบ้าน
+</div>
+</header>
+<main class="max-w-md mx-auto px-4 pt-4">
+<!-- USER FORM VIEW -->
+<div class="space-y-4" id="userView">
+<!-- Progress Bar / Target Status Card -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-500">ความคืบหน้าการเก็บข้อมูล</span>
+<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full" id="progressText">กำลังโหลดข้อมูล...</span>
+</div>
+<div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+<div class="bg-emerald-500 h-3 rounded-full transition-all duration-500" id="progressBar" style="width: 0%"></div>
+</div>
+<div class="mt-3 flex justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+<span>สำรวจแล้ว: <strong class="text-slate-800" id="countDone">0</strong> หลัง</span>
+<span>คงเหลือ: <strong class="text-amber-600" id="countPending">0</strong> หลัง</span>
+</div>
+</div>
+<!-- Main Input Card -->
+<div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+<!-- Form Header -->
+<div class="border-b border-slate-100 pb-2">
+<h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+<i class="fa-solid fa-house-user text-emerald-600"></i> บันทึกข้อมูลตำแหน่งบ้าน
           </h2>
-          <p class="text-xs text-slate-500">เลือกหมู่และบ้านเลขที่เพื่อลงทะเบียนพิกัด</p>
-        </div>
-
-        <form id="gisForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
-          
-          <!-- Volunteer Name -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุล อสม. ผู้บันทึก <span class="text-rose-500">*</span></label>
-            <input type="text" id="osmName" required placeholder="เช่น สมศรี ใจดี"
-              class="w-full px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target">
-          </div>
-
-          <!-- Moo & House Number -->
-          <div class="grid grid-cols-5 gap-2">
-            <div class="col-span-2">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">หมู่ที่ <span class="text-rose-500">*</span></label>
-              <select id="mooNo" required onchange="onAddressChange()"
-                class="w-full px-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target bg-white">
-                <option value="">เลือกหมู่</option>
-                <option value="1">หมู่ 1</option>
-                <option value="2">หมู่ 2</option>
-                <option value="3">หมู่ 3</option>
-                <option value="4">หมู่ 4</option>
-                <option value="5">หมู่ 5</option>
-                <option value="6">หมู่ 6</option>
-                <option value="7">หมู่ 7</option>
-                <option value="8">หมู่ 8</option>
-              </select>
-            </div>
-            <div class="col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1">บ้านเลขที่ <span class="text-rose-500">*</span></label>
-              <input type="text" id="houseNo" required placeholder="เช่น 45/2" oninput="onAddressChange()"
-                class="w-full px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target">
-            </div>
-          </div>
-
-          <!-- Status / Duplicate Warning Banner -->
-          <div id="duplicateAlert" class="hidden p-3 rounded-xl text-xs flex items-start space-x-2 border">
-            <!-- Dynamic warning icon & message inserted by JS -->
-          </div>
-
-          <!-- GPS Location Button -->
-          <div class="space-y-1.5 pt-1">
-            <label class="block text-xs font-semibold text-slate-600">พิกัดดาวเทียม (GPS) <span class="text-rose-500">*</span></label>
-            <button type="button" onclick="captureLocation()" id="gpsBtn"
-              class="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-medium rounded-xl flex items-center justify-center space-x-2 transition touch-target">
-              <i class="fa-solid fa-crosshairs text-lg text-emerald-600"></i>
-              <span id="gpsBtnText">ดึงพิกัดตำแหน่งปัจจุบัน</span>
-            </button>
-            <div id="gpsStatus" class="text-xs text-center text-slate-500 font-mono mt-1">ยังไม่มีข้อมูลพิกัด</div>
-            <input type="hidden" id="latitude" required>
-            <input type="hidden" id="longitude" required>
-            <input type="hidden" id="accuracy">
-          </div>
-
-          <!-- Photo Attachment -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-semibold text-slate-600">ถ่ายภาพหน้าบ้าน / ป้ายบ้านเลขที่</label>
-            <label for="housePhoto" class="w-full py-3.5 px-4 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-dashed border-slate-300 font-medium rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer touch-target">
-              <i class="fa-solid fa-camera text-lg text-slate-500"></i>
-              <span id="photoBtnText">ถ่ายรูปหน้าบ้าน</span>
-            </label>
-            <input type="file" id="housePhoto" accept="image/*" capture="environment" onchange="previewPhoto(event)" class="hidden">
-            <div id="photoPreviewContainer" class="hidden mt-2 relative">
-              <img id="photoPreview" class="w-full h-40 object-cover rounded-xl border border-slate-200">
-              <button type="button" onclick="removePhoto()" class="absolute top-2 right-2 bg-rose-600 text-white rounded-full p-1.5 shadow-md hover:bg-rose-700 text-xs">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Remarks -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">หมายเหตุ (ถ้ามี)</label>
-            <input type="text" id="notes" placeholder="เช่น บ้านร้าง / ย้ายออก / ติดโควิด"
-              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs">
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" id="submitBtn"
-            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2 touch-target">
-            <i class="fa-solid fa-paper-plane"></i>
-            <span>บันทึกส่งข้อมูล</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- Pending List Modal Toggle / Drawer -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-        <button onclick="togglePendingList()" class="w-full flex justify-between items-center text-left text-xs font-bold text-slate-700">
-          <span class="flex items-center gap-2">
-            <i class="fa-solid fa-list-check text-amber-500"></i> รายการบ้านที่ยังไม่ได้เก็บพิกัด
+<p class="text-xs text-slate-500">เลือกหมู่และบ้านเลขที่เพื่อลงทะเบียนพิกัด</p>
+</div>
+<form class="space-y-4" id="gisForm" onsubmit="handleFormSubmit(event)">
+<!-- Volunteer Name -->
+<div>
+<label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุล อสม. ผู้บันทึก <span class="text-rose-500">*</span></label>
+<input class="w-full px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target" id="osmName" placeholder="เช่น สมศรี ใจดี" required="" type="text"/>
+</div>
+<!-- Moo & House Number -->
+<div class="grid grid-cols-5 gap-2">
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-slate-600 mb-1">หมู่ที่ <span class="text-rose-500">*</span></label>
+<select class="w-full px-3 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target bg-white" id="mooNo" onchange="onAddressChange()" required="">
+<option value="">เลือกหมู่</option>
+<option value="1">หมู่ 1</option>
+<option value="2">หมู่ 2</option>
+<option value="3">หมู่ 3</option>
+<option value="4">หมู่ 4</option>
+<option value="5">หมู่ 5</option>
+<option value="6">หมู่ 6</option>
+<option value="7">หมู่ 7</option>
+<option value="8">หมู่ 8</option>
+</select>
+</div>
+<div class="col-span-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">บ้านเลขที่ <span class="text-rose-500">*</span></label>
+<input class="w-full px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm touch-target" id="houseNo" oninput="onAddressChange()" placeholder="เช่น 45/2" required="" type="text"/>
+</div>
+</div>
+<!-- Status / Duplicate Warning Banner -->
+<div class="hidden p-3 rounded-xl text-xs flex items-start space-x-2 border" id="duplicateAlert">
+<!-- Dynamic warning icon & message inserted by JS -->
+</div>
+<!-- GPS Location Button -->
+<div class="space-y-1.5 pt-1">
+<label class="block text-xs font-semibold text-slate-600">พิกัดดาวเทียม (GPS) <span class="text-rose-500">*</span></label>
+<button class="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-medium rounded-xl flex items-center justify-center space-x-2 transition touch-target" id="gpsBtn" onclick="captureLocation()" type="button">
+<i class="fa-solid fa-crosshairs text-lg text-emerald-600"></i>
+<span id="gpsBtnText">ดึงพิกัดตำแหน่งปัจจุบัน</span>
+</button>
+<div class="text-xs text-center text-slate-500 font-mono mt-1" id="gpsStatus">ยังไม่มีข้อมูลพิกัด</div>
+<input id="latitude" required="" type="hidden"/>
+<input id="longitude" required="" type="hidden"/>
+<input id="accuracy" type="hidden"/>
+</div>
+<!-- Photo Attachment -->
+<div class="space-y-1.5">
+<label class="block text-xs font-semibold text-slate-600">ถ่ายภาพหน้าบ้าน / ป้ายบ้านเลขที่</label>
+<label class="w-full py-3.5 px-4 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-dashed border-slate-300 font-medium rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer touch-target" for="housePhoto">
+<i class="fa-solid fa-camera text-lg text-slate-500"></i>
+<span id="photoBtnText">ถ่ายรูปหน้าบ้าน</span>
+</label>
+<input accept="image/*" capture="environment" class="hidden" id="housePhoto" onchange="previewPhoto(event)" type="file"/>
+<div class="hidden mt-2 relative" id="photoPreviewContainer">
+<img class="w-full h-40 object-cover rounded-xl border border-slate-200" id="photoPreview"/>
+<button class="absolute top-2 right-2 bg-rose-600 text-white rounded-full p-1.5 shadow-md hover:bg-rose-700 text-xs" onclick="removePhoto()" type="button">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+</div>
+<!-- Remarks -->
+<div>
+<label class="block text-xs font-semibold text-slate-600 mb-1">หมายเหตุ (ถ้ามี)</label>
+<input class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs" id="notes" placeholder="เช่น บ้านร้าง / ย้ายออก / ติดโควิด" type="text"/>
+</div>
+<!-- Submit Button -->
+<button class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2 touch-target" id="submitBtn" type="submit">
+<i class="fa-solid fa-paper-plane"></i>
+<span>บันทึกส่งข้อมูล</span>
+</button>
+</form>
+</div>
+<!-- Pending List Modal Toggle / Drawer -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+<button class="w-full flex justify-between items-center text-left text-xs font-bold text-slate-700" onclick="togglePendingList()">
+<span class="flex items-center gap-2">
+<i class="fa-solid fa-list-check text-amber-500"></i> รายการบ้านที่ยังไม่ได้เก็บพิกัด
           </span>
-          <i id="pendingChevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+<i class="fa-solid fa-chevron-down text-slate-400 transition-transform" id="pendingChevron"></i>
+</button>
+<div class="hidden mt-3 pt-3 border-t border-slate-100 max-h-60 overflow-y-auto space-y-1.5 text-xs text-slate-600" id="pendingListContainer">
+<!-- Populated by JS -->
+</div>
+</div>
+</div>
+<!-- ADMIN / SUMMARY VIEW -->
+<div class="hidden space-y-4" id="adminView">
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex justify-between items-center">
+<div>
+<h2 class="font-bold text-slate-800 text-sm">ภาพรวมข้อมูลพิกัด (myPCU Sync)</h2>
+<p class="text-xs text-slate-500">ตรวจสอบความถูกต้องและซ้ำซ้อน</p>
+</div>
+<button class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition" onclick="loadMasterData()">
+<i class="fa-solid fa-rotate"></i> รีเฟรช
         </button>
-        <div id="pendingListContainer" class="hidden mt-3 pt-3 border-t border-slate-100 max-h-60 overflow-y-auto space-y-1.5 text-xs text-slate-600">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ADMIN / SUMMARY VIEW -->
-    <div id="adminView" class="hidden space-y-4">
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex justify-between items-center">
-        <div>
-          <h2 class="font-bold text-slate-800 text-sm">ภาพรวมข้อมูลพิกัด (myPCU Sync)</h2>
-          <p class="text-xs text-slate-500">ตรวจสอบความถูกต้องและซ้ำซ้อน</p>
-        </div>
-        <button onclick="loadMasterData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
-          <i class="fa-solid fa-rotate"></i> รีเฟรช
-        </button>
-      </div>
-
-      <!-- Search & Filter -->
-      <div class="grid grid-cols-2 gap-2">
-        <input type="text" id="adminSearch" onkeyup="filterAdminTable()" placeholder="ค้นหาบ้านเลขที่/อสม..."
-          class="px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <select id="adminStatusFilter" onchange="filterAdminTable()" class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white">
-          <option value="ALL">ทั้งหมด</option>
-          <option value="COMPLETED">จัดเก็บแล้ว</option>
-          <option value="DUPLICATE">พบข้อมูลซ้ำ</option>
-          <option value="PENDING">ยังไม่จัดเก็บ</option>
-        </select>
-      </div>
-
-      <!-- Records Table / List -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div class="max-h-[60vh] overflow-y-auto divide-y divide-slate-100 text-xs" id="adminRecordList">
-          <div class="p-4 text-center text-slate-400">กำลังโหลดรายการ...</div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
-    <i id="toastIcon" class="fa-solid fa-circle-info text-emerald-400"></i>
-    <span id="toastMsg">แจ้งเตือน</span>
-  </div>
-
-  <script>
+</div>
+<!-- Search & Filter -->
+<div class="grid grid-cols-2 gap-2">
+<input class="px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" id="adminSearch" onkeyup="filterAdminTable()" placeholder="ค้นหาบ้านเลขที่/อสม..." type="text"/>
+<select class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white" id="adminStatusFilter" onchange="filterAdminTable()">
+<option value="ALL">ทั้งหมด</option>
+<option value="COMPLETED">จัดเก็บแล้ว</option>
+<option value="DUPLICATE">พบข้อมูลซ้ำ</option>
+<option value="PENDING">ยังไม่จัดเก็บ</option>
+</select>
+</div>
+<!-- Records Table / List -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+<div class="max-h-[60vh] overflow-y-auto divide-y divide-slate-100 text-xs" id="adminRecordList">
+<div class="p-4 text-center text-slate-400">กำลังโหลดรายการ...</div>
+</div>
+</div>
+</div>
+</main>
+ Notification Toast 
+<div class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center space-x-2" id="toast">
+<i class="fa-solid fa-circle-info text-emerald-400" id="toastIcon"></i>
+<span id="toastMsg">แจ้งเตือน</span>
+</div>
+<script>
     // === CONFIG ===
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGvePn1Jmdwf5QevTI4-gsS6VAwXOSPHwd6pn7wWhjTIZ_DKjj8OlpHs-lR2NsexzELg/exec';
 
@@ -611,5 +748,66 @@
       }, 3000);
     }
   </script>
+  </main>
+
+  <!-- ===== Footer (Optional) ===== -->
+  <footer class="tool-footer" style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.75rem; border-top:1px solid var(--border-color); margin-top:auto;">
+    Zyde's Toolbox | รพ.สต.ยะรัง
+  </footer>
+
+  <!-- ===== Toast Container (Global) ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ===== Global Scripts ===== -->
+  <script>
+    // ===== Toast System =====
+    window.toast = (message, type = 'info', duration = 4000) => {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `alert alert-${type}`;
+      el.style.cssText = 'pointer-events:auto; min-width:240px; max-width:360px; box-shadow:var(--shadow-lg); animation:slideIn 0.3s ease;';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
+    };
+    // Toast animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+    `;
+    document.head.appendChild(style);
+
+    // ===== Modal Helpers =====
+    window.openModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('open'); };
+    window.closeModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('open'); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+    // ===== Auth Helpers =====
+    window.requireAuth = () => {
+      if (!sessionStorage.getItem('zyde_auth')) {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = 'index.html?return=' + returnUrl;
+        return false;
+      }
+      return true;
+    };
+    window.logout = () => { sessionStorage.removeItem('zyde_auth'); window.location.href = 'index.html'; };
+
+    // ===== Nav Active State =====
+    (function() {
+      const current = window.location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href === current || (current === 'index.html' && href === 'index.html')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+  </script>
+
+  <!-- ===== CHILD: INJECT PAGE-SPECIFIC SCRIPTS HERE ===== -->
+  
 </body>
 </html>

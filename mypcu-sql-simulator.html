@@ -1,42 +1,157 @@
-<!-- 
-========================================================================================
-  PRODUCT REQUIREMENT DOCUMENT (PRD) - myPCU AI Health Assistant
-  Version: 11.0 (Kid/Age Query Parser Fix & Interactive Multi-Select Moo Filter Cards)
-========================================================================================
-
-1. EXECUTIVE SUMMARY & TARGET USER PERSONA
-----------------------------------------------------------------------------------------
-- Target Users: Public health officers and PCU staff with NON-IT backgrounds.
-- Core Purpose: Offline-safe AI assistant translating Thai and English prompts (e.g. "kid under 15",
-  "สิทธิการรักษา", "เบาหวาน", "หมู่ 2 3 4 5") into accurate 43-folder SQL queries and GIS maps.
-
-2. KEY BEHAVIORS & RECENT ENHANCEMENTS
-----------------------------------------------------------------------------------------
-[Fix 1: Age & Kid Prompt Parsing]
-- Prompts containing "kid", "เด็ก", "15", "under 15", or "อายุ" trigger age calculation logic:
-  m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)
-- Prevents fallback to hardcoded diabetes or generic queries.
-
-[Feature 2: Interactive Multi-Select Moo Filter Cards]
-- Village cards (Moo 1 to Moo 6) act as toggle buttons with real-time visual feedback.
-- Officers can click individual Moo cards to select/deselect specific villages.
-- Includes "เลือกทุกหมู่ (Select All)" and "ล้างการเลือก (Select None)" options.
-
-========================================================================================
--->
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>myPCU AI Health Assistant - อ.ยะรัง GIS</title>
-    <!-- Tailwind CSS -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="myPCU AI Health Assistant - อ.ยะรัง GIS - เครื่องมือใน Zyde's Toolbox">
+  <title>myPCU AI Health Assistant - อ.ยะรัง GIS</title>
+
+  <!-- ===== Design Tokens ===== -->
+  <style>
+    :root {
+      /* ---- Color: Brand ---- */
+      --tool-brand: #6366f1;
+      --tool-brand-hover: #4f46e5;
+      --tool-brand-light: #e0e7ff;
+      --tool-brand-text: #312e81;
+      --tool-brand-text-light: #a5b4fc;
+
+      /* ---- Color: Semantic ---- */
+      --tool-success: #22c55e;
+      --tool-success-hover: #16a34a;
+      --tool-warn: #f59e0b;
+      --tool-warn-hover: #d97706;
+      --tool-danger: #ef4444;
+      --tool-danger-hover: #dc2626;
+      --tool-info: #38bdf8;
+      --tool-info-hover: #0ea5e9;
+
+      /* ---- Color: Base (Dark Default) ---- */
+      --bg-base: #0f172a;
+      --bg-card: #1e293b;
+      --bg-elevated: #334155;
+      --bg-hover: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --border-focus: #6366f1;
+      --border-light: #475569;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 9999px;
+      --transition: 150ms ease;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+      --nav-height: 48px;
+
+      /* ---- Z-Index Scale ---- */
+      --z-nav: 100;
+      --z-sticky: 200;
+      --z-modal: 1000;
+      --z-toast: 2000;
+    }
+
+    /* ---- Light Mode Override ---- */
+    html.light {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-elevated: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #6366f1;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+    }
+
+    /* ---- Base Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--tool-brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* ---- Skip Link ---- */
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem;
+      background: var(--tool-brand); color: white;
+      padding: 0.5rem 1rem; border-radius: var(--radius-md);
+      z-index: var(--z-toast);
+      transition: top var(--transition);
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ---- Top Navigation Bar ---- */
+    .tools-nav {
+      position: sticky; top: 0; z-index: var(--z-nav);
+      background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+      height: var(--nav-height);
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0 1rem; flex-wrap: wrap;
+      backdrop-filter: blur(8px);
+    }
+    .tools-nav .nav-home {
+      font-size: 1.25rem; text-decoration: none;
+      padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+      color: var(--text-primary); transition: background var(--transition);
+    }
+    .tools-nav .nav-home:hover { background: var(--bg-elevated); text-decoration: none; }
+    .tools-nav .nav-sep { color: var(--border-color); font-size: 0.75rem; padding: 0 0.25rem; }
+    .tools-nav .nav-link {
+      font-size: 1.125rem; text-decoration: none;
+      padding: 0.25rem 0.375rem; border-radius: var(--radius-md);
+      opacity: 0.55; transition: all var(--transition);
+    }
+    .tools-nav .nav-link:hover { opacity: 1; background: var(--bg-elevated); transform: scale(1.15); text-decoration: none; }
+    .tools-nav .nav-link.active { opacity: 1; background: var(--tool-brand-light); }
+    .tools-nav .nav-title {
+      margin-left: auto; font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 140px;
+    }
+    @media (max-width: 480px) {
+      .tools-nav { gap: 0.25rem; padding: 0 0.5rem; height: auto; min-height: var(--nav-height); }
+      .tools-nav .nav-link { font-size: 1rem; padding: 0.125rem 0.25rem; }
+      .tools-nav .nav-title { font-size: 0.625rem; max-width: 80px; }
+    }
+
+    /* ---- Main Content Area ---- */
+    .tool-main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; margin: 0 auto; }
+    @media (max-width: 640px) { .tool-main { padding: 1rem; } }
+
+    /* ---- Footer ---- */
+    .tool-footer { border-top: 1px solid var(--border-color); }
+
+    /* ---- Toast Container ---- */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+
+    /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Leaflet GIS Map CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <style>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         
         body {
@@ -70,10 +185,52 @@
             border: none;
         }
     </style>
+
+    <!-- ===== Auth Guard (Runs Before Body Render) ===== -->
+    <script>
+      (function() {
+        const authKey = 'zyde_auth';
+        const loginUrl = 'index.html';
+        // Allow child pages to opt-out by setting window.SKIP_AUTH = true before this script runs
+        if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
+          // Preserve return URL
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = loginUrl + '?return=' + returnUrl;
+        }
+      })();
+    </script>
 </head>
-<body class="min-h-screen flex flex-col">
-<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
-<style>
+<body>
+
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
+
+  <!-- ===== Top Navigation Bar ===== -->
+  <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+        <a href="index.html" class="nav-link" title="หน้าหลัก">🏠</a>
+    <a href="envelope-printer.html" class="nav-link" title="Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="Inventory">📦</a>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="Certificate Builder">🏆</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link active" title="myPCU SQL Simulator">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="Health GIS">🏥</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="GPS Tracker">📍</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="VHV Voice Report">🎤</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+    <span class="nav-title" id="navTitle">myPCU AI Health Assistant - อ.ยะรัง GIS</span>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main id="main-content" class="tool-main" role="main">
+    <style>
 .tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
 .tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
 .tools-nav .nav-home:hover{background:#334155;}
@@ -84,455 +241,390 @@
 .tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
 @media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
 </style>
-<div class="tools-nav">
-    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
-    <span class="nav-sep">|</span>
-    <a href="interactive-certificate-builder.html" class="nav-link" title="🏆 Certificate Builder">🏆</a>
-    <a href="envelope-printer.html" class="nav-link" title="✉️ Envelope Printer">✉️</a>
-    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
-    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
-    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
-    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
-    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
-    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
-    <a href="mypcu-sql-simulator.html" class="nav-link active" title="🗄️ myPCU SQL">🗄️</a>
-    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="🧠 myPCU AI SQL">🧠</a>
-    <a href="health-gis-app.html" class="nav-link" title="🏥 Health GIS">🏥</a>
-    <a href="vhv-quick-report.html" class="nav-link" title="🎤 VHV Voice Report">🎤</a>
-    <a href="gps-location-tracker.html" class="nav-link" title="📍 GPS Tracker">📍</a>
-    <a href="yarang-pcc-audit.html" class="nav-link" title="🏥 Yarang PCC Queue">🏥</a>
-    <span class="nav-sep">|</span>
-    <span class="nav-title">🗄️ myPCU SQL</span>
+
+ STREAMING_CHUNK:Building Header & Navigation Dock... 
+ Main Header Banner 
+<header class="bg-gradient-to-r from-teal-800 to-cyan-900 text-white shadow-md py-3 px-4 md:px-6">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+<div class="flex items-center gap-3 w-full md:w-auto">
+<div class="bg-white/10 p-2 rounded-lg border border-white/20 shrink-0">
+<i class="fa-solid fa-hospital-user text-teal-300 text-xl md:text-2xl"></i>
 </div>
-
-
-    <!-- STREAMING_CHUNK:Building Header & Navigation Dock... -->
-    <!-- Main Header Banner -->
-    <header class="bg-gradient-to-r from-teal-800 to-cyan-900 text-white shadow-md py-3 px-4 md:px-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <div class="bg-white/10 p-2 rounded-lg border border-white/20 shrink-0">
-                    <i class="fa-solid fa-hospital-user text-teal-300 text-xl md:text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 flex-wrap">
+<div>
+<h1 class="text-base md:text-lg font-bold tracking-tight flex items-center gap-2 flex-wrap">
                         myPCU AI Health Assistant
                         <span class="text-[10px] bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">v11.0 Interactive Moos</span>
-                    </h1>
-                    <p class="text-[11px] md:text-xs text-teal-100 font-light">ระบบดึงข้อมูลสุขภาพ อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6) ค้นหาภาษาไทย/อังกฤษ ไม่ต้องรู้ SQL</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap justify-center w-full md:w-auto">
-                <button onclick="toggleApiKeyModal()" id="btnApiKeyHeader" class="bg-slate-900/50 hover:bg-slate-900/80 border border-teal-400/40 text-teal-200 text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium shadow-xs">
-                    <i class="fa-solid fa-key text-amber-400"></i>
-                    <span id="apiKeyStatusLabel">ตั้งค่า API Key</span>
-                </button>
-                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Offline Safe (PDPA)
+</h1>
+<p class="text-[11px] md:text-xs text-teal-100 font-light">ระบบดึงข้อมูลสุขภาพ อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6) ค้นหาภาษาไทย/อังกฤษ ไม่ต้องรู้ SQL</p>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-wrap justify-center w-full md:w-auto">
+<button class="bg-slate-900/50 hover:bg-slate-900/80 border border-teal-400/40 text-teal-200 text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium shadow-xs" id="btnApiKeyHeader" onclick="toggleApiKeyModal()">
+<i class="fa-solid fa-key text-amber-400"></i>
+<span id="apiKeyStatusLabel">ตั้งค่า API Key</span>
+</button>
+<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 font-medium">
+<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Offline Safe (PDPA)
                 </span>
-            </div>
-        </div>
-    </header>
-
-    <!-- PROMINENT INTEGRATION & BACKUP HUB -->
-    <section class="bg-slate-100 border-b border-slate-200 px-4 md:px-6 py-2">
-        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-2.5">
-            <div class="flex items-center gap-2 text-slate-700 w-full lg:w-auto justify-center lg:justify-start">
-                <i class="fa-solid fa-folder-tree text-teal-600 text-sm"></i>
-                <span class="text-xs font-bold uppercase tracking-wide">จัดการผังตาราง myPCU:</span>
-                <span class="text-[11px] text-slate-500 font-light hidden sm:inline">(รองรับไฟล์ XML หลายแฟ้ม)</span>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap justify-center">
-                <div class="relative">
-                    <input type="file" id="multiXmlFileUploader" accept=".xml" multiple onchange="importMultipleXmlSchemas(this)" class="hidden">
-                    <button onclick="document.getElementById('multiXmlFileUploader').click()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
-                        <i class="fa-solid fa-folder-open"></i> นำเข้า XML ผังตาราง
+</div>
+</div>
+</header>
+ PROMINENT INTEGRATION & BACKUP HUB 
+<section class="bg-slate-100 border-b border-slate-200 px-4 md:px-6 py-2">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-2.5">
+<div class="flex items-center gap-2 text-slate-700 w-full lg:w-auto justify-center lg:justify-start">
+<i class="fa-solid fa-folder-tree text-teal-600 text-sm"></i>
+<span class="text-xs font-bold uppercase tracking-wide">จัดการผังตาราง myPCU:</span>
+<span class="text-[11px] text-slate-500 font-light hidden sm:inline">(รองรับไฟล์ XML หลายแฟ้ม)</span>
+</div>
+<div class="flex items-center gap-2 flex-wrap justify-center">
+<div class="relative">
+<input accept=".xml" class="hidden" id="multiXmlFileUploader" multiple="" onchange="importMultipleXmlSchemas(this)" type="file"/>
+<button class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all" onclick="document.getElementById('multiXmlFileUploader').click()">
+<i class="fa-solid fa-folder-open"></i> นำเข้า XML ผังตาราง
                     </button>
-                </div>
-                <button onclick="exportAllLocalData()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
-                    <i class="fa-solid fa-download"></i> สำรองข้อมูล (JSON)
+</div>
+<button class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all" onclick="exportAllLocalData()">
+<i class="fa-solid fa-download"></i> สำรองข้อมูล (JSON)
                 </button>
-                <div class="relative">
-                    <input type="file" id="jsonBackupUploader" accept=".json" onchange="importAllLocalData(this)" class="hidden">
-                    <button onclick="document.getElementById('jsonBackupUploader').click()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all">
-                        <i class="fa-solid fa-upload"></i> นำคืนข้อมูล
+<div class="relative">
+<input accept=".json" class="hidden" id="jsonBackupUploader" onchange="importAllLocalData(this)" type="file"/>
+<button class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all" onclick="document.getElementById('jsonBackupUploader').click()">
+<i class="fa-solid fa-upload"></i> นำคืนข้อมูล
                     </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- STREAMING_CHUNK:Building Main AI Copilot Console... -->
-    <!-- MAIN WORKSPACE SECTION -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col gap-4 md:gap-5">
-
-        <!-- TOP SECTION: AI COPILOT (LEFT) + SQL INSPECTOR (RIGHT) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
-            
-            <!-- LEFT WORKSPACE (5 Cols): AI Copilot Studio -->
-            <section class="lg:col-span-5 flex flex-col gap-3">
-                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col h-full">
-                    
-                    <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white px-4 py-2.5 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
-                            <h2 class="text-xs font-bold uppercase tracking-wide">AI Health Assistant (ภาษาไทย/ENG)</h2>
-                        </div>
-                        <span id="aiStatusBadge" class="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold">
+</div>
+</div>
+</div>
+</section>
+ STREAMING_CHUNK:Building Main AI Copilot Console... 
+ MAIN WORKSPACE SECTION 
+<main class="flex-grow max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col gap-4 md:gap-5">
+<!-- TOP SECTION: AI COPILOT (LEFT) + SQL INSPECTOR (RIGHT) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+<!-- LEFT WORKSPACE (5 Cols): AI Copilot Studio -->
+<section class="lg:col-span-5 flex flex-col gap-3">
+<div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col h-full">
+<div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white px-4 py-2.5 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+<h2 class="text-xs font-bold uppercase tracking-wide">AI Health Assistant (ภาษาไทย/ENG)</h2>
+</div>
+<span class="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold" id="aiStatusBadge">
                             โหมดจำลองฟรี
                         </span>
-                    </div>
-
-                    <div class="p-3.5 flex flex-col gap-3 flex-grow bg-slate-50/50">
-                        
-                        <div id="demoModeIndicator" class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-amber-950 flex flex-col gap-1 text-xs">
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold flex items-center gap-1 text-amber-900">
-                                    <i class="fa-solid fa-circle-info text-amber-600"></i> โหมดจำลองฟรี (ยะรัง 6 หมู่บ้าน)
+</div>
+<div class="p-3.5 flex flex-col gap-3 flex-grow bg-slate-50/50">
+<div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-amber-950 flex flex-col gap-1 text-xs" id="demoModeIndicator">
+<div class="flex justify-between items-center">
+<span class="font-bold flex items-center gap-1 text-amber-900">
+<i class="fa-solid fa-circle-info text-amber-600"></i> โหมดจำลองฟรี (ยะรัง 6 หมู่บ้าน)
                                 </span>
-                                <button onclick="toggleApiKeyModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs transition-all">
+<button class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs transition-all" onclick="toggleApiKeyModal()">
                                     ใส่ API Key
                                 </button>
-                            </div>
-                            <p class="text-[10px] font-light text-amber-800 leading-tight">
-                                พิมพ์ค้นหาได้ทันที เช่น "kid under 15", "เด็กอายุ <= 15", "เบาหวาน หมู่ 2 3 4"
+</div>
+<p class="text-[10px] font-light text-amber-800 leading-tight">
+                                พิมพ์ค้นหาได้ทันที เช่น "kid under 15", "เด็กอายุ &lt;= 15", "เบาหวาน หมู่ 2 3 4"
                             </p>
-                        </div>
-
-                        <!-- Prompt Input Console -->
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[11px] font-bold text-slate-700 flex items-center justify-between">
-                                <span><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>พิมพ์คำค้นหาภาษาไทย/อังกฤษ:</span>
-                                <span class="text-[10px] text-slate-400 font-normal">ไม่ต้องพิมพ์ SQL</span>
-                            </label>
-                            <textarea id="aiPromptInput" rows="2.5" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-inner" placeholder="เช่น: kid under 15 หรือ แผนที่ เบาหวาน หมู่2 3 4 5"></textarea>
-                            
-                            <!-- PROMPT MODIFIER BUTTONS -->
-                            <div class="flex flex-col gap-1 mt-1">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase">เพิ่มคำลงในโจทย์:</span>
-                                    <button onclick="openFieldManagerModal()" class="text-[10px] text-indigo-700 hover:underline font-bold flex items-center gap-1">
-                                        <i class="fa-solid fa-gear"></i> จัดการปุ่ม (CRUD)
+</div>
+<!-- Prompt Input Console -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+<span><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>พิมพ์คำค้นหาภาษาไทย/อังกฤษ:</span>
+<span class="text-[10px] text-slate-400 font-normal">ไม่ต้องพิมพ์ SQL</span>
+</label>
+<textarea class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-inner" id="aiPromptInput" placeholder="เช่น: kid under 15 หรือ แผนที่ เบาหวาน หมู่2 3 4 5" rows="2.5"></textarea>
+<!-- PROMPT MODIFIER BUTTONS -->
+<div class="flex flex-col gap-1 mt-1">
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-slate-500 font-bold uppercase">เพิ่มคำลงในโจทย์:</span>
+<button class="text-[10px] text-indigo-700 hover:underline font-bold flex items-center gap-1" onclick="openFieldManagerModal()">
+<i class="fa-solid fa-gear"></i> จัดการปุ่ม (CRUD)
                                     </button>
-                                </div>
-                                
-                                <div id="aiPromptQuickButtons" class="flex flex-wrap gap-1">
-                                    <button onclick="appendPromptKeyword('แผนที่')" class="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs flex items-center gap-1">
-                                        <i class="fa-solid fa-location-dot text-rose-600"></i> + แผนที่ (พิกัด GIS)
+</div>
+<div class="flex flex-wrap gap-1" id="aiPromptQuickButtons">
+<button class="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs flex items-center gap-1" onclick="appendPromptKeyword('แผนที่')">
+<i class="fa-solid fa-location-dot text-rose-600"></i> + แผนที่ (พิกัด GIS)
                                     </button>
-                                    <button onclick="appendPromptKeyword('เด็กอายุ <= 15')" class="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
-                                        + เด็ก <= 15 ปี
+<button class="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs" onclick="appendPromptKeyword('เด็กอายุ &lt;= 15')">
+                                        + เด็ก &lt;= 15 ปี
                                     </button>
-                                    <button onclick="appendPromptKeyword('สิทธิการรักษา')" class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+<button class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs" onclick="appendPromptKeyword('สิทธิการรักษา')">
                                         + สิทธิการรักษา
                                     </button>
-                                    <button onclick="appendPromptKeyword('เบาหวาน')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+<button class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs" onclick="appendPromptKeyword('เบาหวาน')">
                                         + เบาหวาน
                                     </button>
-                                    <button onclick="appendPromptKeyword('หมู่ 2 3 4 5')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs">
+<button class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-medium px-2 py-0.5 rounded shadow-2xs" onclick="appendPromptKeyword('หมู่ 2 3 4 5')">
                                         + หมู่ 2 3 4 5
                                     </button>
-                                </div>
-                            </div>
-
-                            <button onclick="generateSqlWithAI()" id="btnGenerateSql" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> ค้นหาและประมวลผลด้วย AI
+</div>
+</div>
+<button class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all" id="btnGenerateSql" onclick="generateSqlWithAI()">
+<i class="fa-solid fa-wand-magic-sparkles"></i> ค้นหาและประมวลผลด้วย AI
                             </button>
-                        </div>
-
-                        <!-- AI Response Terminal -->
-                        <div id="aiResponsePanel" class="hidden bg-slate-900 text-slate-100 rounded-xl p-3 shadow-md flex flex-col gap-2.5 border border-slate-800">
-                            
-                            <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
-                                <span class="text-xs font-bold text-teal-400 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                                    <span id="aiResultTitle">ผลลัพธ์การค้นหา</span>
+</div>
+<!-- AI Response Terminal -->
+<div class="hidden bg-slate-900 text-slate-100 rounded-xl p-3 shadow-md flex flex-col gap-2.5 border border-slate-800" id="aiResponsePanel">
+<div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+<span class="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+<i class="fa-solid fa-circle-check text-emerald-400"></i>
+<span id="aiResultTitle">ผลลัพธ์การค้นหา</span>
+</span>
+<button class="text-slate-400 hover:text-white text-xs" onclick="hideAiResponse()">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<!-- Plain Thai Explanation -->
+<div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-[11px]">
+<span class="font-bold text-amber-300 flex items-center gap-1 text-[10px] uppercase tracking-wide">
+<i class="fa-solid fa-lightbulb"></i> สรุปการดึงข้อมูล (ภาษาไทย)
                                 </span>
-                                <button onclick="hideAiResponse()" class="text-slate-400 hover:text-white text-xs">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
-
-                            <!-- Plain Thai Explanation -->
-                            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-[11px]">
-                                <span class="font-bold text-amber-300 flex items-center gap-1 text-[10px] uppercase tracking-wide">
-                                    <i class="fa-solid fa-lightbulb"></i> สรุปการดึงข้อมูล (ภาษาไทย)
-                                </span>
-                                <div id="aiStructuredExplanation" class="text-slate-300 flex flex-col gap-1 font-light leading-relaxed">
-                                    <!-- Injected dynamically -->
-                                </div>
-                            </div>
-
-                            <!-- DIRECT 1-CLICK COPY & APPLY ACTION BAR -->
-                            <div class="flex items-center justify-between gap-2 pt-1">
-                                <button onclick="copyAiSqlDirect()" id="btnCopySqlDirect" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs">
-                                    <i class="fa-regular fa-copy"></i> <span>คัดลอกโค้ด SQL</span>
-                                </button>
-                                <button onclick="applyAiSql()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all">
-                                    <i class="fa-solid fa-play text-[10px]"></i> <span>ดึงข้อมูลแสดงตาราง</span>
-                                </button>
-                            </div>
-
-                            <!-- Inspectable SQL Code -->
-                            <details class="bg-slate-950 rounded-lg p-2 border border-slate-800/80 text-[10px]">
-                                <summary class="cursor-pointer font-bold text-slate-400 hover:text-slate-200 flex items-center justify-between">
-                                    <span><i class="fa-solid fa-code mr-1"></i>แสดงโค้ด SQL ที่สร้างขึ้น</span>
-                                    <i class="fa-solid fa-chevron-down text-[9px]"></i>
-                                </summary>
-                                <pre id="aiSqlOutput" class="text-emerald-400 font-mono mt-1.5 select-all leading-normal code-font whitespace-pre-wrap"></pre>
-                            </details>
-
-                        </div>
-
-                    </div>
-                </div>
-            </section>
-
-            <!-- RIGHT WORKSPACE (7 Cols): SQL Inspector & Data Preview Grid -->
-            <section class="lg:col-span-7 flex flex-col gap-3">
-                
-                <!-- SQL Code Inspector Console -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-terminal text-teal-600"></i>
-                            <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wide">คำสั่ง SQL (ประมวลผล)</h2>
-                        </div>
-                        <button onclick="runQuery()" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-3 py-1 text-xs font-bold transition-all flex items-center gap-1 shadow-xs border border-teal-500">
-                            <i class="fa-solid fa-play animate-pulse text-[10px]"></i> ดึงข้อมูล (F9)
+<div class="text-slate-300 flex flex-col gap-1 font-light leading-relaxed" id="aiStructuredExplanation">
+<!-- Injected dynamically -->
+</div>
+</div>
+<!-- DIRECT 1-CLICK COPY & APPLY ACTION BAR -->
+<div class="flex items-center justify-between gap-2 pt-1">
+<button class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs" id="btnCopySqlDirect" onclick="copyAiSqlDirect()">
+<i class="fa-regular fa-copy"></i> <span>คัดลอกโค้ด SQL</span>
+</button>
+<button class="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-1.5 px-2 text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all" onclick="applyAiSql()">
+<i class="fa-solid fa-play text-[10px]"></i> <span>ดึงข้อมูลแสดงตาราง</span>
+</button>
+</div>
+<!-- Inspectable SQL Code -->
+<details class="bg-slate-950 rounded-lg p-2 border border-slate-800/80 text-[10px]">
+<summary class="cursor-pointer font-bold text-slate-400 hover:text-slate-200 flex items-center justify-between">
+<span><i class="fa-solid fa-code mr-1"></i>แสดงโค้ด SQL ที่สร้างขึ้น</span>
+<i class="fa-solid fa-chevron-down text-[9px]"></i>
+</summary>
+<pre class="text-emerald-400 font-mono mt-1.5 select-all leading-normal code-font whitespace-pre-wrap" id="aiSqlOutput"></pre>
+</details>
+</div>
+</div>
+</div>
+</section>
+<!-- RIGHT WORKSPACE (7 Cols): SQL Inspector & Data Preview Grid -->
+<section class="lg:col-span-7 flex flex-col gap-3">
+<!-- SQL Code Inspector Console -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+<div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-terminal text-teal-600"></i>
+<h2 class="text-xs font-bold text-slate-700 uppercase tracking-wide">คำสั่ง SQL (ประมวลผล)</h2>
+</div>
+<button class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-3 py-1 text-xs font-bold transition-all flex items-center gap-1 shadow-xs border border-teal-500" onclick="runQuery()">
+<i class="fa-solid fa-play animate-pulse text-[10px]"></i> ดึงข้อมูล (F9)
                         </button>
-                    </div>
-
-                    <div class="p-2 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between gap-2 text-xs">
-                        <div class="flex items-center gap-1">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">แฟ้มหลัก:</span>
-                            <select id="tableSelector" onchange="handleTableSelect(this.value)" class="bg-white text-sky-700 border border-sky-300 font-semibold rounded px-2 py-0.5 text-xs">
-                                <option value="">-- [ เลือกตาราง m_* ] --</option>
-                                <option value="m_PERSON">m_PERSON (ทำเนียบประชากร)</option>
-                                <option value="m_CARD">m_CARD (สิทธิรักษา)</option>
-                                <option value="m_ADDRESS">m_ADDRESS (ที่อยู่/พิกัด)</option>
-                                <option value="m_CHRONIC">m_CHRONIC (โรคเรื้อรัง)</option>
-                                <option value="m_EP">m_EP (วัคซีนเด็ก)</option>
-                            </select>
-                        </div>
-                        <button onclick="insertAtCursor('LIMIT 100 ')" class="bg-amber-50 text-amber-800 border border-amber-300 rounded px-2 py-0.5 text-[10px] font-bold">LIMIT 100</button>
-                    </div>
-
-                    <div class="relative h-28">
-                        <textarea id="sqlEditor" class="w-full h-full p-2.5 bg-slate-50/30 text-slate-800 font-mono text-xs leading-relaxed focus:outline-none focus:bg-white code-font" placeholder="-- SQL Code generated by AI..." spellcheck="false">SELECT m_PERSON.pid, m_PERSON.birth, TIMESTAMPDIFF(YEAR, m_PERSON.birth, CURDATE()) AS age, m_ADDRESS.moo
+</div>
+<div class="p-2 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between gap-2 text-xs">
+<div class="flex items-center gap-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase">แฟ้มหลัก:</span>
+<select class="bg-white text-sky-700 border border-sky-300 font-semibold rounded px-2 py-0.5 text-xs" id="tableSelector" onchange="handleTableSelect(this.value)">
+<option value="">-- [ เลือกตาราง m_* ] --</option>
+<option value="m_PERSON">m_PERSON (ทำเนียบประชากร)</option>
+<option value="m_CARD">m_CARD (สิทธิรักษา)</option>
+<option value="m_ADDRESS">m_ADDRESS (ที่อยู่/พิกัด)</option>
+<option value="m_CHRONIC">m_CHRONIC (โรคเรื้อรัง)</option>
+<option value="m_EP">m_EP (วัคซีนเด็ก)</option>
+</select>
+</div>
+<button class="bg-amber-50 text-amber-800 border border-amber-300 rounded px-2 py-0.5 text-[10px] font-bold" onclick="insertAtCursor('LIMIT 100 ')">LIMIT 100</button>
+</div>
+<div class="relative h-28">
+<textarea class="w-full h-full p-2.5 bg-slate-50/30 text-slate-800 font-mono text-xs leading-relaxed focus:outline-none focus:bg-white code-font" id="sqlEditor" placeholder="-- SQL Code generated by AI..." spellcheck="false">SELECT m_PERSON.pid, m_PERSON.birth, TIMESTAMPDIFF(YEAR, m_PERSON.birth, CURDATE()) AS age, m_ADDRESS.moo
 FROM m_PERSON
 INNER JOIN m_ADDRESS ON m_PERSON.pid = m_ADDRESS.pid
-WHERE m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)</textarea>
-                    </div>
-                </div>
-
-                <!-- Data Preview Grid Table -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col flex-grow">
-                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-table-list text-teal-600"></i>
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide">ตารางผลลัพธ์ข้อมูล (Data Preview)</h3>
-                        </div>
-                        <span id="gridRecordCount" class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+WHERE m_PERSON.birth &gt;= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)</textarea>
+</div>
+</div>
+<!-- Data Preview Grid Table -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col flex-grow">
+<div class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-table-list text-teal-600"></i>
+<h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide">ตารางผลลัพธ์ข้อมูล (Data Preview)</h3>
+</div>
+<span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold" id="gridRecordCount">
                             0 รายการ
                         </span>
-                    </div>
-
-                    <div class="p-3 overflow-x-auto min-h-[180px] flex-grow">
-                        <table id="resultTable" class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr id="tableHeaderRow" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                                    <th class="p-2 border-r border-slate-200">PID</th>
-                                    <th class="p-2 border-r border-slate-200">หมู่ที่</th>
-                                    <th class="p-2 border-r border-slate-200">รายละเอียด/อายุ/โรค</th>
-                                    <th class="p-2">สถานะพิกัด GIS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody" class="divide-y divide-slate-100 text-slate-600 font-mono">
-                                <tr>
-                                    <td colspan="4" class="p-6 text-center text-slate-400 font-sans italic">
+</div>
+<div class="p-3 overflow-x-auto min-h-[180px] flex-grow">
+<table class="w-full text-left border-collapse text-xs" id="resultTable">
+<thead>
+<tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold" id="tableHeaderRow">
+<th class="p-2 border-r border-slate-200">PID</th>
+<th class="p-2 border-r border-slate-200">หมู่ที่</th>
+<th class="p-2 border-r border-slate-200">รายละเอียด/อายุ/โรค</th>
+<th class="p-2">สถานะพิกัด GIS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 text-slate-600 font-mono" id="tableBody">
+<tr>
+<td class="p-6 text-center text-slate-400 font-sans italic" colspan="4">
                                         พิมพ์คำสั่งภาษาไทยใน AI แล้วกดค้นหาเพื่อแสดงข้อมูลที่นี่
                                     </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </section>
-
-        </div>
-
-        <!-- STREAMING_CHUNK:Building Yarang GIS Map with Interactive Moo Cards... -->
-        <!-- BOTTOM SECTION: GIS MAP (Yarang District, Pattani - 6 Moos) -->
-        <div class="grid grid-cols-1 gap-5">
-            <section class="flex flex-col gap-3">
-                <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-                    
-                    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-earth-asia text-emerald-600"></i>
-                            <h3 class="text-xs font-bold text-slate-700">แผนที่ระบาดวิทยา อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6)</h3>
-                        </div>
-                        <button onclick="toggleHeatmapView()" id="btnHeatmapToggle" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2.5 py-1 text-[10px] font-bold transition-all flex items-center gap-1">
-                            <i class="fa-solid fa-fire text-amber-500"></i> โหมด Heatmap
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+<!-- STREAMING_CHUNK:Building Yarang GIS Map with Interactive Moo Cards... -->
+<!-- BOTTOM SECTION: GIS MAP (Yarang District, Pattani - 6 Moos) -->
+<div class="grid grid-cols-1 gap-5">
+<section class="flex flex-col gap-3">
+<div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+<div class="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-earth-asia text-emerald-600"></i>
+<h3 class="text-xs font-bold text-slate-700">แผนที่ระบาดวิทยา อ.ยะรัง จ.ปัตตานี (หมู่ 1 - หมู่ 6)</h3>
+</div>
+<button class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2.5 py-1 text-[10px] font-bold transition-all flex items-center gap-1" id="btnHeatmapToggle" onclick="toggleHeatmapView()">
+<i class="fa-solid fa-fire text-amber-500"></i> โหมด Heatmap
                         </button>
-                    </div>
-
-                    <div class="p-3.5 bg-slate-50 flex flex-col gap-3">
-                        
-                        <!-- DYNAMIC FILTER CHECKBOX STRIP -->
-                        <div class="flex flex-wrap justify-between items-center gap-2 text-xs bg-white p-2.5 rounded-lg border border-slate-200">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">กรองการแสดงผล (คำนวณตามคิวรี):</span>
-                                <div id="dynamicGisLayerCheckboxes" class="flex items-center gap-2 flex-wrap">
-                                    <!-- Populated dynamically via JS -->
-                                </div>
-                            </div>
-                            <select id="gisTimelineSelect" onchange="updateGisLayers()" class="bg-slate-50 border border-slate-300 rounded px-2 py-0.5 text-xs text-slate-700">
-                                <option value="ALL">ไตรมาส/เวลาทั้งหมด</option>
-                                <option value="2026_Q1">2026 - Q1</option>
-                                <option value="2026_Q2">2026 - Q2</option>
-                            </select>
-                        </div>
-
-                        <!-- Leaflet Canvas Map -->
-                        <div id="diseaseMap" class="w-full h-72 md:h-80 bg-slate-200 rounded-xl relative shadow-inner border border-slate-300/80"></div>
-                        
-                        <!-- INTERACTIVE MOO SELECTION TOOLBAR & 6-CARD SUMMARY GRID -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-slate-600 text-[11px] flex items-center gap-1">
-                                    <i class="fa-solid fa-filter text-teal-600"></i> ตัวกรองเลือกหมู่บ้าน (คลิกเพื่อเลือก/ยกเลิก):
+</div>
+<div class="p-3.5 bg-slate-50 flex flex-col gap-3">
+<!-- DYNAMIC FILTER CHECKBOX STRIP -->
+<div class="flex flex-wrap justify-between items-center gap-2 text-xs bg-white p-2.5 rounded-lg border border-slate-200">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="text-[10px] font-bold text-slate-400 uppercase">กรองการแสดงผล (คำนวณตามคิวรี):</span>
+<div class="flex items-center gap-2 flex-wrap" id="dynamicGisLayerCheckboxes">
+<!-- Populated dynamically via JS -->
+</div>
+</div>
+<select class="bg-slate-50 border border-slate-300 rounded px-2 py-0.5 text-xs text-slate-700" id="gisTimelineSelect" onchange="updateGisLayers()">
+<option value="ALL">ไตรมาส/เวลาทั้งหมด</option>
+<option value="2026_Q1">2026 - Q1</option>
+<option value="2026_Q2">2026 - Q2</option>
+</select>
+</div>
+<!-- Leaflet Canvas Map -->
+<div class="w-full h-72 md:h-80 bg-slate-200 rounded-xl relative shadow-inner border border-slate-300/80" id="diseaseMap"></div>
+<!-- INTERACTIVE MOO SELECTION TOOLBAR & 6-CARD SUMMARY GRID -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-slate-600 text-[11px] flex items-center gap-1">
+<i class="fa-solid fa-filter text-teal-600"></i> ตัวกรองเลือกหมู่บ้าน (คลิกเพื่อเลือก/ยกเลิก):
                                 </span>
-                                <div class="flex items-center gap-1.5">
-                                    <button onclick="selectAllMoos()" class="bg-teal-100 hover:bg-teal-200 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs">
-                                        <i class="fa-solid fa-check-double mr-1"></i>เลือกทุกหมู่
+<div class="flex items-center gap-1.5">
+<button class="bg-teal-100 hover:bg-teal-200 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs" onclick="selectAllMoos()">
+<i class="fa-solid fa-check-double mr-1"></i>เลือกทุกหมู่
                                     </button>
-                                    <button onclick="clearAllMoos()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs">
-                                        <i class="fa-solid fa-xmark mr-1"></i>ล้างการเลือก
+<button class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded transition-all shadow-2xs" onclick="clearAllMoos()">
+<i class="fa-solid fa-xmark mr-1"></i>ล้างการเลือก
                                     </button>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs text-center" id="mooCardsGrid">
-                                <!-- Cards rendered dynamically with click events -->
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-            </section>
-        </div>
-
-        <!-- COLLAPSIBLE REFERENCE DRAWER -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center cursor-pointer" onclick="toggleReferenceDrawer()">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-book-bookmark text-teal-700"></i>
-                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">คู่มืออ้างอิงสูตร & คำอธิบายฟิลด์ (Level 2 Dictionary)</h3>
-                </div>
-                <button id="btnToggleDrawer" class="text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1">
-                    <span>เปิด/ซ่อน</span>
-                    <i class="fa-solid fa-chevron-down transition-transform duration-200" id="drawerChevron"></i>
-                </button>
-            </div>
-
-            <div id="referenceDrawerContent" class="hidden p-4 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 border-t border-slate-100">
-                <div class="flex flex-col gap-3">
-                    <div class="flex justify-between items-center border-b pb-1.5">
-                        <span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-star text-amber-500 mr-1"></i>คลังสูตร SQL ยอดฮิต (CRUD)</span>
-                        <button onclick="openRecipeModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] px-2 py-1 rounded font-bold">
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs text-center" id="mooCardsGrid">
+<!-- Cards rendered dynamically with click events -->
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- COLLAPSIBLE REFERENCE DRAWER -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+<div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center cursor-pointer" onclick="toggleReferenceDrawer()">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-book-bookmark text-teal-700"></i>
+<h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">คู่มืออ้างอิงสูตร &amp; คำอธิบายฟิลด์ (Level 2 Dictionary)</h3>
+</div>
+<button class="text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1" id="btnToggleDrawer">
+<span>เปิด/ซ่อน</span>
+<i class="fa-solid fa-chevron-down transition-transform duration-200" id="drawerChevron"></i>
+</button>
+</div>
+<div class="hidden p-4 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 border-t border-slate-100" id="referenceDrawerContent">
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center border-b pb-1.5">
+<span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-star text-amber-500 mr-1"></i>คลังสูตร SQL ยอดฮิต (CRUD)</span>
+<button class="bg-teal-600 hover:bg-teal-700 text-white text-[10px] px-2 py-1 rounded font-bold" onclick="openRecipeModal()">
                             + เพิ่มสูตรใหม่
                         </button>
-                    </div>
-                    <div id="recipesContainer" class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1"></div>
-                </div>
-
-                <div class="flex flex-col gap-3">
-                    <div class="flex justify-between items-center border-b pb-1.5">
-                        <span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-list-check text-teal-600 mr-1"></i>คำอธิบายฟิลด์ข้อมูล (Level 2)</span>
-                        <button onclick="openAddHeaderModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2 py-1 rounded font-bold">
+</div>
+<div class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1" id="recipesContainer"></div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center border-b pb-1.5">
+<span class="text-xs font-bold text-teal-800"><i class="fa-solid fa-list-check text-teal-600 mr-1"></i>คำอธิบายฟิลด์ข้อมูล (Level 2)</span>
+<button class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2 py-1 rounded font-bold" onclick="openAddHeaderModal()">
                             + เพิ่มฟิลด์ใหม่
                         </button>
-                    </div>
-                    <div id="fieldsDictionaryContainer" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1"></div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- MODALS -->
-    <!-- Prompt Modifier CRUD Modal -->
-    <div id="fieldManagerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
-            <div class="bg-teal-800 text-white p-3.5 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-teal-300"></i>
-                    <h3 class="text-xs font-bold uppercase">จัดการปุ่มตัวช่วยค้นหาใน AI (Prompt Modifiers CRUD)</h3>
-                </div>
-                <button onclick="closeFieldManagerModal()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-4 flex flex-col gap-3">
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-2">
-                    <span class="text-[11px] font-bold text-slate-700">เพิ่มปุ่มคำค้นด่วนใหม่:</span>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="newBtnLabel" class="text-xs p-2 border border-slate-300 rounded focus:outline-none" placeholder="ชื่อปุ่ม (เช่น kid under 15)" />
-                        <input type="text" id="newBtnSnippet" class="text-xs p-2 border border-slate-300 rounded focus:outline-none" placeholder="คำค้นที่จะแทรกใน AI" />
-                    </div>
-                    <button onclick="addCustomSnippetButton()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 rounded transition-all">
+</div>
+<div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1" id="fieldsDictionaryContainer"></div>
+</div>
+</div>
+</div>
+</main>
+ MODALS 
+ Prompt Modifier CRUD Modal 
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden" id="fieldManagerModal">
+<div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
+<div class="bg-teal-800 text-white p-3.5 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-sliders text-teal-300"></i>
+<h3 class="text-xs font-bold uppercase">จัดการปุ่มตัวช่วยค้นหาใน AI (Prompt Modifiers CRUD)</h3>
+</div>
+<button class="text-slate-300 hover:text-white" onclick="closeFieldManagerModal()"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-2">
+<span class="text-[11px] font-bold text-slate-700">เพิ่มปุ่มคำค้นด่วนใหม่:</span>
+<div class="grid grid-cols-2 gap-2">
+<input class="text-xs p-2 border border-slate-300 rounded focus:outline-none" id="newBtnLabel" placeholder="ชื่อปุ่ม (เช่น kid under 15)" type="text"/>
+<input class="text-xs p-2 border border-slate-300 rounded focus:outline-none" id="newBtnSnippet" placeholder="คำค้นที่จะแทรกใน AI" type="text"/>
+</div>
+<button class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 rounded transition-all" onclick="addCustomSnippetButton()">
                         + เพิ่มปุ่มลงในแถบ AI
                     </button>
-                </div>
-                <span class="text-[11px] font-bold text-slate-600 uppercase">รายการปุ่มปัจจุบัน:</span>
-                <div id="customButtonList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1"></div>
-            </div>
-            <div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end">
-                <button onclick="closeFieldManagerModal()" class="bg-slate-800 text-white text-xs font-bold px-4 py-1.5 rounded-lg">ปิดหน้าต่าง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- API Settings Modal Dialog -->
-    <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
-            <div class="bg-slate-800 text-white p-3.5 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-key text-teal-400"></i>
-                    <h3 class="text-xs font-bold">ตั้งค่า Gemini API Key (บันทึกออฟไลน์ในเครื่อง)</h3>
-                </div>
-                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-4 flex flex-col gap-2.5">
-                <p class="text-xs text-slate-500 leading-relaxed">
+</div>
+<span class="text-[11px] font-bold text-slate-600 uppercase">รายการปุ่มปัจจุบัน:</span>
+<div class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1" id="customButtonList"></div>
+</div>
+<div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end">
+<button class="bg-slate-800 text-white text-xs font-bold px-4 py-1.5 rounded-lg" onclick="closeFieldManagerModal()">ปิดหน้าต่าง</button>
+</div>
+</div>
+</div>
+ API Settings Modal Dialog 
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden" id="apiKeyModal">
+<div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-all">
+<div class="bg-slate-800 text-white p-3.5 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-key text-teal-400"></i>
+<h3 class="text-xs font-bold">ตั้งค่า Gemini API Key (บันทึกออฟไลน์ในเครื่อง)</h3>
+</div>
+<button class="text-slate-400 hover:text-white" onclick="toggleApiKeyModal()"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="p-4 flex flex-col gap-2.5">
+<p class="text-xs text-slate-500 leading-relaxed">
                     กุญแจ API จะถูกจัดเก็บบนเว็บบราวเซอร์คอมพิวเตอร์เครื่องนี้อย่างปลอดภัย ปล่อยว่างไว้เพื่อใช้ระบบจำลองคำตอบออฟไลน์ฟรีด่วนได้เสมอ
                 </p>
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-700">Gemini API Key:</label>
-                    <input type="password" id="apiKeyInput" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="AI_zaSyD..." />
-                </div>
-            </div>
-            <div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end gap-2">
-                <button onclick="toggleApiKeyModal()" class="bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-1.5 rounded-lg">ปิด</button>
-                <button onclick="saveApiKey()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-xs">บันทึกตั้งค่า</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Toast Notification -->
-    <div id="toastNotification" class="fixed bottom-5 left-5 z-[2000] transform translate-y-10 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs py-2 px-3.5 rounded-xl shadow-xl flex items-center gap-2 pointer-events-none">
-        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-        <span id="toastMessage">บันทึกข้อมูลเรียบร้อยแล้ว</span>
-    </div>
-
-    <!-- Leaflet Map JS Library -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <!-- STREAMING_CHUNK:Executing JavaScript Engine with Kids Query & Interactive Moo Controls... -->
-    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
-    <script>
+<div class="flex flex-col gap-1">
+<label class="text-[11px] font-bold text-slate-700">Gemini API Key:</label>
+<input class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none" id="apiKeyInput" placeholder="AI_zaSyD..." type="password"/>
+</div>
+</div>
+<div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-end gap-2">
+<button class="bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-1.5 rounded-lg" onclick="toggleApiKeyModal()">ปิด</button>
+<button class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-xs" onclick="saveApiKey()">บันทึกตั้งค่า</button>
+</div>
+</div>
+</div>
+ Floating Toast Notification 
+<div class="fixed bottom-5 left-5 z-[2000] transform translate-y-10 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs py-2 px-3.5 rounded-xl shadow-xl flex items-center gap-2 pointer-events-none" id="toastNotification">
+<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+<span id="toastMessage">บันทึกข้อมูลเรียบร้อยแล้ว</span>
+</div>
+ Leaflet Map JS Library 
+<script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+ STREAMING_CHUNK:Executing JavaScript Engine with Kids Query & Interactive Moo Controls... 
+ INTERACTIVE JAVASCRIPT LOGIC 
+<script>
         const yarangCenterLat = 6.7628;
         const yarangCenterLng = 101.2980;
 
@@ -1119,15 +1211,66 @@ WHERE m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)</textarea>
             showToast("บันทึกข้อมูลตั้งค่าแล้ว!");
         }
     </script>
+  </main>
+
+  <!-- ===== Footer (Optional) ===== -->
+  <footer class="tool-footer" style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.75rem; border-top:1px solid var(--border-color); margin-top:auto;">
+    Zyde's Toolbox | รพ.สต.ยะรัง
+  </footer>
+
+  <!-- ===== Toast Container (Global) ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ===== Global Scripts ===== -->
+  <script>
+    // ===== Toast System =====
+    window.toast = (message, type = 'info', duration = 4000) => {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `alert alert-${type}`;
+      el.style.cssText = 'pointer-events:auto; min-width:240px; max-width:360px; box-shadow:var(--shadow-lg); animation:slideIn 0.3s ease;';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
+    };
+    // Toast animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+    `;
+    document.head.appendChild(style);
+
+    // ===== Modal Helpers =====
+    window.openModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('open'); };
+    window.closeModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('open'); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+    // ===== Auth Helpers =====
+    window.requireAuth = () => {
+      if (!sessionStorage.getItem('zyde_auth')) {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = 'index.html?return=' + returnUrl;
+        return false;
+      }
+      return true;
+    };
+    window.logout = () => { sessionStorage.removeItem('zyde_auth'); window.location.href = 'index.html'; };
+
+    // ===== Nav Active State =====
+    (function() {
+      const current = window.location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href === current || (current === 'index.html' && href === 'index.html')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+  </script>
+
+  <!-- ===== CHILD: INJECT PAGE-SPECIFIC SCRIPTS HERE ===== -->
+  
 </body>
 </html>
-```eof
-
-I have updated the application file `mypcu_sql_cheatsheet.html`.
-
-### Summary of What Was Fixed:
-1. **Parser Mismatch Fixed:**
-   * Prompts containing `"kid under 15"`, `"เด็ก"`, `"15"`, or `"อายุ"` now generate proper age-filtering SQL (`m_PERSON.birth >= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)`) instead of defaulting to diabetes.
-2. **Interactive Village Multi-Select Cards:**
-   * Each of the 6 village cards (Moo 1 to 6) is now an active toggle button.
-   * Includes **"เลือกทุกหมู่ (Select All)"** and **"ล้างการเลือก (Select None)"** control buttons above the cards.

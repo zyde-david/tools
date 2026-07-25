@@ -1,13 +1,155 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ (Ultimate V12 Mobile-Friendly)</title>
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400;1,700&display=swap">
-    
-    <style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ (Ultimate V12 Mobile-Friendly) - เครื่องมือใน Zyde's Toolbox">
+  <title>ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ (Ultimate V12 Mobile-Friendly)</title>
+
+  <!-- ===== Design Tokens ===== -->
+  <style>
+    :root {
+      /* ---- Color: Brand ---- */
+      --tool-brand: #6366f1;
+      --tool-brand-hover: #4f46e5;
+      --tool-brand-light: #e0e7ff;
+      --tool-brand-text: #312e81;
+      --tool-brand-text-light: #a5b4fc;
+
+      /* ---- Color: Semantic ---- */
+      --tool-success: #22c55e;
+      --tool-success-hover: #16a34a;
+      --tool-warn: #f59e0b;
+      --tool-warn-hover: #d97706;
+      --tool-danger: #ef4444;
+      --tool-danger-hover: #dc2626;
+      --tool-info: #38bdf8;
+      --tool-info-hover: #0ea5e9;
+
+      /* ---- Color: Base (Dark Default) ---- */
+      --bg-base: #0f172a;
+      --bg-card: #1e293b;
+      --bg-elevated: #334155;
+      --bg-hover: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #334155;
+      --border-focus: #6366f1;
+      --border-light: #475569;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.5);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 9999px;
+      --transition: 150ms ease;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+      --nav-height: 48px;
+
+      /* ---- Z-Index Scale ---- */
+      --z-nav: 100;
+      --z-sticky: 200;
+      --z-modal: 1000;
+      --z-toast: 2000;
+    }
+
+    /* ---- Light Mode Override ---- */
+    html.light {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-elevated: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #6366f1;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+      --print-bg: #ffffff;
+      --print-text: #0f172a;
+    }
+
+    /* ---- Base Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--tool-brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* ---- Skip Link ---- */
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem;
+      background: var(--tool-brand); color: white;
+      padding: 0.5rem 1rem; border-radius: var(--radius-md);
+      z-index: var(--z-toast);
+      transition: top var(--transition);
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ---- Top Navigation Bar ---- */
+    .tools-nav {
+      position: sticky; top: 0; z-index: var(--z-nav);
+      background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+      height: var(--nav-height);
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0 1rem; flex-wrap: wrap;
+      backdrop-filter: blur(8px);
+    }
+    .tools-nav .nav-home {
+      font-size: 1.25rem; text-decoration: none;
+      padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+      color: var(--text-primary); transition: background var(--transition);
+    }
+    .tools-nav .nav-home:hover { background: var(--bg-elevated); text-decoration: none; }
+    .tools-nav .nav-sep { color: var(--border-color); font-size: 0.75rem; padding: 0 0.25rem; }
+    .tools-nav .nav-link {
+      font-size: 1.125rem; text-decoration: none;
+      padding: 0.25rem 0.375rem; border-radius: var(--radius-md);
+      opacity: 0.55; transition: all var(--transition);
+    }
+    .tools-nav .nav-link:hover { opacity: 1; background: var(--bg-elevated); transform: scale(1.15); text-decoration: none; }
+    .tools-nav .nav-link.active { opacity: 1; background: var(--tool-brand-light); }
+    .tools-nav .nav-title {
+      margin-left: auto; font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 140px;
+    }
+    @media (max-width: 480px) {
+      .tools-nav { gap: 0.25rem; padding: 0 0.5rem; height: auto; min-height: var(--nav-height); }
+      .tools-nav .nav-link { font-size: 1rem; padding: 0.125rem 0.25rem; }
+      .tools-nav .nav-title { font-size: 0.625rem; max-width: 80px; }
+    }
+
+    /* ---- Main Content Area ---- */
+    .tool-main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; margin: 0 auto; }
+    @media (max-width: 640px) { .tool-main { padding: 1rem; } }
+
+    /* ---- Footer ---- */
+    .tool-footer { border-top: 1px solid var(--border-color); }
+
+    /* ---- Toast Container ---- */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+
+    /* ===== CHILD: INJECT EXTRA <link> / <style> HERE ===== */
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400;1,700&amp;display=swap" rel="stylesheet"/>
+<style>
         *, *::before, *::after { box-sizing: border-box; }
         
         @page {
@@ -302,11 +444,52 @@
             margin-top: 20px;
         }
     </style>
-</head>
-<body class="expert-mode-active">
-<script>if(!sessionStorage.getItem("zyde_auth")){location.href="index.html"}</script>
 
-<style>
+    <!-- ===== Auth Guard (Runs Before Body Render) ===== -->
+    <script>
+      (function() {
+        const authKey = 'zyde_auth';
+        const loginUrl = 'index.html';
+        // Allow child pages to opt-out by setting window.SKIP_AUTH = true before this script runs
+        if (typeof window.SKIP_AUTH === 'undefined' && !sessionStorage.getItem(authKey)) {
+          // Preserve return URL
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = loginUrl + '?return=' + returnUrl;
+        }
+      })();
+    </script>
+</head>
+<body>
+
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
+
+  <!-- ===== Top Navigation Bar ===== -->
+  <nav class="tools-nav" role="navigation" aria-label="เครื่องมือนำทาง">
+    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+        <a href="index.html" class="nav-link" title="หน้าหลัก">🏠</a>
+    <a href="envelope-printer.html" class="nav-link active" title="Envelope Printer">✉️</a>
+    <a href="autocorrect.html" class="nav-link" title="AHK AutoCorrect">⌨️</a>
+    <a href="map-epidemic.html" class="nav-link" title="Epidemiology Map">📊</a>
+    <a href="base64-decoder.html" class="nav-link" title="Base64 Decoder">🦫</a>
+    <a href="thai-recovery.html" class="nav-link" title="Thai Recovery">🔤</a>
+    <a href="ink-planner.html" class="nav-link" title="Ink Planner">🖨️</a>
+    <a href="inventory-analytics.html" class="nav-link" title="Inventory">📦</a>
+    <a href="interactive-certificate-builder.html" class="nav-link" title="Certificate Builder">🏆</a>
+    <a href="mypcu-sql-simulator.html" class="nav-link" title="myPCU SQL Simulator">🗄️</a>
+    <a href="mypcu-sql-cheatsheet-ai.html" class="nav-link" title="myPCU AI SQL">🧠</a>
+    <a href="health-gis-app.html" class="nav-link" title="Health GIS">🏥</a>
+    <a href="gps-location-tracker.html" class="nav-link" title="GPS Tracker">📍</a>
+    <a href="vhv-quick-report.html" class="nav-link" title="VHV Voice Report">🎤</a>
+    <a href="yarang-pcc-audit.html" class="nav-link" title="Yarang PCC">🏥</a>
+    <span class="nav-sep" aria-hidden="true">|</span>
+    <span class="nav-title" id="navTitle">ระบบพิมพ์ซองจดหมายและนำทางอัจฉริยะ (Ultimate V12 Mobile-Friendly)</span>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main id="main-content" class="tool-main" role="main">
+    <style>
 .tools-nav{background:#1e293b;padding:6px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100;}
 .tools-nav .nav-home{font-size:1.2rem;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background .2s;color:#e2e8f0;}
 .tools-nav .nav-home:hover{background:#334155;}
@@ -317,220 +500,182 @@
 .tools-nav .nav-title{margin-left:auto;font-size:0.7rem;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
 @media(max-width:480px){.tools-nav{gap:2px;padding:4px 8px}.tools-nav .nav-link{font-size:0.95rem;padding:2px 4px}.tools-nav .nav-title{font-size:0.6rem;max-width:80px}}
 </style>
-<div class="tools-nav">
-    <a href="index.html" class="nav-home" title="หน้าหลัก">🏠</a>
-    <span class="nav-sep">|</span>
-    <a href="envelope-printer.html" class="nav-link active" title="✉️ Envelope Printer">✉️</a>
-    <a href="autocorrect.html" class="nav-link" title="⌨️ AHK AutoCorrect">⌨️</a>
-    <a href="map-epidemic.html" class="nav-link" title="📊 Epidemiology Map">📊</a>
-    <a href="base64-decoder.html" class="nav-link" title="🦫 Base64 Decoder">🦫</a>
-    <a href="thai-recovery.html" class="nav-link" title="🔤 Thai Recovery">🔤</a>
-    <a href="ink-planner.html" class="nav-link" title="🖨️ Ink Planner">🖨️</a>
-    <a href="inventory-analytics.html" class="nav-link" title="📦 Inventory">📦</a>
-    <span class="nav-sep">|</span>
-    <span class="nav-title">✉️ Envelope Printer</span>
+
+<div class="no-print container">
+<div class="main-header">
+<h2>✉️ ระบบจัดพิมพ์ซองและระบุคิวส่งอัตโนมัติ (V12 Responsive Expert)</h2>
+<p>สลับและผสมคำนำหน้าได้อิสระ ย่อขนาดพรีวิวอัตโนมัติบนมือถือเพื่อความคล่องตัวและพิกัดที่แม่นยำที่สุด</p>
 </div>
-
-    <div class="no-print container">
-        <div class="main-header">
-            <h2>✉️ ระบบจัดพิมพ์ซองและระบุคิวส่งอัตโนมัติ (V12 Responsive Expert)</h2>
-            <p>สลับและผสมคำนำหน้าได้อิสระ ย่อขนาดพรีวิวอัตโนมัติบนมือถือเพื่อความคล่องตัวและพิกัดที่แม่นยำที่สุด</p>
-        </div>
-        
-        <div class="main-grid">
-            <!-- ================= แผงที่ 1 (ด้านบนมือถือ / ฝั่งซ้ายคอมพ์): พรีวิวซองและการพิมพ์ ================= -->
-            <div class="panel">
-                <div class="panel-title">✍️ รายชื่อซองจดหมายอิสระ (1 บรรทัด = 1 ซอง)</div>
-                <div class="control-row">
-                    <div class="input-group">
-                        <span style="font-size:12px; font-weight:bold;">ฟอนต์หลัก:</span>
-                        <select id="mainFontSelect" class="select-style" onchange="renderSystemAll()">
-                            <option value="TH Sarabun IT ๙">TH Sarabun IT ๙ (เลขไทย)</option>
-                            <option value="TH Sarabun New">TH Sarabun New</option>
-                            <option value="TH Sarabun PSK" selected>TH Sarabun PSK</option>
-                            <option value="Angsana New">Angsana New</option>
-                            <option value="Sarabun">Sarabun (Online)</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px;" onclick="adjustMainFontSize(1)">➕</button>
-                        <span id="mainFontSizeDisplay" style="font-weight:bold; font-size:13px; width:60px; text-align:center;">24pt</span>
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px;" onclick="adjustMainFontSize(-1)">➖</button>
-                    </div>
-                </div>
-                
-                <textarea id="freeTextNamesInput" rows="3" placeholder="พิมพ์ชื่อหน่วยงานอิสระที่นี่ตามจริงได้เลย เช่น สาธารณสุขอำเภอยะรัง" oninput="renderSystemAll()"></textarea>
-                <br><br>
-                
-                <button class="btn btn-main" onclick="executePrintJob()">สั่งพิมพ์หน้าซองทั้งหมดทันที 🖨️</button>
-                
-                <div class="map-box">
-                    <div style="font-size:13px; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                        <span>📍 ข้อมูลฐานเดินรถเริ่มต้น:</span>
-                        <label style="cursor:pointer; font-weight:normal; font-size:12px; color:#2563eb;">
-                            <input type="checkbox" id="returnToBaseToggle" checked onchange="renderSystemAll()"> 🔄 วนกลับฐานเมื่อเสร็จ (Round-Trip)
+<div class="main-grid">
+<!-- ================= แผงที่ 1 (ด้านบนมือถือ / ฝั่งซ้ายคอมพ์): พรีวิวซองและการพิมพ์ ================= -->
+<div class="panel">
+<div class="panel-title">✍️ รายชื่อซองจดหมายอิสระ (1 บรรทัด = 1 ซอง)</div>
+<div class="control-row">
+<div class="input-group">
+<span style="font-size:12px; font-weight:bold;">ฟอนต์หลัก:</span>
+<select class="select-style" id="mainFontSelect" onchange="renderSystemAll()">
+<option value="TH Sarabun IT ๙">TH Sarabun IT ๙ (เลขไทย)</option>
+<option value="TH Sarabun New">TH Sarabun New</option>
+<option selected="" value="TH Sarabun PSK">TH Sarabun PSK</option>
+<option value="Angsana New">Angsana New</option>
+<option value="Sarabun">Sarabun (Online)</option>
+</select>
+</div>
+<div class="input-group">
+<button class="btn btn-secondary" onclick="adjustMainFontSize(1)" style="padding:4px 8px;" type="button">➕</button>
+<span id="mainFontSizeDisplay" style="font-weight:bold; font-size:13px; width:60px; text-align:center;">24pt</span>
+<button class="btn btn-secondary" onclick="adjustMainFontSize(-1)" style="padding:4px 8px;" type="button">➖</button>
+</div>
+</div>
+<textarea id="freeTextNamesInput" oninput="renderSystemAll()" placeholder="พิมพ์ชื่อหน่วยงานอิสระที่นี่ตามจริงได้เลย เช่น สาธารณสุขอำเภอยะรัง" rows="3"></textarea>
+<br/><br/>
+<button class="btn btn-main" onclick="executePrintJob()">สั่งพิมพ์หน้าซองทั้งหมดทันที 🖨️</button>
+<div class="map-box">
+<div style="font-size:13px; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+<span>📍 ข้อมูลฐานเดินรถเริ่มต้น:</span>
+<label style="cursor:pointer; font-weight:normal; font-size:12px; color:#2563eb;">
+<input checked="" id="returnToBaseToggle" onchange="renderSystemAll()" type="checkbox"/> 🔄 วนกลับฐานเมื่อเสร็จ (Round-Trip)
                         </label>
-                    </div>
-                    <select id="startPointHubSelect" class="select-style" style="width:100%; font-weight:bold; margin-bottom:8px;" onchange="toggleManualHubInput()">
-                        <option value="รพ.สต.ยะรัง">🏢 รพ.สต.ยะรัง (พิกัดภูมิศาสตร์จริง 6.760930)</option>
-                        <option value="ที่ว่าการอำเภอยะรัง">🏛️ ที่ว่าการอำเภอยะรัง</option>
-                        <option value="CUSTOM_GPS">📌 ระบุพิกัดละติจูด/ลองจิจูดจุดเริ่มเอง...</option>
-                    </select>
-                    <div id="customHubGpsWrapper" style="display:none; margin-bottom:8px;">
-                        <input type="text" id="customHubGpsInput" class="input-style" placeholder="วางพิกัดจากกูเกิลแมพ เช่น 6.760930, 101.294492" style="width:100%;" oninput="renderSystemAll()">
-                    </div>
-                    <button type="button" class="btn btn-success" style="width:100%; padding:8px;" onclick="launchGoogleMapsMobile()">📱 ส่งออกทริปจัดคิวสั้นสุดไปเปิดบนมือถือ</button>
-                </div>
-                
-                <div class="panel-title" style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:12px;" id="totalQueueCountLabel">📄 รายการคิวเตรียมพิมพ์: 0 ซอง</div>
-                <div id="livePreviewScreenArea" class="preview-container-box"></div>
-            </div>
-            
-            <!-- ================= แผงที่ 2 (ด้านล่างมือถือ / ฝั่งขวาคอมพ์): จัดการข้อมูลพิกัดและตำแหน่งโน้ตย่อยประจำจุด ================= -->
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🏫 จัดการบัญชีปลายทางและตำแหน่งโน้ตย่อย</span>
-                    <button type="button" id="modeToggleBtn" class="btn btn-mode-toggle" onclick="toggleScreenDisplayMode()">🔄 โหมดหน้าจอ: ขั้นสูง (Expert)</button>
-                </div>
-                
-                <!-- แท็บรับข้อมูลปลายทางแบบเดี่ยว / แบบกลุ่ม Bulk -->
-                <div class="form-tab-container">
-                    <div class="tab-btn-headers">
-                        <button type="button" id="tabLinkSingle" class="tab-link active" onclick="switchFormPanelTab('SINGLE')">✏️ เพิ่มปลายทางเดี่ยว</button>
-                        <button type="button" id="tabLinkBulk" class="tab-link" onclick="switchFormPanelTab('BULK')">📥 นำเข้ากลุ่มใหญ่ด่วน (Bulk Import)</button>
-                    </div>
-                    
-                    <div id="panelFormSingle" class="add-form-single">
-                        <input type="text" id="formLocationName" class="input-style" placeholder="พิมพ์ชื่อปลายทาง เช่น สาธารณสุขอำเภอยะรัง">
-                        <input type="text" id="formLocationGps" class="input-style" placeholder="วางพิกัดจากกูเกิลแมพ Lat, Lng">
-                        <div style="display:flex; gap:4px;">
-                            <button type="button" id="formSubmitBtn" class="btn btn-success" style="flex:1;" onclick="submitLocationForm()">💾 บันทึก</button>
-                            <button type="button" id="formCancelBtn" class="btn btn-secondary" style="display:none;" onclick="resetLocationForm()">❌</button>
-                        </div>
-                    </div>
-                    
-                    <div id="panelFormBulk" style="display:none;">
-                        <textarea id="bulkDataImportInput" rows="4" style="font-size:12px; margin-bottom:6px;" placeholder="วางรายชื่อและพิกัดที่คัดลอกมา (รูปแบบ: ชื่อสถานที่ | Lat, Lng) ตัวอย่างเช่น:
+</div>
+<select class="select-style" id="startPointHubSelect" onchange="toggleManualHubInput()" style="width:100%; font-weight:bold; margin-bottom:8px;">
+<option value="รพ.สต.ยะรัง">🏢 รพ.สต.ยะรัง (พิกัดภูมิศาสตร์จริง 6.760930)</option>
+<option value="ที่ว่าการอำเภอยะรัง">🏛️ ที่ว่าการอำเภอยะรัง</option>
+<option value="CUSTOM_GPS">📌 ระบุพิกัดละติจูด/ลองจิจูดจุดเริ่มเอง...</option>
+</select>
+<div id="customHubGpsWrapper" style="display:none; margin-bottom:8px;">
+<input class="input-style" id="customHubGpsInput" oninput="renderSystemAll()" placeholder="วางพิกัดจากกูเกิลแมพ เช่น 6.760930, 101.294492" style="width:100%;" type="text"/>
+</div>
+<button class="btn btn-success" onclick="launchGoogleMapsMobile()" style="width:100%; padding:8px;" type="button">📱 ส่งออกทริปจัดคิวสั้นสุดไปเปิดบนมือถือ</button>
+</div>
+<div class="panel-title" id="totalQueueCountLabel" style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:12px;">📄 รายการคิวเตรียมพิมพ์: 0 ซอง</div>
+<div class="preview-container-box" id="livePreviewScreenArea"></div>
+</div>
+<!-- ================= แผงที่ 2 (ด้านล่างมือถือ / ฝั่งขวาคอมพ์): จัดการข้อมูลพิกัดและตำแหน่งโน้ตย่อยประจำจุด ================= -->
+<div class="panel">
+<div class="panel-title">
+<span>🏫 จัดการบัญชีปลายทางและตำแหน่งโน้ตย่อย</span>
+<button class="btn btn-mode-toggle" id="modeToggleBtn" onclick="toggleScreenDisplayMode()" type="button">🔄 โหมดหน้าจอ: ขั้นสูง (Expert)</button>
+</div>
+<!-- แท็บรับข้อมูลปลายทางแบบเดี่ยว / แบบกลุ่ม Bulk -->
+<div class="form-tab-container">
+<div class="tab-btn-headers">
+<button class="tab-link active" id="tabLinkSingle" onclick="switchFormPanelTab('SINGLE')" type="button">✏️ เพิ่มปลายทางเดี่ยว</button>
+<button class="tab-link" id="tabLinkBulk" onclick="switchFormPanelTab('BULK')" type="button">📥 นำเข้ากลุ่มใหญ่ด่วน (Bulk Import)</button>
+</div>
+<div class="add-form-single" id="panelFormSingle">
+<input class="input-style" id="formLocationName" placeholder="พิมพ์ชื่อปลายทาง เช่น สาธารณสุขอำเภอยะรัง" type="text"/>
+<input class="input-style" id="formLocationGps" placeholder="วางพิกัดจากกูเกิลแมพ Lat, Lng" type="text"/>
+<div style="display:flex; gap:4px;">
+<button class="btn btn-success" id="formSubmitBtn" onclick="submitLocationForm()" style="flex:1;" type="button">💾 บันทึก</button>
+<button class="btn btn-secondary" id="formCancelBtn" onclick="resetLocationForm()" style="display:none;" type="button">❌</button>
+</div>
+</div>
+<div id="panelFormBulk" style="display:none;">
+<textarea id="bulkDataImportInput" placeholder="วางรายชื่อและพิกัดที่คัดลอกมา (รูปแบบ: ชื่อสถานที่ | Lat, Lng) ตัวอย่างเช่น:
 โรงเรียนบ้านกรือเซะ | 6.769512, 101.276315
-โรงเรียนประสานวิทยามูลนิธิ | 6.784830, 101.295019"></textarea>
-                        <button type="button" class="btn btn-main" style="padding:6px; font-size:12px;" onclick="executeBulkImportProcessing()">📥 เริ่มโหลดข้อมูลเข้าตารางทั้งหมด</button>
-                    </div>
-                </div>
-                
-                <!-- แถบจัดการสลับคำนำหน้าเรียน/ผู้อำนวยการแบบไดนามิกส์ 2 ปุ่มแยกอิสระ -->
-                <div class="control-row" style="background:#f8fafc; padding:8px; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:5px; gap:6px;">
-                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="checkAllTableLocations(true)">☑️ เลือกทั้งหมด</button>
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="checkAllTableLocations(false)">⬜ ยกเลิกทั้งหมด</button>
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#475569;" onclick="changeTableSortingMode('Q')">🔢 เรียงตามคิว Q</button>
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#475569;" onclick="changeTableSortingMode('NAME')">🔤 เรียงตามชื่อ</button>
-                    </div>
-                    
-                    <div style="display:flex; gap:4px; flex-wrap:wrap; border-left:2px solid #cbd5e1; padding-left:8px;">
-                        <button type="button" class="btn btn-wizard" style="background:#eff6ff; border-color:#bfdbfe;" onclick="splitSalutationWizardEngine('LEARN')">➕ พ่วงคำว่า "เรียน"</button>
-                        <button type="button" class="btn btn-wizard" style="background:#f5f3ff; border-color:#ddd6fe;" onclick="splitSalutationWizardEngine('DIRECTOR')">🏫 พ่วงคำว่า "ผู้อำนวยการ"</button>
-                        <button type="button" class="btn btn-wizard" style="background:#fff5f5; border-color:#fed7d7; color:#c53030;" onclick="splitSalutationWizardEngine('CLEAR')">🗑️ ลบคำนำหน้า</button>
-                    </div>
-                </div>
-
-                <div class="control-row" style="margin-bottom:5px; justify-content: flex-end;">
-                    <div style="display:flex; gap:4px;">
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#64748b;" onclick="triggerExportDatabaseBackupFile()">💾 โหลดไฟล์สำรอง</button>
-                        <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; background:#0284c7;" onclick="document.getElementById('hiddenBackupFileInput').click()">📤 กู้คืนไฟล์สำรอง</button>
-                        <input type="file" id="hiddenBackupFileInput" style="display:none;" accept=".txt,.json" onchange="executeImportDatabaseBackupFile(event)">
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table class="school-table" id="masterLocationsTable">
-                        <thead>
-                            <tr>
-                                <th rowspan="2" style="width:40px; text-align:center;">Q</th>
-                                <th rowspan="2" style="width:45px; text-align:center;">พิมพ์</th>
-                                <th rowspan="2" style="min-width:180px;">รายชื่อหน่วยงานปลายทาง / ระยะทางจริง</th>
-                                
-                                <th colspan="2" class="nested-header-cell expert-col">Note Top (บน) <br><button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('tl')">ซ้าย</button> <button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('tr')">ขวา</button></th>
-                                <th colspan="2" class="nested-header-cell expert-col">Note Bottom (ล่าง) <br><button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('bl')">ซ้าย</button> <button type="button" class="btn-wizard" style="font-size:9px; padding:1px 4px;" onclick="setAllNotePositions('br')">ขวา</button></th>
-                                <th rowspan="2" class="expert-col" style="min-width:110px;">📋 โน้ตย่อยหัวซอง</th>
-                                <th rowspan="2" class="expert-col" style="width:90px;">🔤 แบบฟอนต์</th>
-                                <th rowspan="2" class="expert-col" style="width:65px;">📏 ขนาด</th>
-                                
-                                <th rowspan="2" style="width:75px; text-align:center;">จัดการ</th>
-                            </tr>
-                            <tr>
-                                <th class="sub-header-cell expert-col">Left (ซ้าย)</th>
-                                <th class="sub-header-cell expert-col">Right (ขวา)</th>
-                                <th class="sub-header-cell expert-col">Left (ซ้าย)</th>
-                                <th class="sub-header-cell expert-col">Right (ขวา)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="masterTableBody">
-                            <!-- แถวถูกเจนด้วยจาวาสคริปต์ -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom UI Dialog containers replacing alert() and confirm() -->
-    <div id="customToastContainer" class="no-print"></div>
-
-    <div id="customConfirmModal" class="no-print">
-        <div class="confirm-box">
-            <h3 id="confirmTitle" style="margin-top:0; color:#1e293b;">ยืนยันการดำเนินการ</h3>
-            <p id="confirmMessage" style="color:#64748b; font-size:14px; margin-bottom:20px;">คุณแน่ใจหรือไม่ที่จะลบรายการนี้?</p>
-            <div class="confirm-actions">
-                <button type="button" id="confirmBtnYes" class="btn btn-success" style="background:#ef4444;">ตกลง</button>
-                <button type="button" id="confirmBtnNo" class="btn btn-secondary" style="background:#64748b;">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="fab-container no-print">
-        <button class="fab-btn" onclick="openInstructionModal()" title="คู่มือเครื่องพิมพ์">💡</button>
-    </div>
-
-    <!-- โมดอลแนะนําเครื่องพิมพ์และการตั้งค่าหน้ากระดาษพ่วงภาพ SVG อธิบายทิศทางการป้อนซอง -->
-    <div class="modal-overlay no-print" id="instructionModalOverlay" onclick="closeInstructionModalOutside(event)">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeInstructionModal()">❌</button>
-            <h3 style="margin-top:0; color:#1e3a8a; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">📋 คู่มือแนะนำเครื่องพิมพ์และการตั้งค่าหน้ากระดาษ</h3>
-            <div style="font-size:13px; line-height:1.6; color:#334155;">
-                <p><strong>1. การป้อนซองจดหมายกับเครื่องพิมพ์ Brother:</strong><br>
+โรงเรียนประสานวิทยามูลนิธิ | 6.784830, 101.295019" rows="4" style="font-size:12px; margin-bottom:6px;"></textarea>
+<button class="btn btn-main" onclick="executeBulkImportProcessing()" style="padding:6px; font-size:12px;" type="button">📥 เริ่มโหลดข้อมูลเข้าตารางทั้งหมด</button>
+</div>
+</div>
+<!-- แถบจัดการสลับคำนำหน้าเรียน/ผู้อำนวยการแบบไดนามิกส์ 2 ปุ่มแยกอิสระ -->
+<div class="control-row" style="background:#f8fafc; padding:8px; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:5px; gap:6px;">
+<div style="display:flex; gap:4px; flex-wrap:wrap;">
+<button class="btn btn-secondary" onclick="checkAllTableLocations(true)" style="padding:4px 8px; font-size:11px;" type="button">☑️ เลือกทั้งหมด</button>
+<button class="btn btn-secondary" onclick="checkAllTableLocations(false)" style="padding:4px 8px; font-size:11px;" type="button">⬜ ยกเลิกทั้งหมด</button>
+<button class="btn btn-secondary" onclick="changeTableSortingMode('Q')" style="padding:4px 8px; font-size:11px; background:#475569;" type="button">🔢 เรียงตามคิว Q</button>
+<button class="btn btn-secondary" onclick="changeTableSortingMode('NAME')" style="padding:4px 8px; font-size:11px; background:#475569;" type="button">🔤 เรียงตามชื่อ</button>
+</div>
+<div style="display:flex; gap:4px; flex-wrap:wrap; border-left:2px solid #cbd5e1; padding-left:8px;">
+<button class="btn btn-wizard" onclick="splitSalutationWizardEngine('LEARN')" style="background:#eff6ff; border-color:#bfdbfe;" type="button">➕ พ่วงคำว่า "เรียน"</button>
+<button class="btn btn-wizard" onclick="splitSalutationWizardEngine('DIRECTOR')" style="background:#f5f3ff; border-color:#ddd6fe;" type="button">🏫 พ่วงคำว่า "ผู้อำนวยการ"</button>
+<button class="btn btn-wizard" onclick="splitSalutationWizardEngine('CLEAR')" style="background:#fff5f5; border-color:#fed7d7; color:#c53030;" type="button">🗑️ ลบคำนำหน้า</button>
+</div>
+</div>
+<div class="control-row" style="margin-bottom:5px; justify-content: flex-end;">
+<div style="display:flex; gap:4px;">
+<button class="btn btn-secondary" onclick="triggerExportDatabaseBackupFile()" style="padding:4px 8px; font-size:11px; background:#64748b;" type="button">💾 โหลดไฟล์สำรอง</button>
+<button class="btn btn-secondary" onclick="document.getElementById('hiddenBackupFileInput').click()" style="padding:4px 8px; font-size:11px; background:#0284c7;" type="button">📤 กู้คืนไฟล์สำรอง</button>
+<input accept=".txt,.json" id="hiddenBackupFileInput" onchange="executeImportDatabaseBackupFile(event)" style="display:none;" type="file"/>
+</div>
+</div>
+<div class="table-container">
+<table class="school-table" id="masterLocationsTable">
+<thead>
+<tr>
+<th rowspan="2" style="width:40px; text-align:center;">Q</th>
+<th rowspan="2" style="width:45px; text-align:center;">พิมพ์</th>
+<th rowspan="2" style="min-width:180px;">รายชื่อหน่วยงานปลายทาง / ระยะทางจริง</th>
+<th class="nested-header-cell expert-col" colspan="2">Note Top (บน) <br/><button class="btn-wizard" onclick="setAllNotePositions('tl')" style="font-size:9px; padding:1px 4px;" type="button">ซ้าย</button> <button class="btn-wizard" onclick="setAllNotePositions('tr')" style="font-size:9px; padding:1px 4px;" type="button">ขวา</button></th>
+<th class="nested-header-cell expert-col" colspan="2">Note Bottom (ล่าง) <br/><button class="btn-wizard" onclick="setAllNotePositions('bl')" style="font-size:9px; padding:1px 4px;" type="button">ซ้าย</button> <button class="btn-wizard" onclick="setAllNotePositions('br')" style="font-size:9px; padding:1px 4px;" type="button">ขวา</button></th>
+<th class="expert-col" rowspan="2" style="min-width:110px;">📋 โน้ตย่อยหัวซอง</th>
+<th class="expert-col" rowspan="2" style="width:90px;">🔤 แบบฟอนต์</th>
+<th class="expert-col" rowspan="2" style="width:65px;">📏 ขนาด</th>
+<th rowspan="2" style="width:75px; text-align:center;">จัดการ</th>
+</tr>
+<tr>
+<th class="sub-header-cell expert-col">Left (ซ้าย)</th>
+<th class="sub-header-cell expert-col">Right (ขวา)</th>
+<th class="sub-header-cell expert-col">Left (ซ้าย)</th>
+<th class="sub-header-cell expert-col">Right (ขวา)</th>
+</tr>
+</thead>
+<tbody id="masterTableBody">
+<!-- แถวถูกเจนด้วยจาวาสคริปต์ -->
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+ Custom UI Dialog containers replacing alert() and confirm() 
+<div class="no-print" id="customToastContainer"></div>
+<div class="no-print" id="customConfirmModal">
+<div class="confirm-box">
+<h3 id="confirmTitle" style="margin-top:0; color:#1e293b;">ยืนยันการดำเนินการ</h3>
+<p id="confirmMessage" style="color:#64748b; font-size:14px; margin-bottom:20px;">คุณแน่ใจหรือไม่ที่จะลบรายการนี้?</p>
+<div class="confirm-actions">
+<button class="btn btn-success" id="confirmBtnYes" style="background:#ef4444;" type="button">ตกลง</button>
+<button class="btn btn-secondary" id="confirmBtnNo" style="background:#64748b;" type="button">ยกเลิก</button>
+</div>
+</div>
+</div>
+<div class="fab-container no-print">
+<button class="fab-btn" onclick="openInstructionModal()" title="คู่มือเครื่องพิมพ์">💡</button>
+</div>
+ โมดอลแนะนําเครื่องพิมพ์และการตั้งค่าหน้ากระดาษพ่วงภาพ SVG อธิบายทิศทางการป้อนซอง 
+<div class="modal-overlay no-print" id="instructionModalOverlay" onclick="closeInstructionModalOutside(event)">
+<div class="modal-content">
+<button class="modal-close" onclick="closeInstructionModal()">❌</button>
+<h3 style="margin-top:0; color:#1e3a8a; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">📋 คู่มือแนะนำเครื่องพิมพ์และการตั้งค่าหน้ากระดาษ</h3>
+<div style="font-size:13px; line-height:1.6; color:#334155;">
+<p><strong>1. การป้อนซองจดหมายกับเครื่องพิมพ์ Brother:</strong><br/>
                 ให้คว่ำหน้าซองจดหมายลงด้านล่างเสมอ และหันส่วนฝาพับซองไปทางซ้ายมือของผู้ใช้งานเสมอ เพื่อล็อกตำแหน่งจดหมายไม่ให้เบี้ยวเอียงขณะวิ่งผ่านลูกกลิ้ง</p>
-                
-                <div style="text-align: center; margin: 15px 0; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                    <svg viewBox="0 0 400 200" width="100%" height="auto" style="max-width: 320px; display: block; margin: 0 auto;">
-                        <rect x="10" y="40" width="380" height="150" rx="10" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="4"/>
-                        <rect x="50" y="30" width="300" height="20" rx="4" fill="#94a3b8" />
-                        <line x1="80" y1="20" x2="320" y2="20" stroke="#64748b" stroke-width="8" stroke-dasharray="10 5" />
-                        
-                        <g transform="translate(110, 70)">
-                            <rect x="0" y="0" width="180" height="90" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="3" />
-                            <path d="M 0,0 L 40,45 L 0,90 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="2" />
-                            <rect x="150" y="65" width="20" height="20" rx="1" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="2 2" />
-                            <path d="M 90,45 L 90,15 M 90,15 L 85,25 M 90,15 L 95,25" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                        </g>
-                        
-                        <text x="200" y="180" font-family="Sarabun, sans-serif" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle">ทิศทางป้อนกระดาษ (Feed Direction)</text>
-                        <text x="65" y="112" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">ฝาพับอยู่ซ้าย</text>
-                        <text x="65" y="127" font-family="Sarabun, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">(Flap Left)</text>
-                        <text x="200" y="108" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">คว่ำหน้าซองลง</text>
-                        <text x="200" y="123" font-family="Sarabun, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">(Face Down)</text>
-                    </svg>
-                </div>
-                
-                <p><strong>2. การตั้งค่าก่อนกดพิมพ์:</strong><br>
-                - เลือกขนาดกระดาษเป็น <code>Envelope DL</code> หรือ <code>220 x 110 mm</code><br>
+<div style="text-align: center; margin: 15px 0; background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+<svg height="auto" style="max-width: 320px; display: block; margin: 0 auto;" viewbox="0 0 400 200" width="100%">
+<rect fill="#e2e8f0" height="150" rx="10" stroke="#cbd5e1" stroke-width="4" width="380" x="10" y="40"></rect>
+<rect fill="#94a3b8" height="20" rx="4" width="300" x="50" y="30"></rect>
+<line stroke="#64748b" stroke-dasharray="10 5" stroke-width="8" x1="80" x2="320" y1="20" y2="20"></line>
+<g transform="translate(110, 70)">
+<rect fill="#ffffff" height="90" rx="2" stroke="#1e293b" stroke-width="3" width="180" x="0" y="0"></rect>
+<path d="M 0,0 L 40,45 L 0,90 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="2"></path>
+<rect fill="none" height="20" rx="1" stroke="#cbd5e1" stroke-dasharray="2 2" stroke-width="2" width="20" x="150" y="65"></rect>
+<path d="M 90,45 L 90,15 M 90,15 L 85,25 M 90,15 L 95,25" fill="none" stroke="#ef4444" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+</g>
+<text fill="#1e293b" font-family="Sarabun, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" x="200" y="180">ทิศทางป้อนกระดาษ (Feed Direction)</text>
+<text fill="#ef4444" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" x="65" y="112">ฝาพับอยู่ซ้าย</text>
+<text fill="#64748b" font-family="Sarabun, sans-serif" font-size="10" text-anchor="middle" x="65" y="127">(Flap Left)</text>
+<text fill="#1e3a8a" font-family="Sarabun, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" x="200" y="108">คว่ำหน้าซองลง</text>
+<text fill="#64748b" font-family="Sarabun, sans-serif" font-size="10" text-anchor="middle" x="200" y="123">(Face Down)</text>
+</svg>
+</div>
+<p><strong>2. การตั้งค่าก่อนกดพิมพ์:</strong><br/>
+                - เลือกขนาดกระดาษเป็น <code>Envelope DL</code> หรือ <code>220 x 110 mm</code><br/>
                 - ตั้งทิศทางเป็น <code>แนวนอน (Landscape)</code> และระยะขอบเลือกเป็น <code>ไม่มี (None)</code> เสมอ</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="printArea"></div>
-
-    <script>
+</div>
+</div>
+</div>
+<div id="printArea"></div>
+<script>
         let currentMainFontSize = 24;
         let activeEditIndex = null;
         let currentSortMode = 'Q'; 
@@ -1232,5 +1377,66 @@
             setTimeout(() => { window.print(); }, 300);
         }
     </script>
+  </main>
+
+  <!-- ===== Footer (Optional) ===== -->
+  <footer class="tool-footer" style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.75rem; border-top:1px solid var(--border-color); margin-top:auto;">
+    Zyde's Toolbox | รพ.สต.ยะรัง
+  </footer>
+
+  <!-- ===== Toast Container (Global) ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ===== Global Scripts ===== -->
+  <script>
+    // ===== Toast System =====
+    window.toast = (message, type = 'info', duration = 4000) => {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `alert alert-${type}`;
+      el.style.cssText = 'pointer-events:auto; min-width:240px; max-width:360px; box-shadow:var(--shadow-lg); animation:slideIn 0.3s ease;';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
+    };
+    // Toast animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+    `;
+    document.head.appendChild(style);
+
+    // ===== Modal Helpers =====
+    window.openModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('open'); };
+    window.closeModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('open'); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+    // ===== Auth Helpers =====
+    window.requireAuth = () => {
+      if (!sessionStorage.getItem('zyde_auth')) {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = 'index.html?return=' + returnUrl;
+        return false;
+      }
+      return true;
+    };
+    window.logout = () => { sessionStorage.removeItem('zyde_auth'); window.location.href = 'index.html'; };
+
+    // ===== Nav Active State =====
+    (function() {
+      const current = window.location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href === current || (current === 'index.html' && href === 'index.html')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+  </script>
+
+  <!-- ===== CHILD: INJECT PAGE-SPECIFIC SCRIPTS HERE ===== -->
+  
 </body>
 </html>
