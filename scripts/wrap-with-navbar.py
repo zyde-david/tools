@@ -273,7 +273,7 @@ html.light {
 
 /* ===== DESKTOP SIDEBAR (collapsible) ===== */
 @media (min-width: 768px) {
-  .tools-fab { display: none; }
+  .tools-fab { display: none !important; }
 
   .tools-sidebar {
     position: fixed;
@@ -408,11 +408,11 @@ html.light {
 
   /* Content offset - auto adjusts with sidebar width */
   body {
-    padding-left: var(--nav-collapsed);
+    padding-left: var(--nav-collapsed) !important;
     transition: padding-left 0.2s ease;
   }
   body:has(.tools-sidebar:hover) {
-    padding-left: var(--nav-width);
+    padding-left: var(--nav-width) !important;
   }
 }
 '''
@@ -619,7 +619,7 @@ def inject_navbar(html_content, current_file):
         style_tag.string = f'''
 /* Ensure content not hidden behind bottom nav on mobile */
 @media (max-width: 767px) {{
-  body {{padding-bottom: calc(var(--nav-height) + 1rem{extra_offset}); }}
+  body {{padding-bottom: calc(var(--nav-height) + 1rem{extra_offset}) !important; }}
   main {{padding-bottom: calc(var(--nav-height) + 1rem{extra_offset}); }}
   .container, .tool-main, #main-content, [role="main"] {{
     padding-bottom: calc(var(--nav-height) + 1rem{extra_offset}) !important;
@@ -632,21 +632,21 @@ def inject_navbar(html_content, current_file):
   }}
 }}
 @media (min-width: 768px) {{
-  body {{padding-left: var(--nav-collapsed); }}
+  body {{padding-left: var(--nav-collapsed) !important; }}
   main, .container, .tool-main, #main-content, [role="main"] {{
-    margin-left: var(--nav-collapsed);
-    max-width: calc(100% - var(--nav-collapsed));
+    margin-left: var(--nav-collapsed) !important;
+    max-width: calc(100% - var(--nav-collapsed)) !important;
   }}
   body:has(.tools-sidebar:hover) {{
-    padding-left: var(--nav-width);
+    padding-left: var(--nav-width) !important;
   }}
   body:has(.tools-sidebar:hover) main,
   body:has(.tools-sidebar:hover) .container,
   body:has(.tools-sidebar:hover) .tool-main,
   body:has(.tools-sidebar:hover) #main-content,
   body:has(.tools-sidebar:hover) [role="main"] {{
-    margin-left: var(--nav-width);
-    max-width: calc(100% - var(--nav-width));
+    margin-left: var(--nav-width) !important;
+    max-width: calc(100% - var(--nav-width)) !important;
   }}
 }}
 '''
