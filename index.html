@@ -199,6 +199,7 @@
 
 <script>
     const PASSWORD_HASH = '88077ce624e416d49dde93dbd5e8babee964f30a6f76fef2e0482a3969316526';
+    const OWNER_EMAIL = 'zodas13031@gmail.com';
     let currentCategory = 'all';
 
     const tools = [
@@ -297,10 +298,19 @@
         btn.innerHTML = '<span>กำลังเชื่อมต่อ Google...</span>';
         btn.disabled = true;
         try {
-            await window.TOOLS_FIREBASE.signInWithGoogle();
+            var result = await window.TOOLS_FIREBASE.signInWithGoogle();
+            var user = result.user;
+            if (!user || user.email !== OWNER_EMAIL) {
+                await window.TOOLS_FIREBASE.signOut();
+                btn.innerHTML = '<svg style="width:18px;height:18px" viewBox="0 0 24 24">...</svg><span>เข้าสู่ระบบด้วย Google Account</span>';
+                btn.disabled = false;
+                document.getElementById('errorMsg').textContent = '❌ เฉพาะ owner เท่านั้น';
+                document.getElementById('errorMsg').style.display = 'block';
+                return;
+            }
             showDashboard();
         } catch(e) {
-            btn.innerHTML = '<svg style="width:18px;height:18px;" viewBox="0 0 24 24">...</svg><span>เข้าสู่ระบบด้วย Google Account</span>';
+            btn.innerHTML = '<svg style="width:18px;height:18px" viewBox="0 0 24 24">...</svg><span>เข้าสู่ระบบด้วย Google Account</span>';
             btn.disabled = false;
             document.getElementById('errorMsg').textContent = '❌ ' + (e.message || 'ไม่สามารถเข้าสู่ระบบได้');
             document.getElementById('errorMsg').style.display = 'block';
@@ -329,14 +339,22 @@
     } else if (window.TOOLS_FIREBASE) {
      window.TOOLS_FIREBASE.onAuthChanged(function(user) {
          if (user && localStorage.getItem('zyde_auth') !== '1') {
-             showDashboard();
+             // Only allow dashboard access for owner email
+             if (user.email === OWNER_EMAIL) {
+                 showDashboard();
+             } else {
+                 window.TOOLS_FIREBASE.signOut();
+             }
          }
          // Update auth status in search section
          updateAuthSearchUI(user);
      });
      // Also check if already signed in
      if (window.TOOLS_FIREBASE.isSignedIn()) {
-         showDashboard();
+         var curUser = window.TOOLS_FIREBASE.getUser();
+         if (curUser && curUser.email === OWNER_EMAIL) {
+             showDashboard();
+         }
      }
      // Initial auth UI render
      setTimeout(function() { updateAuthSearchUI(window.TOOLS_FIREBASE.getUser()); }, 500);
@@ -368,7 +386,13 @@
          });
      } else {
          window.TOOLS_FIREBASE.signInWithGoogle().then(function(result) {
-             updateAuthSearchUI(result.user);
+             var user = result.user;
+             if (!user || user.email !== OWNER_EMAIL) {
+                 window.TOOLS_FIREBASE.signOut();
+                 updateAuthSearchUI(null);
+                 return;
+             }
+             updateAuthSearchUI(user);
          }).catch(function(e) {
              document.getElementById('errorMsg').textContent = '❌ ' + (e.message || 'Login failed');
              document.getElementById('errorMsg').style.display = 'block';
