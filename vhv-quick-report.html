@@ -1142,6 +1142,31 @@ html.light {
             '📋 บันทึกทั่วไป': { icon: '📋', keywords: [] }
         };
 
+        // Nearby Places (ยะรัง) for reverse geo context
+        const NEARBY_PLACES = [
+            { name: '📍 4แยกยะรัง (เทศบาล)', lat: 6.7600, lng: 101.3940, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.1 (บ้านดาโต๊ะ)', lat: 6.7660, lng: 101.4120, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.2 (บ้านบาโงยือริง)', lat: 6.7540, lng: 101.4080, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.3 (บ้านประจาน)', lat: 6.7440, lng: 101.3970, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.4 (บ้านจาและ)', lat: 6.7350, lng: 101.4050, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.5 (บ้านปาแดปาลัส)', lat: 6.7670, lng: 101.3920, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.6 (บ้านจะรา)', lat: 6.7520, lng: 101.3850, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.7 (บ้านบาตู)', lat: 6.7410, lng: 101.3800, radius: 200 },
+            { name: '📍 ต.ยะรัง ม.8 (บ้านโต๊ะชิง)', lat: 6.7600, lng: 101.3780, radius: 200 },
+            { name: '📍 รพ.สต.ยะรัง', lat: 6.7630, lng: 101.3950, radius: 150 },
+        ];
+
+        function findNearestPlace(lat, lng) {
+            if (!lat || !lng) return null;
+            for (const place of NEARBY_PLACES) {
+                const dlat = lat - place.lat;
+                const dlng = lng - place.lng;
+                const dist = Math.sqrt(dlat * dlat + dlng * dlng) * 111320; // deg→m approx
+                if (dist <= place.radius) return { name: place.name, distance: Math.round(dist) };
+            }
+            return null;
+        }
+
         // Application State
         let currentRole = 'VHV';
         let isOfficerAuthenticated = false;
@@ -1568,7 +1593,7 @@ html.light {
             try {
                 recognition.start();
                 startAudioRecorder();
-                // GPS is now manual via button tap
+                captureGps(); // Auto GPS when mic pressed
             } catch (err) {
                 console.error("Start recording error:", err);
             }
@@ -1588,12 +1613,12 @@ html.light {
             const soundWave = document.getElementById('soundWave');
 
             if (recording) {
-                micBtn.className = "w-15 h-15 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white shadow-xl mic-pulse flex flex-col items-center justify-center border-4 border-slate-100";
+                micBtn.className = "w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white shadow-xl mic-pulse flex flex-col items-center justify-center border-4 border-slate-100 shrink-0";
                 micIcon.className = 'fa-solid fa-square text-xl animate-bounce';
                 micBtnText.textContent = 'หยุด';
                 soundWave.classList.remove('hidden');
             } else {
-                micBtn.className = "w-15 h-15 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-xl hover:shadow-2xl flex flex-col items-center justify-center border-4 border-slate-100";
+                micBtn.className = "w-16 h-16 rounded-full bg-gradient-to-tr from-vhv-700 via-vhv-600 to-emerald-400 text-white shadow-xl hover:shadow-2xl active:scale-90 transition-all duration-200 flex flex-col items-center justify-center border-4 border-slate-100 shrink-0";
                 micIcon.className = 'fa-solid fa-microphone text-2xl';
                 micBtnText.textContent = 'พูด';
                 soundWave.classList.add('hidden');
@@ -1751,10 +1776,22 @@ html.light {
                 }
 
                 const gpsLink = (item.location?.lat && item.location?.lng)
-                    ? `<a href="https://maps.google.com/?q=${item.location.lat},${item.location.lng}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center space-x-1 font-mono">
-                         <i class="fa-solid fa-map-pin text-red-500"></i>
-                         <span>${item.location.lat}, ${item.location.lng}</span>
-                       </a>`
+                    ? (() => {
+                        const loc = item.location;
+                        const acc = loc.accuracy ? parseInt(loc.accuracy) : null;
+                        const accStr = acc !== null && acc !== 0 ? `±${acc}ม` : '';
+                        const accColor = acc !== null && acc <= 15 ? 'text-emerald-700' : acc !== null && acc <= 80 ? 'text-amber-600' : 'text-rose-600';
+                        const np = findNearestPlace(parseFloat(loc.lat), parseFloat(loc.lng));
+                        const nearHtml = np ? `<span class="text-[10px] text-slate-600">${np.name}</span>` : '';
+                        return `<div class="flex flex-col items-end gap-0.5">
+                            <a href="https://maps.google.com/?q=${loc.lat},${loc.lng}" target="_blank" class="text-xs font-mono ${accColor} hover:underline flex items-center space-x-1" title="เปิด Google Maps">
+                              <i class="fa-solid fa-map-pin text-red-500"></i>
+                              <span>${loc.lat}, ${loc.lng}</span>
+                              ${accStr ? `<span class="font-bold">${accStr}</span>` : ''}
+                            </a>
+                            ${nearHtml}
+                          </div>`;
+                      })()
                     : `<span class="text-[10px] text-slate-400">ไม่มีพิกัด</span>`;
 
                 let audioPlayerHtml = '';
@@ -1874,6 +1911,11 @@ html.light {
                 const mapLink = (item.location?.lat && item.location?.lng)
                     ? `https://maps.google.com/?q=${item.location.lat},${item.location.lng}`
                     : null;
+                const locAcc = item.location?.accuracy ? parseInt(item.location.accuracy) : null;
+                const locColor = locAcc !== null && locAcc <= 15 ? 'text-emerald-700' : locAcc !== null && locAcc <= 80 ? 'text-amber-600' : 'text-rose-600';
+                const locNear = (item.location?.lat && item.location?.lng)
+                    ? findNearestPlace(parseFloat(item.location.lat), parseFloat(item.location.lng))
+                    : null;
 
                 return `
                     <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 space-y-2">
@@ -1893,8 +1935,13 @@ html.light {
                         </div>
 
                         <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
-                            <span><i class="fa-regular fa-clock"></i> ${item.formattedTime}</span>
-                            <div class="flex items-center space-x-1">
+                            <span class="flex items-center space-x-1.5 truncate">
+                                <i class="fa-regular fa-clock shrink-0"></i>
+                                <span>${item.formattedTime}</span>
+                                ${locNear ? `<span class="text-[10px] text-slate-500 truncate">· ${locNear.name}</span>` : ''}
+                                ${locAcc !== null && locAcc > 0 ? `<span class="text-[10px] font-mono ${locColor}">±${locAcc}ม</span>` : ''}
+                            </span>
+                            <div class="flex items-center space-x-1 shrink-0">
                                 ${reporterPhone ? `<a href="tel:${reporterPhone}" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold">โทร</a>` : ''}
                                 ${mapLink ? `<a href="${mapLink}" target="_blank" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-bold">แผนที่</a>` : ''}
                                 <button onclick="openOfficerModal('${item.id}')" class="bg-vhv-600 text-white px-2 py-0.5 rounded-lg font-bold">จัดการ</button>
