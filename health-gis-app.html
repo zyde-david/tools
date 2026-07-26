@@ -821,17 +821,27 @@ html.light {
 <div class="flex justify-between items-center">
 <div>
 <h2 class="font-extrabold text-slate-800 text-base">เจ้าหน้าที่ รพ.สต. (Admin)</h2>
-<p class="text-xs text-slate-500">สร้างไฟล์แม่แบบแยกหมู่บ้าน และรวมไฟล์รายงาน</p>
+<p class="text-xs text-slate-500">ดูรายการ ส่งออกข้อมูล และจัดการพิกัด</p>
 </div>
 <button class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition" onclick="exitAdminView()">
 <i class="fa-solid fa-xmark"></i> ปิด
           </button>
 </div>
-<!-- Template Generator Section -->
-<div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
-<label class="block text-xs font-bold text-emerald-900">1. สร้างไฟล์แม่แบบ CSV ให้ อสม. แยกรายหมู่:</label>
-<div class="flex gap-2">
-<select class="px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white" id="templateMooSelect">
+<!-- Stats Bar + Sync Status -->
+<div class="flex justify-between items-center text-xs text-slate-500 px-1 bg-slate-50 p-2 rounded-xl border border-slate-200">
+<span id="adminStatsBar">ทั้งหมด 0 หลัง | จัดเก็บแล้ว 0 หลัง | คงเหลือ 0 หลัง</span>
+<span id="adminModeBadge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">💾 Local</span>
+</div>
+<!-- Search & Filters -->
+<div class="flex flex-wrap gap-2 items-center">
+<input class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white" id="adminSearch" oninput="filterAdminTable()" placeholder="🔍 ค้นหาบ้านเลขที่, เจ้าของ..." type="text"/>
+<select class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white" id="adminStatusFilter" onchange="filterAdminTable()">
+<option value="ALL">สถานะทั้งหมด</option>
+<option value="COMPLETED">มีพิกัดแล้ว</option>
+<option value="PENDING">รอพิกัด</option>
+</select>
+<select class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white" id="adminMooFilter" onchange="filterAdminTable()">
+<option value="">ทุกหมู่</option>
 <option value="1">หมู่ 1</option>
 <option value="2">หมู่ 2</option>
 <option value="3">หมู่ 3</option>
@@ -841,29 +851,49 @@ html.light {
 <option value="7">หมู่ 7</option>
 <option value="8">หมู่ 8</option>
 </select>
-<button class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 transition" onclick="downloadMooTemplateCSV()">
-<i class="fa-solid fa-file-csv text-sm"></i> ดาวน์โหลดแม่แบบ CSV
-            </button>
 </div>
-<p class="text-[10px] text-emerald-700">ส่งไฟล์ CSV นี้ให้ อสม. ในกลุ่ม LINE เพื่อกด "นำเข้าไฟล์บ้าน"</p>
+<!-- Export Buttons -->
+<div class="flex flex-wrap gap-2">
+<button class="flex-1 min-w-[80px] py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-xl shadow flex items-center justify-center gap-1 transition" onclick="exportAdminCSV()"><i class="fa-solid fa-file-csv text-xs"></i> CSV</button>
+<button class="flex-1 min-w-[80px] py-2 px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-xl shadow flex items-center justify-center gap-1 transition" onclick="exportAdminJSON()"><i class="fa-solid fa-code text-xs"></i> JSON</button>
+<button class="flex-1 min-w-[80px] py-2 px-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] rounded-xl shadow flex items-center justify-center gap-1 transition" onclick="exportAdminExcel()"><i class="fa-solid fa-file-excel text-xs"></i> Excel</button>
+<button class="flex-1 min-w-[80px] py-2 px-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-[10px] rounded-xl shadow flex items-center justify-center gap-1 transition" onclick="shareAdminData()"><i class="fa-solid fa-share-nodes text-xs"></i> แชร์</button>
 </div>
-<!-- Multiple File Aggregator -->
+<!-- Template & Import (preserved) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+<div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+<label class="block text-xs font-bold text-emerald-900">สร้างแม่แบบ CSV แยกหมู่:</label>
+<div class="flex gap-2">
+<select class="px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white" id="templateMooSelect">
+<option value="1">หมู่ 1</option><option value="2">หมู่ 2</option><option value="3">หมู่ 3</option><option value="4">หมู่ 4</option><option value="5">หมู่ 5</option><option value="6">หมู่ 6</option><option value="7">หมู่ 7</option><option value="8">หมู่ 8</option>
+</select>
+<button class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 transition" onclick="downloadMooTemplateCSV()"><i class="fa-solid fa-file-csv text-sm"></i> ดาวน์โหลด</button>
+</div>
+</div>
 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-<label class="block text-xs font-bold text-slate-800">2. นำเข้าไฟล์รายงาน (.json/.xlsx) จาก อสม. หลายท่าน:</label>
+<label class="block text-xs font-bold text-slate-800">นำเข้าไฟล์รายงาน (.json/.xlsx/.csv):</label>
 <input accept=".json,.xlsx,.csv" class="text-xs text-slate-600 w-full" id="officerImportFiles" multiple="" onchange="importMultipleOsmFiles(event)" type="file"/>
+<button class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-2 transition" onclick="exportMasterExcel()"><i class="fa-solid fa-file-excel text-sm"></i> Export Master Excel</button>
 </div>
-<button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow flex items-center justify-center gap-2 transition" onclick="exportMasterExcel()">
-<i class="fa-solid fa-file-excel text-sm"></i> ส่งออก Master Excel รวมทุกหมู่บ้าน
-        </button>
 </div>
-<!-- Master Record Table -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-<div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
-<span>รายการบ้านทั้งหมดในระบบ</span>
-<span class="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded" id="adminTotalCount">0 หลัง</span>
-</div>
-<div class="max-h-[50vh] overflow-y-auto divide-y divide-slate-100 text-xs" id="adminRecordList">
-<div class="p-4 text-center text-slate-400">ยังไม่มีข้อมูล โปรดนำเข้าไฟล์รายงาน</div>
+<!-- Records Table (sortable, desktop-friendly) -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+<div class="overflow-x-auto max-h-[65vh] overflow-y-auto">
+<table class="w-full text-xs" id="adminRecordTable">
+<thead class="bg-slate-50 sticky top-0 z-10">
+<tr class="text-slate-600 font-semibold">
+<th class="p-2 text-left cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('moo')">หมู่ <span class="sort-icon" data-col="moo"></span></th>
+<th class="p-2 text-left cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('houseNo')">บ้านเลขที่ <span class="sort-icon" data-col="houseNo"></span></th>
+<th class="p-2 text-left cursor-pointer hover:bg-slate-100 whitespace-nowrap hidden sm:table-cell" onclick="sortTable('owner')">เจ้าของบ้าน <span class="sort-icon" data-col="owner"></span></th>
+<th class="p-2 text-left cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('status')">สถานะ <span class="sort-icon" data-col="status"></span></th>
+<th class="p-2 text-left cursor-pointer hover:bg-slate-100 whitespace-nowrap hidden lg:table-cell" onclick="sortTable('timestamp')">เวลา <span class="sort-icon" data-col="timestamp"></span></th>
+<th class="p-2 text-center whitespace-nowrap">แผนที่</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100" id="adminRecordList">
+<tr><td colspan="6" class="p-4 text-center text-slate-400">กำลังโหลดรายการ...</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -890,8 +920,16 @@ html.light {
 </div>
 <script>
     const ADMIN_PASSWORD_DEFAULT = "1234";
+    // === CONFIG ===
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGvePn1Jmdwf5QevTI4-gsS6VAwXOSPHwd6pn7wWhjTIZ_DKjj8OlpHs-lR2NsexzELg/exec';
+    const LOCAL_STORAGE_KEY = 'health_gis_houses';
+    const SORT_KEY = 'health_gis_sort';
+    
     let my25Houses = [];
     let masterAggregatedHouses = [];
+    let sortColumn = 'houseNo';
+    let sortDirection = 'asc';
+    let isOnline = true;
 
     // Default mock data for testing if local storage is empty
     const sampleVillageData = [
@@ -903,7 +941,7 @@ html.light {
 
     window.onload = function() {
       loadSavedProfile();
-      loadStoredHouses();
+      loadMasterData();
     };
 
     function loadSavedProfile() {
@@ -931,6 +969,71 @@ html.light {
     function saveStoredHouses() {
       localStorage.setItem('my_assigned_houses', JSON.stringify(my25Houses));
       updateUI();
+    }
+
+    // === Cloud Sync Functions ===
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(my25Houses));
+      } catch(e) {
+        console.warn('localStorage save failed:', e);
+      }
+    }
+    
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+          my25Houses = JSON.parse(saved);
+          return true;
+        }
+      } catch(e) {}
+      return false;
+    }
+    
+    function loadMasterData() {
+      showToast('กำลังซิงค์ข้อมูลล่าสุด...', 'info');
+      fetch(`${SCRIPT_URL}?action=getMasterData`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            my25Houses = data.map(item => ({
+              moo: item.moo,
+              houseNo: item.houseNo,
+              owner: item.owner || 'ไม่ระบุ',
+              done: !!(item.lat || item.status === 'COMPLETED'),
+              lat: item.lat || '',
+              lng: item.lng || '',
+              accuracy: item.accuracy || '',
+              healthTags: item.healthTags || [],
+              updatedBy: item.updatedBy || '',
+              timestamp: item.timestamp || ''
+            }));
+            saveToLocalStorage();
+            isOnline = true;
+          } else {
+            if (!loadFromLocalStorage()) {
+              my25Houses = [...sampleVillageData];
+            }
+            isOnline = false;
+          }
+          onDataLoaded();
+        })
+        .catch(() => {
+          if (!loadFromLocalStorage()) {
+            my25Houses = [...sampleVillageData];
+          }
+          isOnline = false;
+          onDataLoaded();
+        });
+    }
+    
+    function onDataLoaded() {
+      updateUI();
+      updateAdminStats();
+      renderAdminTable();
+      const mode = isOnline ? '☁️ Cloud' : '💾 Local';
+      showToast(`อัปเดตข้อมูลสำเร็จ (${mode})`, 'success');
     }
 
     // Import CSV/JSON File
@@ -1133,27 +1236,83 @@ html.light {
       const owner = document.getElementById('ownerName').value.trim();
       const lat = document.getElementById('latitude').value;
       const lng = document.getElementById('longitude').value;
+      const acc = document.getElementById('accuracy').value;
       const healthTags = Array.from(document.querySelectorAll('.health-tag-checkbox:checked')).map(cb => cb.value);
 
+      // Auto-GPS if missing
       if (!lat || !lng) {
-        alert("กรุณากดปุ่มดึงพิกัดตำแหน่งบ้านก่อนส่งข้อมูล");
+        showToast('กำลังจับสัญญาณ GPS อัตโนมัติ...', 'info');
+        handleSmartGPS();
+        // Re-try submit after short delay for GPS to populate
+        setTimeout(() => handleFormSubmit(e), 2000);
         return;
       }
 
-      const idx = my25Houses.findIndex(h => String(h.moo) === String(moo) && String(h.houseNo) === String(house));
-      if (idx >= 0) {
-        my25Houses[idx].done = true;
-        my25Houses[idx].lat = lat;
-        my25Houses[idx].lng = lng;
-        my25Houses[idx].owner = owner || my25Houses[idx].owner;
-        my25Houses[idx].healthTags = healthTags;
-      } else {
-        my25Houses.push({ moo, houseNo: house, owner: owner || 'บ้านเพิ่มใหม่', done: true, lat, lng, healthTags });
-      }
+      const osmName = document.getElementById('osmName').value.trim();
 
-      saveStoredHouses();
-      showToast(`บันทึกบ้านเลขที่ ${house} หมู่ ${moo} สำเร็จ!`, 'success');
-      resetForm();
+      const payload = {
+        name: osmName,
+        moo, houseNo: house, owner,
+        lat, lng,
+        accuracy: acc,
+        healthTags,
+        timestamp: new Date().toLocaleString('th-TH')
+      };
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>กำลังบันทึกข้อมูล...</span>`;
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      })
+        .then(r => r.json())
+        .then((res) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>บันทึกลงมือถือ</span>`;
+          if (res.success) {
+            const idx = my25Houses.findIndex(h => String(h.moo) === String(moo) && String(h.houseNo) === String(house));
+            if (idx >= 0) {
+              my25Houses[idx].done = true;
+              my25Houses[idx].lat = lat;
+              my25Houses[idx].lng = lng;
+              my25Houses[idx].accuracy = acc;
+              my25Houses[idx].owner = owner || my25Houses[idx].owner;
+              my25Houses[idx].healthTags = healthTags;
+              my25Houses[idx].updatedBy = osmName;
+              my25Houses[idx].timestamp = payload.timestamp;
+            } else {
+              my25Houses.push({ moo, houseNo: house, owner: owner || 'บ้านเพิ่มใหม่', done: true, lat, lng, accuracy: acc, healthTags, updatedBy: osmName, timestamp: payload.timestamp });
+            }
+            saveToLocalStorage();
+            showToast('☁️ Cloud + 💾 Local saved!', 'success');
+            resetForm();
+            loadMasterData();
+          } else {
+            alert('เกิดข้อผิดพลาด: ' + (res.error || 'ไม่ทราบสาเหตุ'));
+          }
+        })
+        .catch((err) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>บันทึกลงมือถือ</span>`;
+          // Offline: save locally
+          const idx = my25Houses.findIndex(h => String(h.moo) === String(moo) && String(h.houseNo) === String(house));
+          if (idx >= 0) {
+            my25Houses[idx].done = true;
+            my25Houses[idx].lat = lat;
+            my25Houses[idx].lng = lng;
+            my25Houses[idx].accuracy = acc;
+            my25Houses[idx].owner = owner || my25Houses[idx].owner;
+            my25Houses[idx].healthTags = healthTags;
+          } else {
+            my25Houses.push({ moo, houseNo: house, owner: owner || 'บ้านเพิ่มใหม่', done: true, lat, lng, accuracy: acc, healthTags });
+          }
+          saveStoredHouses();
+          showToast('💾 บันทึกข้อมูลลงเครื่องสำเร็จ (ออฟไลน์)', 'success');
+          resetForm();
+        });
     }
 
     function resetForm() {
@@ -1242,6 +1401,8 @@ html.light {
         closeAdminModal();
         document.getElementById('userView').classList.add('hidden');
         document.getElementById('adminView').classList.remove('hidden');
+        updateAdminStats();
+        renderAdminTable();
       } else {
         alert('รหัสผ่านไม่ถูกต้อง');
       }
@@ -1300,26 +1461,33 @@ html.light {
     }
 
     function renderAdminMasterTable() {
-      const container = document.getElementById('adminRecordList');
-      document.getElementById('adminTotalCount').innerText = `${masterAggregatedHouses.length} หลัง`;
-
+      const tbody = document.getElementById('adminRecordList');
+      
       if (masterAggregatedHouses.length === 0) {
-        container.innerHTML = `<div class="p-4 text-center text-slate-400">ยังไม่มีข้อมูล โปรดเลือกไฟล์จาก อสม.</div>`;
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">ยังไม่มีข้อมูล โปรดเลือกไฟล์จาก อสม.</td></tr>';
         return;
       }
 
-      container.innerHTML = masterAggregatedHouses.map(h => `
-        <div class="p-3 hover:bg-slate-50 transition flex justify-between items-start text-xs">
-          <div>
-            <strong class="text-slate-800">หมู่ ${h.moo} บ้านเลขที่ ${h.houseNo}</strong>
-            <p class="text-slate-500">${h.owner || 'ไม่ระบุชื่อ'}</p>
-            ${h.healthTags && h.healthTags.length > 0 ? `<div class="text-[10px] text-emerald-700 font-semibold mt-0.5">${h.healthTags.join(', ')}</div>` : ''}
-          </div>
-          <span class="${(h.done || h.lat) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} text-[10px] font-bold px-2 py-0.5 rounded">
-            ${(h.done || h.lat) ? 'สำรวจแล้ว' : 'ตกสำรวจ'}
-          </span>
-        </div>
-      `).join('');
+      tbody.innerHTML = masterAggregatedHouses.map(h => {
+        const hasLoc = !!(h.lat && h.lng);
+        const accBadge = h.accuracy ? (
+          parseInt(h.accuracy) <= 10 ? `<span class="text-emerald-600">±${h.accuracy} ม.</span>` :
+          parseInt(h.accuracy) <= 30 ? `<span class="text-amber-600">±${h.accuracy} ม.</span>` :
+          `<span class="text-rose-600">±${h.accuracy} ม.</span>`
+        ) : '';
+        const statusBadge = (h.done || h.lat)
+          ? `<span class="text-emerald-600 font-bold">✓ มีพิกัด ${accBadge}</span>`
+          : '<span class="text-amber-600">⏳ รอพิกัด</span>';
+        const tags = h.healthTags && h.healthTags.length > 0 ? h.healthTags.join(', ') : '';
+        return `<tr class="hover:bg-slate-50 transition">
+          <td class="p-2">หมู่ ${h.moo}</td>
+          <td class="p-2 font-medium">${h.houseNo}</td>
+          <td class="p-2 hidden sm:table-cell">${h.owner || '-'}${tags ? '<br><span class="text-[10px] text-emerald-600">'+tags+'</span>' : ''}</td>
+          <td class="p-2">${statusBadge}</td>
+          <td class="p-2 hidden lg:table-cell text-[10px]">${h.timestamp || '-'}</td>
+          <td class="p-2 text-center">${hasLoc ? `<a href="https://maps.google.com/?q=${h.lat},${h.lng}" target="_blank" class="text-emerald-600"><i class="fa-solid fa-map-location-dot"></i></a>` : '-'}</td>
+        </tr>`;
+      }).join('');
     }
 
     function exportMasterExcel() {
@@ -1346,6 +1514,163 @@ html.light {
       setTimeout(() => {
         toast.classList.add('opacity-0', 'pointer-events-none');
       }, 3000);
+    }
+
+    // ====== SORTABLE ADMIN TABLE ======
+    function sortTable(col) {
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = col;
+        sortDirection = 'asc';
+      }
+      updateSortIcons();
+      renderAdminTable();
+    }
+    
+    function updateSortIcons() {
+      document.querySelectorAll('.sort-icon').forEach(el => {
+        const col = el.getAttribute('data-col');
+        if (col === sortColumn) {
+          el.innerHTML = sortDirection === 'asc' ? ' ▲' : ' ▼';
+        } else {
+          el.innerHTML = '';
+        }
+      });
+    }
+    
+    function renderAdminTable() {
+      const tbody = document.getElementById('adminRecordList');
+      const search = document.getElementById('adminSearch')?.value.toLowerCase() || '';
+      const filter = document.getElementById('adminStatusFilter')?.value || 'ALL';
+      const mooFilter = document.getElementById('adminMooFilter')?.value || '';
+      
+      let items = my25Houses.filter(item => {
+        const matchesSearch = item.houseNo.toLowerCase().includes(search) || 
+                              (item.owner && item.owner.toLowerCase().includes(search));
+        const matchesMoo = !mooFilter || item.moo === mooFilter;
+        let matchesStatus = true;
+        if (filter === 'COMPLETED') matchesStatus = !!(item.lat || item.done);
+        if (filter === 'PENDING') matchesStatus = !item.lat && !item.done;
+        return matchesSearch && matchesStatus && matchesMoo;
+      });
+      
+      // Sort
+      items.sort((a, b) => {
+        let va = (a[sortColumn] || '').toString().toLowerCase();
+        let vb = (b[sortColumn] || '').toString().toLowerCase();
+        if (va < vb) return sortDirection === 'asc' ? -1 : 1;
+        if (va > vb) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">ไม่พบรายการที่ค้นหา</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = items.map(item => {
+        const hasLoc = !!(item.lat && item.lng);
+        const acc = item.accuracy ? parseInt(item.accuracy) : 0;
+        const accBadge = hasLoc ? (
+          acc > 0 && acc <= 10 ? `<span class="text-emerald-600 font-bold">±${acc} ม.</span>` :
+          acc > 10 && acc <= 30 ? `<span class="text-amber-600">±${acc} ม.</span>` :
+          acc > 0 ? `<span class="text-rose-600 font-bold">±${acc} ม. ⚠</span>` : ''
+        ) : '';
+        const statusBadge = hasLoc
+          ? `<span class="text-emerald-600 text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded">✓ มีพิกัด ${accBadge}</span>`
+          : '<span class="text-amber-600 text-[10px] bg-amber-50 px-1.5 py-0.5 rounded">⏳ รอพิกัด</span>';
+        return `<tr class="hover:bg-slate-50 transition">
+          <td class="p-2">หมู่ ${item.moo}</td>
+          <td class="p-2 font-medium">${item.houseNo}</td>
+          <td class="p-2 hidden sm:table-cell">${item.owner || '-'}</td>
+          <td class="p-2">${statusBadge}</td>
+          <td class="p-2 hidden lg:table-cell text-[10px]">${item.timestamp || '-'}</td>
+          <td class="p-2 text-center">${hasLoc ? `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="text-emerald-600 hover:text-emerald-800"><i class="fa-solid fa-map-location-dot"></i></a>` : '-'}</td>
+        </tr>`;
+      }).join('');
+    }
+    
+    function filterAdminTable() {
+      renderAdminTable();
+    }
+    
+    function updateAdminStats() {
+      const total = my25Houses.length;
+      const completed = my25Houses.filter(h => h.lat || h.done || h.status === 'COMPLETED').length;
+      const pending = total - completed;
+      const statsBar = document.getElementById('adminStatsBar');
+      const modeBadge = document.getElementById('adminModeBadge');
+      if (statsBar) statsBar.innerText = `ทั้งหมด ${total} หลัง | จัดเก็บแล้ว ${completed} หลัง | คงเหลือ ${pending} หลัง`;
+      if (modeBadge) modeBadge.innerHTML = isOnline ? '☁️ Cloud' : '💾 Local';
+    }
+    
+    // ====== EXPORT FUNCTIONS ======
+    function getExportData() {
+      return my25Houses.map(item => ({
+        'หมู่': item.moo,
+        'บ้านเลขที่': item.houseNo,
+        'เจ้าของบ้าน': item.owner || '',
+        'ละติจูด': item.lat || '',
+        'ลองจิจูด': item.lng || '',
+        'ความแม่นยำ (ม.)': item.accuracy || '',
+        'สถานะ': (item.lat || item.done) ? 'จัดเก็บแล้ว' : 'รอพิกัด',
+        'ผู้บันทึก': item.updatedBy || '',
+        'เวลา': item.timestamp || ''
+      }));
+    }
+    
+    function exportAdminCSV() {
+      const data = getExportData();
+      const headers = Object.keys(data[0] || {});
+      const csvRows = [headers.join(',')];
+      data.forEach(row => {
+        csvRows.push(headers.map(h => `"${(row[h]||'').replace(/"/g,'""')}"`).join(','));
+      });
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `health_gis_export_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+      showToast('ส่งออก CSV สำเร็จ', 'success');
+    }
+    
+    function exportAdminJSON() {
+      const blob = new Blob([JSON.stringify(getExportData(), null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `health_gis_export_${new Date().toISOString().slice(0,10)}.json`;
+      link.click();
+      showToast('ส่งออก JSON สำเร็จ', 'success');
+    }
+    
+    function exportAdminExcel() {
+      if (typeof XLSX === 'undefined') {
+        showToast('กรุณาเชื่อมต่ออินเทอร์เน็ตเพื่อใช้ Export Excel', 'error');
+        return;
+      }
+      const data = getExportData();
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Health GIS Data');
+      XLSX.writeFile(wb, `health_gis_export_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast('ส่งออก Excel สำเร็จ', 'success');
+    }
+    
+    function shareAdminData() {
+      const dataStr = JSON.stringify(getExportData(), null, 2);
+      if (navigator.share) {
+        navigator.share({
+          title: 'ข้อมูล GPS Health GIS',
+          text: dataStr,
+        }).catch(() => {});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(dataStr).then(() => {
+          showToast('คัดลอกข้อมูลไปคลิปบอร์ดแล้ว', 'success');
+        });
+      } else {
+        showToast('กรุณากด Export เพื่อแชร์ข้อมูล', 'info');
+      }
     }
   </script>
 
