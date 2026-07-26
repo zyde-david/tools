@@ -52,6 +52,25 @@
         .btn-logout { padding: 8px 16px; background: #334155; color: #94a3b8; border: 1px solid #475569; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
         .btn-logout:hover { background: #ef4444; color: white; border-color: #ef4444; }
 
+        /* Sticky search header */
+        .dash-sticky {
+            position: sticky; top: 0; z-index: 50;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding-top: 12px;
+            margin-bottom: 14px;
+        }
+        /* Auth status in search section */
+        .auth-status-search {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 16px; margin-bottom: 8px;
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+            font-size: 0.8rem;
+        }
+        .auth-status-search .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #94a3b8; flex-shrink: 0; }
+        .auth-status-search .name { color: #cbd5e1; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .auth-status-search .btn-auth { padding: 2px 10px; border-radius: 4px; border: none; background: #334155; color: #e2e8f0; font-size: 0.7rem; cursor: pointer; font-weight: 600; white-space: nowrap; }
+        .auth-status-search .btn-auth:hover { background: #475569; }
+
         /* Search + filter bar */
         .search-bar {
             background: #1e293b; border: 1px solid #334155; border-radius: 10px;
@@ -139,12 +158,22 @@
 <!-- ===== DASHBOARD ===== -->
 <div id="dashboard">
 
+    <!-- Sticky Header -->
+    <div class="dash-sticky">
+
     <!-- Top Bar -->
     <div class="dash-topbar">
         <h1>🛠️ Zyde's Toolbox <span class="tool-count" id="toolCount">7</span></h1>
         <div class="right">
             <button onclick="logout()" class="btn-logout">🚪 ออกจากระบบ</button>
         </div>
+    </div>
+
+    <!-- Auth Status -->
+    <div class="auth-status-search" id="authStatusSearch">
+        <span class="dot" id="authDotSearch"></span>
+        <span class="name" id="authNameSearch">Cloud Sync</span>
+        <button class="btn-auth" id="authBtnSearch" onclick="toggleAuthSearch()">Login</button>
     </div>
 
     <!-- Search -->
@@ -157,6 +186,8 @@
     <div class="cat-tabs" id="categoryTabs">
         <span class="cat-tab active" data-cat="all" onclick="setCategory('all')">🔧 ทั้งหมด</span>
     </div>
+
+    </div><!-- /dash-sticky -->
 
     <!-- Tool Grid -->
     <div class="tool-grid" id="toolGrid"></div>
@@ -292,16 +323,54 @@
     if (localStorage.getItem('zyde_auth') === '1') {
         showDashboard();
     } else if (window.TOOLS_FIREBASE) {
-        window.TOOLS_FIREBASE.onAuthChanged(function(user) {
-            if (user && localStorage.getItem('zyde_auth') !== '1') {
-                showDashboard();
-            }
-        });
-        // Also check if already signed in
-        if (window.TOOLS_FIREBASE.isSignedIn()) {
-            showDashboard();
-        }
-    }
+     window.TOOLS_FIREBASE.onAuthChanged(function(user) {
+         if (user && localStorage.getItem('zyde_auth') !== '1') {
+             showDashboard();
+         }
+         // Update auth status in search section
+         updateAuthSearchUI(user);
+     });
+     // Also check if already signed in
+     if (window.TOOLS_FIREBASE.isSignedIn()) {
+         showDashboard();
+     }
+     // Initial auth UI render
+     setTimeout(function() { updateAuthSearchUI(window.TOOLS_FIREBASE.getUser()); }, 500);
+ }
+
+ function updateAuthSearchUI(user) {
+     var dot = document.getElementById('authDotSearch');
+     var name = document.getElementById('authNameSearch');
+     var btn = document.getElementById('authBtnSearch');
+     if (!dot) return;
+     if (user) {
+         dot.style.background = '#22c55e';
+         name.textContent = user.displayName || user.email || user.uid.slice(0,8);
+         btn.textContent = 'Logout';
+         btn.onclick = function() { window.TOOLS_FIREBASE.signOut(); };
+     } else {
+         dot.style.background = '#94a3b8';
+         name.textContent = 'Cloud Sync';
+         btn.textContent = 'Login';
+         btn.onclick = toggleAuthSearch;
+     }
+ }
+
+ function toggleAuthSearch() {
+     if (!window.TOOLS_FIREBASE) return;
+     if (window.TOOLS_FIREBASE.isSignedIn()) {
+         window.TOOLS_FIREBASE.signOut().then(function() {
+             updateAuthSearchUI(null);
+         });
+     } else {
+         window.TOOLS_FIREBASE.signInWithGoogle().then(function(result) {
+             updateAuthSearchUI(result.user);
+         }).catch(function(e) {
+             document.getElementById('errorMsg').textContent = '❌ ' + (e.message || 'Login failed');
+             document.getElementById('errorMsg').style.display = 'block';
+         });
+     }
+ }
 
     renderCategories();
     filterTools();
