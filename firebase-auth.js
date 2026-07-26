@@ -97,7 +97,15 @@ const __TOOLS_FIREBASE_CONFIG = {"apiKey": "AIzaSyAnxs-PKm4-3f_GREnBZwuLi7B5yiqM
     s.src = src;
     s.onload = cb;
     s.onerror = function() { console.error('[FirebaseAuth] Failed to load:', src); };
-    document.body.appendChild(s);
+    var target = document.body || document.head || document.documentElement;
+    if (target) {
+      target.appendChild(s);
+    } else {
+      // document not ready yet, defer to DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function() {
+        (document.body || document.head || document.documentElement).appendChild(s);
+      });
+    }
   }
 
   // Auth state
