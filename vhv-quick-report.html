@@ -10,6 +10,8 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script src="firebase-auth.js"></script>
+<script src="tools-auth-injector.js"></script>
 <script>
         tailwind.config = {
             theme: {
@@ -77,54 +79,51 @@
             }
         }
     </style>
-<!-- Firebase Modular SDK -->
+<!-- Firebase Auth via shared module -->
+<script>
+// Bridge TOOLS_FIREBASE (compat) + modular Firestore functions for VHV
+(function() {
+  function tryInit() {
+    if (!window.TOOLS_FIREBASE || !window.TOOLS_FIREBASE.getUser) {
+      return setTimeout(tryInit, 200);
+    }
+    window.db = TOOLS_FIREBASE.getDb ? TOOLS_FIREBASE.getDb() : null;
+    window.auth = TOOLS_FIREBASE.getAuth ? TOOLS_FIREBASE.getAuth() : null;
+    window.appId = 'vhv-quick-report';
+
+    TOOLS_FIREBASE.onAuthChanged(function(user) {
+      window.currentUser = user;
+      if (user) {
+        if (window.onFirebaseUserChanged) window.onFirebaseUserChanged(user);
+        if (window.onFirebaseReady) window.onFirebaseReady();
+      } else {
+        if (window.onFirebaseUserChanged) window.onFirebaseUserChanged(null);
+      }
+    });
+    if (TOOLS_FIREBASE.isSignedIn()) {
+      if (window.onFirebaseReady) window.onFirebaseReady();
+    }
+  }
+  tryInit();
+})();
+</script>
 <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        window.db = null;
-        window.auth = null;
-        window.currentUser = null;
-        window.GoogleAuthProvider = GoogleAuthProvider;
-        window.signInWithPopup = signInWithPopup;
-        window.signOut = signOut;
-        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'vhv-quick-report';
-
-        window.doc = doc;
-        window.collection = collection;
-        window.setDoc = setDoc;
-        window.onSnapshot = onSnapshot;
-        window.updateDoc = updateDoc;
-        window.deleteDoc = deleteDoc;
-
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                window.auth = getAuth(app);
-                window.db = getFirestore(app);
-
-                const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                
-                if (initialToken) {
-                    signInWithCustomToken(window.auth, initialToken).catch(() => signInAnonymously(window.auth));
-                } else {
-                    signInAnonymously(window.auth);
-                }
-
-                onAuthStateChanged(window.auth, (user) => {
-                    if (user) {
-                        window.currentUser = user;
-                        if (window.onFirebaseUserChanged) window.onFirebaseUserChanged(user);
-                        if (window.onFirebaseReady) window.onFirebaseReady();
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn("Firebase fallback:", e);
-        }
-    </script>
+// Import modular Firestore CRUD functions for VHV cloud sync
+import { doc, collection, setDoc, onSnapshot, updateDoc, deleteDoc, getDoc, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+window.doc = doc;
+window.collection = collection;
+window.setDoc = setDoc;
+window.onSnapshot = onSnapshot;
+window.updateDoc = updateDoc;
+window.deleteDoc = deleteDoc;
+window.getDoc = getDoc;
+window.query = query;
+window.where = where;
+window.orderBy = orderBy;
+window.getDocs = getDocs;
+// Signal that Firestore functions are loaded
+window.dispatchEvent(new Event('firestore-modules-ready'));
+</script>
 <style>
 /* ===== GPS CIRCLE BUTTON ===== */
 .gps-btn-circle {
@@ -2120,16 +2119,14 @@ html.light {
         }
 
         async function signInWithGoogleAccount() {
-            if (!window.auth || !window.GoogleAuthProvider || !window.signInWithPopup) {
-                showToast("ระบบสิทธิ์ Google ไม่พร้อมใช้งาน", "error");
+            if (!window.TOOLS_FIREBASE || !window.TOOLS_FIREBASE.signInWithGoogle) {
+                showToast("ระบบ Firebase ไม่พร้อมทำงาน", "error");
                 return;
             }
             try {
                 showToast("กำลังเชื่อมต่อ Google...", "info");
-                const provider = new window.GoogleAuthProvider();
-                const result = await window.signInWithPopup(window.auth, provider);
+                const result = await window.TOOLS_FIREBASE.signInWithGoogle();
                 const user = result.user;
-
                 showToast(`ยินดีต้อนรับ ${user.displayName || user.email}`, "success");
                 updateAccountSyncUI(user);
                 listenToPersonalNotes();
