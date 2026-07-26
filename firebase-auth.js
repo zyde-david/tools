@@ -46,16 +46,18 @@ const __TOOLS_FIREBASE_CONFIG = {"apiKey": "AIzaSyAnxs-PKm4-3f_GREnBZwuLi7B5yiqM
   let db = null;
   let currentUser = null;
   const listeners = [];
+  let initPromise = null;
 
   const api = {};
 
   // Init: load Firebase compat SDK then init
   api.init = function() {
     if (initialized) return Promise.resolve();
+    if (initPromise) return initPromise;
     if (!CONFIG.apiKey || !CONFIG.projectId) {
       return Promise.reject(new Error('[FirebaseAuth] No config'));
     }
-    return new Promise(function(resolve, reject) {
+    initPromise = new Promise(function(resolve, reject) {
       loadScript('https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js', function() {
         loadScript('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js', function() {
           loadScript('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js', function() {
@@ -105,12 +107,16 @@ const __TOOLS_FIREBASE_CONFIG = {"apiKey": "AIzaSyAnxs-PKm4-3f_GREnBZwuLi7B5yiqM
 
   // Sign In with Google — popup
   api.signInWithGoogle = function() {
-    if (!auth) return Promise.reject(new Error('[FirebaseAuth] Not initialized'));
-    var provider = new firebase.auth.GoogleAuthProvider();
-    // Request these scopes so we can identify the user across devices
-    provider.addScope('profile');
-    provider.addScope('email');
-    return auth.signInWithPopup(provider);
+    var self = this;
+    // Wait for init to complete first
+    return (initPromise || Promise.resolve()).then(function() {
+      if (!auth) throw new Error('[FirebaseAuth] Not initialized');
+      var provider = new firebase.auth.GoogleAuthProvider();
+      // Request these scopes so we can identify the user across devices
+      provider.addScope('profile');
+      provider.addScope('email');
+      return auth.signInWithPopup(provider);
+    });
   };
 
   // Sign Out
