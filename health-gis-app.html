@@ -30,6 +30,91 @@
       font-size: 1.05rem;
     }
   </style>
+<style>
+/* ===== GPS CIRCLE BUTTON ===== */
+.gps-btn-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid #cbd5e1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+  margin: 0 auto;
+}
+.gps-btn-circle:not(.gps-state-done):not(.gps-state-inaccurate):not(.gps-state-error):hover {
+  border-color: #6366f1;
+  background: #e0e7ff;
+  transform: scale(1.05);
+}
+.gps-btn-circle.gps-state-ready { border-color: #cbd5e1; background: #ffffff; }
+.gps-btn-circle.gps-state-ready .gps-btn-icon { color: #6366f1; }
+.gps-btn-circle.gps-state-done.gps-accurate { border-color: #10b981; background: #ecfdf5; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+.gps-btn-circle.gps-state-done.gps-accurate .gps-btn-icon { color: #10b981; }
+.gps-btn-circle.gps-state-done.gps-inaccurate { border-color: #f59e0b; background: #fffbeb; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+.gps-btn-circle.gps-state-done.gps-inaccurate .gps-btn-icon { color: #f59e0b; }
+.gps-btn-circle.gps-state-error { border-color: #ef4444; background: #fef2f2; box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+.gps-btn-circle.gps-state-error .gps-btn-icon { color: #ef4444; }
+.gps-btn-circle.gps-state-loading { border-color: #6366f1; background: #e0e7ff; animation: gps-pulse 1.5s ease-in-out infinite; }
+.gps-btn-circle.gps-state-loading .gps-btn-icon { color: #6366f1; animation: spin 1s linear infinite; }
+@keyframes gps-pulse { 0%,100% { box-shadow: 0 0 0 3px rgba(99,102,241,0.2); } 50% { box-shadow: 0 0 0 8px rgba(99,102,241,0.1); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.gps-btn-icon { font-size: 1.75rem; transition: all 0.3s ease; }
+.gps-btn-tooltip {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  border: 1px solid #334155;
+}
+.gps-btn-circle:hover .gps-btn-tooltip { opacity: 1; }
+.gps-status-display {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  margin-top: 0.5rem;
+  min-height: 1.5rem;
+  transition: all 0.3s ease;
+}
+.gps-status-display.has-data { background: #f8fafc; border-color: #6366f1; }
+.gps-status-display.accurate { border-color: #10b981; background: #ecfdf5; color: #065f46; }
+.gps-status-display.inaccurate { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+.gps-status-display.error { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+.accuracy-warning {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: none;
+}
+.accuracy-warning.visible { display: block; animation: slideDown 0.3s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.accuracy-warning-content { display: flex; align-items: flex-start; gap: 0.5rem; }
+.accuracy-warning-icon { color: #f59e0b; font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+.accuracy-warning-text { flex: 1; font-size: 0.75rem; color: #92400e; line-height: 1.5; }
+.accuracy-warning-text strong { display: block; margin-bottom: 0.25rem; color: #b45309; }
+.calibration-steps { margin-top: 0.5rem; padding-left: 1.5rem; font-size: 0.7rem; color: #78350f; line-height: 1.8; }
+.calibration-steps li { position: relative; }
+</style>
 <style>/* ============================================================
    RESPONSIVE NAVIGATION (Injected)
    Mobile: Fixed bottom bar (Search, Home, Note)
@@ -589,10 +674,28 @@ html.light {
 <p class="text-xs text-emerald-100">ดึงพิกัด GPS &amp; ค้นหาบ้านตรงหน้าให้อัตโนมัติ</p>
 </div>
 </div>
-<button class="w-full py-3.5 px-4 bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-900 font-extrabold rounded-xl shadow-lg flex items-center justify-center gap-2 transition text-base big-btn" id="btnSmartGPS" onclick="handleSmartGPS()" type="button">
-<i class="fa-solid fa-bullseye text-xl text-slate-900"></i>
-<span id="btnText">📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่</span>
+<div class="flex flex-col items-center space-y-2 py-2">
+<button class="gps-btn-circle gps-state-ready" id="gpsBtn" onclick="handleSmartGPS()" type="button" aria-label="ดึงพิกัด GPS">
+<i class="fa-solid fa-crosshairs gps-btn-icon" id="gpsBtnIcon"></i>
+<span class="gps-btn-tooltip" id="gpsBtnTooltip">พร้อมดึงพิกัด</span>
 </button>
+<div class="gps-status-display" id="gpsStatus" role="status" aria-live="polite">ยังไม่ได้ดึงพิกัด</div>
+<div class="accuracy-warning" id="accuracyWarning" role="alert">
+<div class="accuracy-warning-content">
+<i class="fa-solid fa-triangle-exclamation accuracy-warning-icon"></i>
+<div class="accuracy-warning-text">
+<strong>อาจไม่แม่นยำ</strong>
+โปรดอยู่กลางแจ้ง หรือปรับเทียบ GPS
+<ul class="calibration-steps">
+<li>ออกจากอาคาร/ตึก ไปยืนกลางแจ้งโล่ง</li>
+<li>เปิด Google Maps แล้วโยนโทรศัพท์แบบเลข 8 (Figure-8) 3-5 รอบ</li>
+<li>รอ GPS ค้นหาดาวเทียม 10-30 วินาที</li>
+<li>ลองดึงพิกัดใหม่</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
 <button class="w-full py-2 px-3 bg-teal-900/50 hover:bg-teal-900/80 text-emerald-100 text-xs font-bold rounded-xl border border-teal-500/40 flex items-center justify-center gap-1.5 transition" onclick="enableNewHouseMode()" type="button">
 <i class="fa-solid fa-plus-circle text-amber-300"></i>
 <span>พบบ้านใหม่นอกระบบ? (กดตรงนี้เพื่อเพิ่ม)</span>
@@ -674,7 +777,6 @@ html.light {
 </div>
 </div>
 <!-- Hidden GPS Fields -->
-<div class="text-[11px] text-center text-slate-500 font-mono font-semibold" id="gpsStatus">ยังไม่ได้ดึงพิกัด</div>
 <input id="latitude" required="" type="hidden"/>
 <input id="longitude" required="" type="hidden"/>
 <input id="accuracy" type="hidden"/>
@@ -886,17 +988,19 @@ html.light {
 
     // One-Smart-Button GPS Handler
     function handleSmartGPS() {
-      const btnText = document.getElementById('btnText');
-      const alertBox = document.getElementById('gpsAlertBox');
+      const btn = document.getElementById('gpsBtn');
       const status = document.getElementById('gpsStatus');
+      const warning = document.getElementById('accuracyWarning');
 
-      btnText.innerText = "กำลังวัดตำแหน่ง GPS...";
-      alertBox.classList.remove('hidden');
-      alertBox.className = "p-3.5 rounded-2xl text-xs bg-sky-50 text-sky-900 border border-sky-200 shadow-sm";
-      alertBox.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <strong>กำลังจับสัญญาณ GPS และค้นหาบ้านใกล้เคียง...</strong>`;
+      btn.className = "gps-btn-circle gps-state-loading";
+      document.getElementById('gpsBtnIcon').className = "fa-solid fa-spinner gps-btn-icon";
+      document.getElementById('gpsBtnTooltip').textContent = "กำลังค้นหาสัญญาณดาวเทียม...";
+      status.className = "gps-status-display text-amber-600 animate-pulse";
+      status.innerText = "กำลังวัดตำแหน่ง GPS...";
+      warning.classList.remove('visible');
 
       if (!navigator.geolocation) {
-        alert("อุปกรณ์นี้ไม่รองรับสัญญาณ GPS");
+        setGpsError("อุปกรณ์นี้ไม่รองรับสัญญาณ GPS");
         return;
       }
 
@@ -910,18 +1014,30 @@ html.light {
           document.getElementById('longitude').value = lng.toFixed(6);
           document.getElementById('accuracy').value = acc;
 
-          btnText.innerText = "📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่";
-          status.innerText = `พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${acc} ม.)`;
+          const isAccurate = acc <= 10;
+          btn.className = `gps-btn-circle gps-state-done ${isAccurate ? 'gps-accurate' : 'gps-inaccurate'}`;
+          document.getElementById('gpsBtnIcon').className = `fa-solid ${isAccurate ? 'fa-location-dot' : 'fa-location-crosshairs'} gps-btn-icon`;
+          document.getElementById('gpsBtnTooltip').textContent = isAccurate ? "พิกัดแม่นยำ ✓" : "พิกัดอาจไม่แม่นยำ ⚠";
+
+          status.className = `gps-status-display has-data ${isAccurate ? 'accurate' : 'inaccurate'}`;
+          status.innerHTML = `ละติจูด: ${lat.toFixed(6)}, ลองจิจูด: ${lng.toFixed(6)} (คลาดเคลื่อน ±${acc} ม.)`;
+
+          if (!isAccurate) {
+            warning.classList.add('visible');
+          }
 
           if (acc > 30) {
-            alertBox.className = "p-3.5 rounded-2xl text-xs bg-amber-50 text-amber-900 border border-amber-300 shadow-sm";
+            const alertBox = document.getElementById('gpsAlertBox');
+            alertBox.className = "hidden p-3.5 rounded-2xl text-xs bg-amber-50 text-amber-900 border border-amber-300 shadow-sm";
             alertBox.innerHTML = `⚠️ <strong>สัญญาณ GPS ไม่ชัดเจน (ความคลาดเคลื่อน ±${acc} เมตร)</strong><br>กรุณาเดินออกมายืนกลางแจ้งเพื่อความแม่นยำสูงสุด`;
+            alertBox.classList.remove('hidden');
             return;
           }
 
           const nearest = findNearestHouse(lat, lng, my25Houses);
 
           if (nearest && nearest.house) {
+            const alertBox = document.getElementById('gpsAlertBox');
             document.getElementById('mooNo').value = nearest.house.moo;
             document.getElementById('houseNo').value = nearest.house.houseNo;
             document.getElementById('ownerName').value = nearest.house.owner || '';
@@ -934,18 +1050,37 @@ html.light {
 
             alertBox.className = "p-3.5 rounded-2xl text-xs bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-sm";
             alertBox.innerHTML = `🎯 <strong>พบบ้านที่ใกล้ที่สุด!</strong> คุณยืนอยู่หน้า <strong>หมู่ ${nearest.house.moo} บ้านเลขที่ ${nearest.house.houseNo}</strong> (${nearest.house.owner || 'ไม่ระบุเจ้าของ'}) ${recalcText}`;
+            alertBox.classList.remove('hidden');
           } else {
+            const alertBox = document.getElementById('gpsAlertBox');
             alertBox.className = "p-3.5 rounded-2xl text-xs bg-blue-50 text-blue-900 border border-blue-200 shadow-sm";
             alertBox.innerHTML = `📍 <strong>ดึงพิกัดสำเร็จ (±${acc} เมตร)</strong> ไม่พบบ้านตรงกันในรัศมีใกล้เคียง สามารถพิมพ์เลขที่บ้านเองได้ทันที`;
+            alertBox.classList.remove('hidden');
           }
         },
         (err) => {
-          btnText.innerText = "📍 กดตรงนี้เพื่อเช็กพิกัดบ้านที่ยืนอยู่";
+          setGpsError(err.code === err.PERMISSION_DENIED ? "ไม่ได้รับอนุญาตเข้าถึงตำแหน่ง โปรดอนุญาตในตั้งค่า" : 
+                     err.code === err.TIMEOUT ? "ค้นหาสัญญาณดาวเทียมเกินเวลา ลองใหม่อีกครั้ง" : 
+                     "เกิดข้อผิดพลาด: โปรดเปิด GPS/Location ของมือถือ");
+          const alertBox = document.getElementById('gpsAlertBox');
           alertBox.className = "p-3.5 rounded-2xl text-xs bg-rose-50 text-rose-800 border border-rose-200 shadow-sm";
           alertBox.innerHTML = "❌ ไม่สามารถจับพิกัด GPS ได้ โปรดตรวจสอบการเปิด Location Services บนอุปกรณ์";
+          alertBox.classList.remove('hidden');
         },
-        { enableHighAccuracy: true, timeout: 12000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
+    }
+
+    function setGpsError(msg) {
+      const btn = document.getElementById('gpsBtn');
+      const status = document.getElementById('gpsStatus');
+      const warning = document.getElementById('accuracyWarning');
+      btn.className = "gps-btn-circle gps-state-error";
+      document.getElementById('gpsBtnIcon').className = "fa-solid fa-satellite-dish gps-btn-icon";
+      document.getElementById('gpsBtnTooltip').textContent = "ไม่สามารถดึงพิกัดได้";
+      status.className = "gps-status-display error";
+      status.innerText = msg;
+      warning.classList.remove('visible');
     }
 
     function enableNewHouseMode() {
@@ -1026,10 +1161,15 @@ html.light {
       document.getElementById('latitude').value = '';
       document.getElementById('longitude').value = '';
       document.getElementById('accuracy').value = '';
+      document.getElementById('gpsStatus').className = 'gps-status-display';
       document.getElementById('gpsStatus').innerText = 'ยังไม่ได้ดึงพิกัด';
       document.getElementById('gpsAlertBox').className = "hidden";
       document.getElementById('duplicateAlert').className = "hidden";
       document.querySelectorAll('.health-tag-checkbox').forEach(cb => cb.checked = false);
+      document.getElementById('gpsBtn').className = "gps-btn-circle gps-state-ready";
+      document.getElementById('gpsBtnIcon').className = "fa-solid fa-crosshairs gps-btn-icon";
+      document.getElementById('gpsBtnTooltip').textContent = "พร้อมดึงพิกัด";
+      document.getElementById('accuracyWarning').classList.remove('visible');
     }
 
     function onAddressChange() {
