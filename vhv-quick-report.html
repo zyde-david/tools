@@ -616,17 +616,15 @@ html.light {
 </style><style>
 /* Ensure content not hidden behind bottom nav on mobile */
 @media (max-width: 767px) {
-  .tools-fab { display: none !important; }
+  /* Page's own bottom bar sits ABOVE the generic FAB */
+  [data-has-own-bottom-bar] nav.fixed.bottom-0,
+  [data-has-own-bottom-bar] nav[class*="bottom-0"] {
+    bottom: var(--nav-height) !important;
+  }
   body {padding-bottom: calc(var(--nav-height) + 1rem + 80px) !important; }
   main {padding-bottom: calc(var(--nav-height) + 1rem + 80px); }
   .container, .tool-main, #main-content, [role="main"] {
     padding-bottom: calc(var(--nav-height) + 1rem + 80px) !important;
-  }
-  /* Hide page's own bottom bar on mobile - we provide the nav */
-  [data-has-own-bottom-bar] nav.fixed.bottom-0,
-  [data-has-own-bottom-bar] nav[class*="bottom-0"],
-  [data-has-own-bottom-bar] [class*="bottom-action-bar"] {
-    display: none !important;
   }
 }
 @media (min-width: 768px) {
@@ -648,7 +646,7 @@ html.light {
   }
 }
 </style></head>
-<body class="bg-slate-100 min-h-screen text-slate-800 pb-28"><!-- ===== Responsive Navigation ===== -->
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-28" data-has-own-bottom-bar="true"><!-- ===== Responsive Navigation ===== -->
 <!-- Mobile: 3-button bottom bar -->
 <nav aria-label="เครื่องมือนำทาง" class="tools-fab" role="navigation">
 <button aria-label="ค้นหา" class="fab-btn fab-search" data-i18n="search" id="fabSearchBtn" title="ค้นหา">
