@@ -124,12 +124,16 @@
         .tool-hidden { display: none !important; }
 
         @media (max-width: 640px) {
-            #dashboard { padding: 12px; }
+            #dashboard { padding: 8px; }
             .tool-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .tool-card { padding: 14px; }
             .tool-card h2 { font-size: 0.85rem; }
             .dash-topbar { flex-wrap: wrap; gap: 8px; }
-            .dash-topbar h1 { font-size: 1.1rem; }
+            .dash-topbar h1 { font-size: 1rem; }
+            .dash-sticky { padding-top: 6px; }
+            .auth-status-search { padding: 4px 10px; font-size: 0.7rem; margin-bottom: 4px; }
+            .search-bar { padding: 8px 10px; }
+            .cat-tabs { margin-bottom: 12px; }
         }
     </style>
 <script src="firebase-auth.js"></script>
