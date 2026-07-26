@@ -1,3 +1,5 @@
+const __TOOLS_FIREBASE_CONFIG = {"apiKey": "AIzaSyAnxs-PKm4-3f_GREnBZwuLi7B5yiqMBDU", "authDomain": "itsm-tracker.firebaseapp.com", "projectId": "itsm-tracker", "storageBucket": "itsm-tracker.firebasestorage.app", "messagingSenderId": "18939555642", "appId": "1:18939555642:web:17e8ff6ab679636532aa03"};
+
 // Firebase Auth Module v1.0 — Shared across all tools
 // Auto-loads Firebase SDK + provides signIn/signOut/data sync for Google Accounts
 (function() {
