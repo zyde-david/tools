@@ -278,6 +278,9 @@
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('dashboard').style.display = 'none';
         document.getElementById('passwordInput').value = '';
+        // Revert: center login card vertically
+        document.body.style.alignItems = 'center';
+        document.body.style.paddingTop = '0';
     }
 
     function showDashboard() {
@@ -285,6 +288,9 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         document.getElementById('errorMsg').style.display = 'none';
+        // Fix: align body to top so all cards are clickable
+        document.body.style.alignItems = 'flex-start';
+        document.body.style.paddingTop = '20px';
     }
 
     async function signInWithGoogleIndex() {
