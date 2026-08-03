@@ -260,6 +260,7 @@
             window.TOOLS_FIREBASE.signOut();
         }
         localStorage.removeItem('zyde_auth');
+        sessionStorage.removeItem('zyde_auth');
         document.getElementById('loginScreen').style.display = 'block';
         document.getElementById('dashboard').style.display = 'none';
         document.getElementById('passwordInput').value = '';
@@ -270,6 +271,7 @@
 
     function showDashboard() {
         localStorage.setItem('zyde_auth', '1');
+        sessionStorage.setItem('zyde_auth', '1');
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         document.getElementById('errorMsg').style.display = 'none';
