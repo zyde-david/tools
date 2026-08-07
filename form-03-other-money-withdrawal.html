@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบ 3 - ฎีกาเบิกเงินอื่น</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<!-- SheetJS for Excel Import/Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 4mm 4mm 4mm 4mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "TH SarabunPSK", "TH Sarabun PSK", "TH Sarabun New", "Sarabun", sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: #eef2f5;
+    font-size: 16pt;
+    line-height: 1.12;
+    color: #000;
+  }
+
+  /* Navigation Toolbar */
+  .toolbar {
+    background: #ffffff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    max-width: 205mm;
+    margin: 0 auto 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .btn-primary { background: #007bff; color: #fff; }
+  .btn-primary:hover { background: #0056b3; }
+  
+  .btn-success { background: #28a745; color: #fff; }
+  .btn-success:hover { background: #218838; }
+
+  .btn-secondary { background: #6c757d; color: #fff; }
+  .btn-secondary:hover { background: #5a6268; }
+
+  .btn-warning { background: #ffc107; color: #000; }
+  .btn-warning:hover { background: #e0a800; }
+
+  .btn-danger { background: #dc3545; color: #fff; }
+  .btn-danger:hover { background: #bd2130; }
+
+  select.doc-select {
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    font-size: 12.5px;
+    font-weight: 500;
+    max-width: 240px;
+  }
+
+  .doc-counter {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #495057;
+    background: #e9ecef;
+    padding: 3px 8px;
+    border-radius: 12px;
+  }
+
+  .a4-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .a4-page {
+    width: 205mm;
+    height: 287mm;
+    padding: 2mm 3mm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    page-break-after: always;
+    box-sizing: border-box;
+    font-size: 16pt;
+    overflow: hidden;
+  }
+
+  /* Grid Table Layout based on Excel 31 columns */
+  table.grid-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 1.5px solid #000000;
+    box-sizing: border-box;
+  }
+
+  table.grid-table td, table.grid-table th {
+    border: 1px solid #000000;
+    padding: 0px 2px;
+    vertical-align: middle;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: inherit;
+  }
+
+  /* Structural Border Utilities for Box Divisions */
+  .no-border, .no-border td { border: none !important; }
+  .border-top { border-top: 1px solid #000 !important; }
+  .border-bottom { border-bottom: 1px solid #000 !important; }
+  .border-right { border-right: 1px solid #000 !important; }
+  .border-left { border-left: 1px solid #000 !important; }
+  .border-right-outer { border-right: 1.5px solid #000000 !important; }
+  .box-divider-top { border-top: 1.5px solid #000000 !important; }
+  .box-divider-bottom { border-bottom: 1.5px solid #000000 !important; }
+
+  .text-center { text-align: center; }
+  .text-right { text-align: right; }
+  .bold { font-weight: bold; }
+
+  /* Flexible Row Layouts for Dynamic Input-Label Scaling */
+  .flex-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 4px;
+  }
+
+  /* Resizable editable fields styling with resize handles */
+  .red-field, input, textarea {
+    color: #cc0000;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  input[type="text"], textarea {
+    border: 1px dashed #007bff;
+    background: #f0f7ff;
+    padding: 0px 2px;
+    resize: both !important;
+    overflow: auto;
+    line-height: 1.1;
+    box-sizing: border-box;
+    vertical-align: middle;
+  }
+
+  input[type="text"] {
+    height: 22px;
+  }
+
+  textarea {
+    width: 98%;
+    height: 22px;
+    min-height: 20px;
+    white-space: nowrap;
+  }
+
+  textarea.multiline {
+    white-space: pre-wrap;
+    word-break: break-word;
+    height: auto;
+  }
+
+  textarea.num, input.num { text-align: right; }
+  textarea.center, input.center { text-align: center; }
+
+  /* Bounded text container for long amounts on single line */
+  .amount-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .modal-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 650px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  /* Print Styles */
+  @media print {
+    body {
+      background: none;
+      padding: 0;
+      margin: 0;
+      font-size: 16pt;
+    }
+    .toolbar, .modal-overlay { display: none !important; }
+    .a4-container { gap: 0; }
+    .a4-page {
+      box-shadow: none;
+      width: 100%;
+      height: 100vh;
+      max-height: 287mm;
+      padding: 0;
+      margin: 0;
+      page-break-after: always;
+      overflow: hidden !important;
+    }
+    .a4-page:last-child {
+      page-break-after: avoid;
+    }
+    table.grid-table {
+      border: 1.5px solid #000000 !important;
+    }
+    .red-field, input, textarea {
+      color: #000000 !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      resize: none !important;
+      overflow: hidden !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-group">
+    <strong>นำเข้า Excel: </strong>
+    <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="width: 170px; border: none; background: none; color: #000;">
+  </div>
+
+  <div class="toolbar-group">
+    <strong>ขนาดอักษร:</strong>
+    <button class="btn btn-secondary" onclick="changeFontSize(-0.5)" title="ลดขนาดตัวอักษร">A-</button>
+    <span id="fontSizeDisplay" style="font-weight: bold; min-width: 45px; text-align: center;">16 pt</span>
+    <button class="btn btn-secondary" onclick="changeFontSize(0.5)" title="เพิ่มขนาดตัวอักษร">A+</button>
+  </div>
+
+  <div class="toolbar-group">
+    <button class="btn btn-secondary" onclick="prevDocument()">◄ ก่อนหน้า</button>
+    <select id="docSelect" class="doc-select" onchange="selectDocument(this.value)"></select>
+    <span id="docCounter" class="doc-counter">1 / 1</span>
+    <button class="btn btn-secondary" onclick="nextDocument()">ถัดไป ►</button>
+  </div>
+
+  <div class="toolbar-group">
+    <button class="btn btn-primary" onclick="addNewDocument()">➕ เพิ่มฎีกาใหม่</button>
+    <button class="btn btn-warning" onclick="exportToExcel()">📥 ส่งออก Excel</button>
+    <button class="btn btn-danger" onclick="archiveCurrentDocument()">🗑️ เก็บลงคลัง</button>
+    <button class="btn btn-secondary" onclick="openArchiveModal()">📦 คลังที่เก็บไว้ (<span id="archiveCount">0</span>)</button>
+    <button class="btn btn-success" onclick="printCurrentDoc()">🖨️ พิมพ์หน้านี้</button>
+    <button class="btn btn-success" onclick="printAllDocs()">🖨️ พิมพ์ทั้งหมด (Batch)</button>
+  </div>
+</div>
+
+<div class="a4-container" id="a4Container">
+  <div class="a4-page" id="docPage" style="font-size: 16pt;">
+    <table class="grid-table">
+      <colgroup>
+        <!-- Left Side: Cols B to V (Total 50.0%) -->
+        <col style="width: 5.5%;">  <!-- B -->
+        <col style="width: 1.5%;">  <!-- C -->
+        <col style="width: 2.0%;">  <!-- D -->
+        <col style="width: 1.5%;">  <!-- E -->
+        <col style="width: 2.0%;">  <!-- F -->
+        <col style="width: 1.5%;">  <!-- G -->
+        <col style="width: 7.0%;">  <!-- H -->
+        <col style="width: 2.5%;">  <!-- I -->
+        <col style="width: 1.0%;">  <!-- J -->
+        <col style="width: 1.5%;">  <!-- K -->
+        <col style="width: 2.0%;">  <!-- L -->
+        <col style="width: 3.0%;">  <!-- M -->
+        <col style="width: 2.0%;">  <!-- N -->
+        <col style="width: 1.0%;">  <!-- O -->
+        <col style="width: 1.5%;">  <!-- P -->
+        <col style="width: 1.5%;">  <!-- Q -->
+        <col style="width: 1.0%;">  <!-- R -->
+        <col style="width: 1.0%;">  <!-- S -->
+        <col style="width: 1.0%;">  <!-- T -->
+        <col style="width: 1.5%;">  <!-- U -->
+        <col style="width: 8.5%;">  <!-- V -->
+        <!-- Right Side: Cols W to AF (Total 50.0%) -->
+        <col style="width: 4.5%;">  <!-- W -->
+        <col style="width: 4.5%;">  <!-- X -->
+        <col style="width: 6.0%;">  <!-- Y -->
+        <col style="width: 5.5%;">  <!-- Z -->
+        <col style="width: 5.5%;">  <!-- AA -->
+        <col style="width: 6.0%;">  <!-- AB -->
+        <col style="width: 5.0%;">  <!-- AC -->
+        <col style="width: 4.5%;">  <!-- AD -->
+        <col style="width: 3.5%;">  <!-- AE -->
+        <col style="width: 5.0%;">  <!-- AF -->
+      </colgroup>
+
+      <!-- Rows 1-4: Header Block (Unsplit Centered across all 31 cols) -->
+      <tr style="height: 20px; position: relative;">
+        <td colspan="31" class="text-center no-border bold border-right-outer" style="position: relative;">
+          <textarea id="Agency" rows="1" class="center bold" style="width: 70%; text-align: center;">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</textarea>
+          <span style="position: absolute; right: 6px; top: 1px; font-weight: bold; font-size: inherit;">แบบ 3</span>
+        </td>
+      </tr>
+      <tr style="height: 18px;">
+        <td colspan="31" class="text-center no-border bold border-right-outer">องค์การบริหารส่วนจังหวัดปัตตานี</td>
+      </tr>
+      <tr style="height: 22px;">
+        <td colspan="31" class="text-center no-border bold border-right-outer">
+          <textarea id="DocTitle" rows="1" class="center bold" style="width: 50%; text-align: center; font-weight: bold; font-size: 1.1em;">ฎีกาเบิกเงินอื่น</textarea>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="31" class="text-center no-border border-right-outer" style="border-bottom: 1px solid #000 !important;">
+          ประจำปีงบประมาณ <textarea id="FiscalYear" rows="1" class="center" style="width: 70px; text-align: center;">2569</textarea>
+        </td>
+      </tr>
+
+      <tr style="height: 20px;">
+        <td colspan="3" class="no-border" style="white-space: nowrap;">เลขที่ผู้เบิก</td>
+        <td colspan="18" class="no-border"><textarea id="DocNo" rows="1" style="width: 150px;">999/2569</textarea></td>
+        <td colspan="4" class="no-border" style="white-space: nowrap;">เลขที่คลังรับ</td>
+        <td colspan="6" class="no-border border-right-outer"><span id="DocNoRef" class="red-field">999/2569</span></td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="3" class="no-border" style="white-space: nowrap;">วันที่จัดทำ</td>
+        <td colspan="18" class="no-border"><textarea id="DocDate" rows="1" style="width: 150px;">27 กรกฎาคม 2569</textarea></td>
+        <td colspan="4" class="no-border" style="white-space: nowrap;">วันที่คลังรับ</td>
+        <td colspan="6" class="no-border border-right-outer"><span id="DocDateRef" class="red-field">27 กรกฎาคม 2569</span></td>
+      </tr>
+
+      <!-- Cost Table Header -->
+      <tr class="text-center bold" style="height: 22px; background: #fafafa;">
+        <td colspan="11">รายการ</td>
+        <td colspan="10">จำนวนเงิน</td>
+        <td colspan="10" class="border-right-outer">หมายเหตุ</td>
+      </tr>
+
+      <!-- Cost Rows -->
+      <tr style="height: 20px;">
+        <td colspan="11">มูลค่าสินค้าหรือบริการ</td>
+        <td colspan="10" class="text-right"><textarea class="num" id="Cost" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)" oninput="calculate()">0.00</textarea></td>
+        <td colspan="10" rowspan="5" class="border-right-outer" style="vertical-align: top; padding: 2px;">
+          <div style="font-weight: bold; margin-bottom: 2px;">
+            <textarea id="NoteHeader" rows="1" class="bold" style="font-weight: bold; width: 98%;">ขออนุมัติเบิกจ่ายค่าสาธารณูปโภค</textarea>
+          </div>
+          <textarea id="Note" class="multiline" rows="4" style="width: 98%;">ค่าอินเตอร์เน็ต ประจำเดือน เมษายน - มิถุนายน 2569</textarea>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="2">บวก</td>
+        <td colspan="9">ภาษีมูลค่าเพิ่ม</td>
+        <td colspan="10" class="text-right"><textarea class="num" id="VAT" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)" oninput="calculate()">0.00</textarea></td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="11" class="bold">จำนวนเงินที่ขอเบิก</td>
+        <td colspan="10" class="text-right bold"><span id="TotalReq" class="red-field">0.00</span></td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="2">หัก</td>
+        <td colspan="9">ภาษี ณ ที่จ่าย</td>
+        <td colspan="10" class="text-right"><textarea class="num" id="Tax" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)" oninput="calculate()">0.00</textarea></td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="2"></td>
+        <td colspan="9" style="font-size: 0.85em; white-space: nowrap;">ค่าปรับ(รายได้ค่าปรับผิดสัญญา)</td>
+        <td colspan="10" class="text-right"><textarea class="num" id="Penalty" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)" oninput="calculate()">0.00</textarea></td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="11" class="bold">จำนวนเงินที่จ่ายสุทธิ</td>
+        <td colspan="10" class="text-right bold"><span id="NetTotal" class="red-field">0.00</span></td>
+        <td colspan="10" class="border-right-outer"></td>
+      </tr>
+
+      <!-- BahtText Row (Unsplit) -->
+      <tr style="height: 22px;" class="box-divider-bottom">
+        <td colspan="4" class="bold">(ตัวอักษร)</td>
+        <td colspan="27" class="bold border-right-outer">(<span id="BahtText" class="red-field">ศูนย์บาทถ้วน</span>)</td>
+      </tr>
+
+      <tr style="height: 20px;" class="box-divider-top">
+        <td colspan="5" class="no-border" style="white-space: nowrap;">หน่วยงานผู้เบิก</td>
+        <td colspan="16" class="no-border border-right"><span id="AgencyRef" class="red-field">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</span></td>
+        <td colspan="10" class="no-border border-right-outer">ได้ตรวจสอบแล้วมีเงินคงเหลือเพียงพอที่จะเบิกจ่ายได้</td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">ขอเบิกเงินรายจ่ายตามรายการข้างต้น</td>
+        <!-- Money Source section with context preserved, without inner box borders -->
+        <td colspan="3" class="no-border text-center">แหล่งที่มาของเงิน</td>
+        <td colspan="3" class="no-border text-center">ยอดยกมา</td>
+        <td colspan="4" class="no-border text-center border-right-outer">ยอดยกไป</td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right"></td>
+        <td colspan="3" class="no-border text-center"><textarea id="FundSource" rows="1" class="center">เงินแผนบำรุง</textarea></td>
+        <td colspan="3" class="no-border text-center"><textarea class="num" id="BroughtForward" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)">50,000.00</textarea></td>
+        <td colspan="4" class="no-border text-center border-right-outer"><textarea class="num" id="CarriedForward" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)">50,000.00</textarea></td>
+      </tr>
+      
+      <!-- Flexbox Signatures -->
+      <tr style="height: 22px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="Signer1Sig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">หัวหน้าหน่วยงานผู้เบิก</span>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="InspectorSig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">ผู้ตรวจสอบ</span>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right text-center">
+          <textarea id="Signer1Name" rows="1" class="center" style="width: 98%;">นายxxxxxxxxx</textarea>
+        </td>
+        <td colspan="10" class="no-border border-right-outer text-center">
+          <textarea id="InspectorName" rows="1" class="center" style="width: 98%;">นางสาวyyyyyyyyy</textarea>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="Signer1Pos" rows="1" class="center" style="flex:1;">ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="InspectorPos" rows="1" class="center" style="flex:1;">นักสาธารณสุขชำนาญการ</textarea>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;" class="box-divider-bottom">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="Signer1Date" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="InspectorDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+
+      <tr style="height: 20px;" class="box-divider-top">
+        <td colspan="21" class="no-border border-right">ได้ตรวจสอบเอกสารประกอบฎีกาครบถ้วนถูกต้องแล้ว</td>
+        <td colspan="2" class="no-border">เรียน</td>
+        <td colspan="8" class="no-border bold border-right-outer">ผู้บริหารท้องถิ่น</td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right"></td>
+        <td colspan="10" class="no-border border-right-outer">&nbsp;&nbsp;&nbsp;&nbsp;เห็นควรอนุมัติให้เบิกจ่ายได้ตามจำนวนเงินข้างต้น</td>
+      </tr>
+      <tr style="height: 22px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="CheckerSig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">ผู้ตรวจฎีกา</span>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="FinanceHeadSig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right text-center">
+          <textarea id="CheckerName" rows="1" class="center" style="width: 98%;">นางสาวyyyyyyy</textarea>
+        </td>
+        <td colspan="10" class="no-border border-right-outer text-center">
+          <textarea id="FinanceHeadName" rows="1" class="center" style="width: 98%;">นายxxxxxxxxxxx</textarea>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="CheckerPos" rows="1" class="center" style="flex:1;">นักสาธารณสุขชำนาญการ</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="FinanceHeadPos" rows="1" class="center" style="flex:1;">(หัวหน้าหน่วยงานคลัง)</textarea>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;" class="box-divider-bottom">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="CheckerDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="FinanceHeadDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+
+      <tr style="height: 20px;" class="box-divider-top">
+        <td colspan="21" class="no-border bold border-right">เรียน &nbsp; ผู้บริหารท้องถิ่น</td>
+        <td colspan="10" class="no-border bold text-center border-right-outer">อนุมัติให้เบิกจ่ายได้</td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">&nbsp;&nbsp;&nbsp;&nbsp;เห็นควรอนุมัติให้เบิกจ่ายได้ตามจำนวนเงินข้างต้น</td>
+        <td colspan="10" class="no-border text-center border-right-outer">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>จำนวน</span>
+            <textarea class="num center red-field bold" id="ApprovedAmount" rows="1" onfocus="unformatNumberInput(this)" onblur="formatNumberInput(this)" style="width: 110px;">0.00</textarea>
+            <span>บาท</span>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 22px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="DeputySig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="ActingHeadSig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right text-center">
+          <textarea id="DeputyName" rows="1" class="center" style="width: 98%;">นายมูหะมัดรุสดี ยะอามะ</textarea>
+        </td>
+        <td colspan="10" class="no-border border-right-outer text-center">
+          <textarea id="ActingHeadName" rows="1" class="center" style="width: 98%;">นายxxxxxxxx</textarea>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="DeputyPos" rows="1" class="center" style="flex:1;">ตำแหน่ง ปลัดองค์กรปกครองส่วนท้องถิ่น</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ตำแหน่ง</span>
+            <textarea id="ActingHeadPos" rows="1" class="center" style="flex:1;">ผอ.รพ.สต.ยะรัง ปฏิบัติราชการแทน</textarea>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 18px;">
+        <td colspan="21" class="no-border border-right"></td>
+        <td colspan="10" class="no-border text-center border-right-outer">นายกองค์การบริหารส่วนจังหวัดปัตตานี</td>
+      </tr>
+      <tr style="height: 20px;" class="box-divider-bottom">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="DeputyDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">วันที่</span>
+            <textarea id="ActingHeadDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+
+      <tr style="height: 20px;" class="box-divider-top">
+        <td colspan="21" class="no-border border-right">
+          <div style="display: flex; align-items: center; gap: 6px; width: 100%;">
+            <span style="white-space: nowrap;">ธนาคาร</span>
+            <textarea id="BankName" rows="1" style="width: 130px;">ธ.ก.ส. ปัตตานี</textarea>
+            <span style="white-space: nowrap; margin-left: 8px;">บัญชีเลขที่</span>
+            <textarea id="AccountNo" rows="1" style="width: 110px; max-width: 110px;">9999999999</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border text-center border-right-outer bold">ผู้ลงนามในเช็ค/ใบถอน</td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          <div style="display: flex; align-items: center; gap: 6px; width: 100%;">
+            <span style="white-space: nowrap;">เลขที่เช็ค</span>
+            <textarea id="ChequeNo" rows="1" style="width: 90px; max-width: 90px;">........................</textarea>
+            <span style="white-space: nowrap; margin-left: 8px;">ลงวันที่</span>
+            <textarea id="ChequeDate" rows="1" style="width: 110px;">........................</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="SignerCheque1Sig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">ผู้ลงนาม</span>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 22px;">
+        <td colspan="21" class="no-border border-right">
+          <div id="TextPayeeAmountContainer" style="display: flex; align-items: center; width: 100%; white-space: nowrap; gap: 2px; overflow: hidden; font-size: 16pt;">
+            <span style="white-space: nowrap;">จำนวนเงิน</span>
+            <span id="NetTotalNumRef" class="red-field bold" style="margin: 0 2px; white-space: nowrap;">0.00</span>
+            <span style="white-space: nowrap;">บาท &nbsp;(</span>
+            <span id="TextPayeeAmount" class="red-field bold" style="white-space: nowrap;">ศูนย์บาทถ้วน</span>
+            <span style="white-space: nowrap;">)</span>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="SignerCheque2Sig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">ผู้ลงนาม</span>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">จ่ายให้</span>
+            <textarea id="Payee" rows="1" style="flex:1;">บริษัท โทรคมนาคมแห่งชาติ จำกัด (มหาชน)</textarea>
+          </div>
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span>(ลงชื่อ)</span>
+            <textarea id="SignerCheque3Sig" rows="1" class="center" style="flex:1;">...................................................</textarea>
+            <span style="white-space: nowrap; margin-left: 2px;">ผู้ลงนาม</span>
+          </div>
+        </td>
+      </tr>
+      <tr style="height: 20px;">
+        <td colspan="21" class="no-border border-right">
+          การจ่ายเงินเป็นไปตามรายงานการจัดทำเช็ค/ใบถอน
+        </td>
+        <td colspan="10" class="no-border border-right-outer">
+          <div class="flex-row">
+            <span style="white-space: nowrap;">ลงวันที่</span>
+            <textarea id="PaymentReportDate" rows="1" class="center" style="flex:1;">...................................................</textarea>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- Modal for Soft Delete Archive Store -->
+<div class="modal-overlay" id="archiveModal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+      <h3 style="margin:0;">📦 คลังฎีกาที่ถูกเก็บไว้ (Archive)</h3>
+      <button class="btn btn-secondary" onclick="closeArchiveModal()">✖ ปิด</button>
+    </div>
+    <div id="archiveList">
+      <p style="color:#6c757d;">ไม่มีฎีกาในคลัง</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  let documents = [];
+  let archivedDocuments = [];
+  let currentIndex = 0;
+  let currentFontSizePt = 16; // Default font size strictly set to 16 pt
+
+  function changeFontSize(delta) {
+    currentFontSizePt = Math.max(9, Math.min(22, currentFontSizePt + delta));
+    document.getElementById('docPage').style.fontSize = currentFontSizePt + 'pt';
+    document.getElementById('fontSizeDisplay').innerText = currentFontSizePt + ' pt';
+    adjustPayeeAmountFontSize();
+  }
+
+  const defaultDoc = {
+    DocTitle: 'ฎีกาเบิกเงินอื่น',
+    Agency: 'โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง',
+    FiscalYear: '2569',
+    DocNo: '999/2569',
+    DocDate: '27 กรกฎาคม 2569',
+    Cost: '3,021.00',
+    VAT: '0.00',
+    Tax: '0.00',
+    Penalty: '0.00',
+    NoteHeader: 'ขออนุมัติเบิกจ่ายค่าสาธารณูปโภค',
+    Note: 'ค่าอินเตอร์เน็ต ประจำเดือน เมษายน - มิถุนายน 2569',
+    FundSource: 'เงินแผนบำรุง',
+    BroughtForward: '50,000.00',
+    CarriedForward: '50,000.00',
+    ApprovedAmount: '3,021.00',
+    
+    Signer1Sig: '...................................................',
+    Signer1Name: 'นายxxxxxxxxx',
+    Signer1Pos: 'ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง',
+    Signer1Date: '...................................................',
+
+    InspectorSig: '...................................................',
+    InspectorName: 'นางสาวyyyyyyyyy',
+    InspectorPos: 'นักสาธารณสุขชำนาญการ',
+    InspectorDate: '...................................................',
+
+    CheckerSig: '...................................................',
+    CheckerName: 'นางสาวyyyyyyy',
+    CheckerPos: 'นักสาธารณสุขชำนาญการ',
+    CheckerDate: '...................................................',
+
+    FinanceHeadSig: '...................................................',
+    FinanceHeadName: 'นายxxxxxxxxxxx',
+    FinanceHeadPos: '(หัวหน้าหน่วยงานคลัง)',
+    FinanceHeadDate: '...................................................',
+
+    DeputySig: '...................................................',
+    DeputyName: 'นายมูหะมัดรุสดี ยะอามะ',
+    DeputyPos: 'ตำแหน่ง ปลัดองค์กรปกครองส่วนท้องถิ่น',
+    DeputyDate: '...................................................',
+
+    ActingHeadSig: '...................................................',
+    ActingHeadName: 'นายxxxxxxxx',
+    ActingHeadPos: 'ผอ.รพ.สต.ยะรัง ปฏิบัติราชการแทน',
+    ActingHeadDate: '...................................................',
+
+    BankName: 'ธ.ก.ส. ปัตตานี',
+    AccountNo: '9999999999',
+    ChequeNo: '........................',
+    ChequeDate: '........................',
+    SignerCheque1Sig: '...................................................',
+    SignerCheque2Sig: '...................................................',
+    SignerCheque3Sig: '...................................................',
+    Payee: 'บริษัท โทรคมนาคมแห่งชาติ จำกัด (มหาชน)',
+    PaymentReportDate: '...................................................'
+  };
+
+  documents.push(JSON.parse(JSON.stringify(defaultDoc)));
+
+  function getFieldKeys() {
+    return [
+      'DocTitle', 'Agency', 'FiscalYear', 'DocNo', 'DocDate', 'Cost', 'VAT', 'Tax', 'Penalty', 'NoteHeader', 'Note',
+      'FundSource', 'BroughtForward', 'CarriedForward', 'ApprovedAmount',
+      'Signer1Sig', 'Signer1Name', 'Signer1Pos', 'Signer1Date',
+      'InspectorSig', 'InspectorName', 'InspectorPos', 'InspectorDate',
+      'CheckerSig', 'CheckerName', 'CheckerPos', 'CheckerDate',
+      'FinanceHeadSig', 'FinanceHeadName', 'FinanceHeadPos', 'FinanceHeadDate',
+      'DeputySig', 'DeputyName', 'DeputyPos', 'DeputyDate',
+      'ActingHeadSig', 'ActingHeadName', 'ActingHeadPos', 'ActingHeadDate',
+      'BankName', 'AccountNo', 'ChequeNo', 'ChequeDate',
+      'SignerCheque1Sig', 'SignerCheque2Sig', 'SignerCheque3Sig', 'Payee', 'PaymentReportDate'
+    ];
+  }
+
+  function parseNum(val) {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    let clean = val.toString().replace(/,/g, '').trim();
+    return parseFloat(clean) || 0;
+  }
+
+  function formatMoney(num) {
+    return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatNumberInput(inputEl) {
+    let num = parseNum(inputEl.value);
+    inputEl.value = formatMoney(num);
+    saveCurrentState();
+  }
+
+  function unformatNumberInput(inputEl) {
+    let num = parseNum(inputEl.value);
+    inputEl.value = num === 0 ? '' : num.toString();
+  }
+
+  function calculate() {
+    const cost = parseNum(document.getElementById('Cost').value);
+    const vat = parseNum(document.getElementById('VAT').value);
+    const tax = parseNum(document.getElementById('Tax').value);
+    const penalty = parseNum(document.getElementById('Penalty').value);
+
+    const totalReq = cost + vat;
+    const netTotal = totalReq - tax - penalty;
+
+    document.getElementById('TotalReq').innerText = formatMoney(totalReq);
+    document.getElementById('NetTotal').innerText = formatMoney(netTotal);
+    document.getElementById('NetTotalNumRef').innerText = formatMoney(netTotal);
+
+    const bText = bahtText(netTotal);
+    document.getElementById('BahtText').innerText = bText;
+    document.getElementById('TextPayeeAmount').innerText = bText;
+    
+    const appEl = document.getElementById('ApprovedAmount');
+    appEl.value = formatMoney(totalReq);
+
+    adjustPayeeAmountFontSize();
+    saveCurrentState();
+  }
+
+  function adjustPayeeAmountFontSize() {
+    const container = document.getElementById('TextPayeeAmountContainer');
+    if (!container) return;
+    
+    // Default strictly to current base font size (16pt)
+    container.style.fontSize = currentFontSizePt + 'pt';
+    const parent = container.parentElement;
+    if (!parent) return;
+    
+    const maxW = parent.clientWidth - 4;
+    let sizePt = currentFontSizePt;
+    // Shrink iteratively only if text overflows container
+    while (container.scrollWidth > maxW && sizePt > 8) {
+      sizePt -= 0.5;
+      container.style.fontSize = sizePt + 'pt';
+    }
+  }
+
+  /* Multi-chunk BahtText algorithm supporting values over 1,000,000 without undefined errors */
+  function bahtText(number) {
+    if (isNaN(number) || number === null) return "ศูนย์บาทถ้วน";
+    let num = Number(number);
+    if (num <= 0) return "ศูนย์บาทถ้วน";
+    
+    let str = num.toFixed(2);
+    let [intStr, decStr] = str.split(".");
+    
+    const digits = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+    const units = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+
+    function readGroup(s) {
+      let text = "";
+      let len = s.length;
+      for (let i = 0; i < len; i++) {
+        let digit = parseInt(s[i]);
+        let pos = len - i - 1;
+        if (digit !== 0) {
+          if (pos === 1) {
+            if (digit === 1) text += "สิบ";
+            else if (digit === 2) text += "ยี่สิบ";
+            else text += digits[digit] + "สิบ";
+          } else if (pos === 0) {
+            if (digit === 1 && len > 1) text += "เอ็ด";
+            else text += digits[digit];
+          } else {
+            text += digits[digit] + units[pos];
+          }
+        }
+      }
+      return text;
+    }
+
+    function readInteger(s) {
+      if (s.length <= 6) return readGroup(s);
+      let right6 = s.substring(s.length - 6);
+      let left = s.substring(0, s.length - 6);
+      return readInteger(left) + "ล้าน" + readGroup(right6);
+    }
+
+    let intText = readInteger(intStr) || "ศูนย์";
+    let decVal = parseInt(decStr);
+    let decText = decVal > 0 ? readGroup(decStr) + "สตางค์" : "ถ้วน";
+
+    return intText + "บาท" + decText;
+  }
+
+  function loadDocumentIntoDOM(doc) {
+    getFieldKeys().forEach(key => {
+      const el = document.getElementById(key);
+      if (el) {
+        let val = doc[key] !== undefined ? doc[key] : '';
+        if (['Cost', 'VAT', 'Tax', 'Penalty', 'BroughtForward', 'CarriedForward', 'ApprovedAmount'].includes(key)) {
+          el.value = formatMoney(parseNum(val));
+        } else {
+          el.value = val;
+        }
+      }
+    });
+
+    document.getElementById('DocNoRef').innerText = document.getElementById('DocNo').value;
+    document.getElementById('DocDateRef').innerText = document.getElementById('DocDate').value;
+    document.getElementById('AgencyRef').innerText = document.getElementById('Agency').value;
+
+    calculate();
+  }
+
+  function saveCurrentState() {
+    if (!documents[currentIndex]) return;
+    const doc = documents[currentIndex];
+    getFieldKeys().forEach(key => {
+      const el = document.getElementById(key);
+      if (el) {
+        doc[key] = el.value;
+      }
+    });
+  }
+
+  function updateUI() {
+    if (documents.length === 0) {
+      addNewDocument();
+      return;
+    }
+
+    loadDocumentIntoDOM(documents[currentIndex]);
+    
+    const select = document.getElementById('docSelect');
+    select.innerHTML = '';
+    documents.forEach((d, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.innerText = `ฎีกาที่ ${idx + 1}: ${d.DocNo || 'ไม่ระบุ'} (${d.Payee ? d.Payee.substring(0, 15) : '...'})`;
+      if (idx === currentIndex) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    document.getElementById('docCounter').innerText = `${currentIndex + 1} / ${documents.length}`;
+    document.getElementById('archiveCount').innerText = archivedDocuments.length;
+  }
+
+  function selectDocument(idx) {
+    saveCurrentState();
+    currentIndex = parseInt(idx);
+    updateUI();
+  }
+
+  function prevDocument() {
+    saveCurrentState();
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateUI();
+    }
+  }
+
+  function nextDocument() {
+    saveCurrentState();
+    if (currentIndex < documents.length - 1) {
+      currentIndex++;
+      updateUI();
+    }
+  }
+
+  function addNewDocument() {
+    saveCurrentState();
+    let newDoc = JSON.parse(JSON.stringify(documents[currentIndex] || defaultDoc));
+    
+    let currentDocNo = newDoc.DocNo || `${documents.length}/2569`;
+    let parts = currentDocNo.split('/');
+    if (parts.length === 2 && !isNaN(parseInt(parts[0]))) {
+      newDoc.DocNo = `${parseInt(parts[0]) + 1}/${parts[1]}`;
+    } else {
+      newDoc.DocNo = `${documents.length + 1}/2569`;
+    }
+
+    newDoc.Cost = '0.00';
+    newDoc.VAT = '0.00';
+    newDoc.Tax = '0.00';
+    newDoc.Penalty = '0.00';
+
+    documents.push(newDoc);
+    currentIndex = documents.length - 1;
+    updateUI();
+  }
+
+  function archiveCurrentDocument() {
+    if (documents.length <= 1) {
+      alert("ต้องมีอย่างน้อย 1 ฎีกาในรายการหลัก");
+      return;
+    }
+    saveCurrentState();
+    const target = documents[currentIndex];
+    archivedDocuments.push(target);
+    documents.splice(currentIndex, 1);
+
+    if (currentIndex >= documents.length) currentIndex = documents.length - 1;
+    updateUI();
+  }
+
+  function openArchiveModal() {
+    const listEl = document.getElementById('archiveList');
+    if (archivedDocuments.length === 0) {
+      listEl.innerHTML = '<p style="color:#6c757d;">ไม่มีฎีกาอยู่ในคลังที่เก็บไว้</p>';
+    } else {
+      let html = '<ul style="list-style:none; padding:0; margin:0;">';
+      archivedDocuments.forEach((doc, idx) => {
+        html += `
+          <li style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #dee2e6;">
+            <div>
+              <strong>เลขที่: ${doc.DocNo || 'ไม่ระบุ'}</strong> - ${doc.Payee || ''} (${formatMoney(parseNum(doc.Cost))} บาท)
+            </div>
+            <button class="btn btn-primary" onclick="recallFromArchive(${idx})">🔄 ดึงคืน</button>
+          </li>
+        `;
+      });
+      html += '</ul>';
+      listEl.innerHTML = html;
+    }
+    document.getElementById('archiveModal').style.display = 'flex';
+  }
+
+  function closeArchiveModal() {
+    document.getElementById('archiveModal').style.display = 'none';
+  }
+
+  function recallFromArchive(idx) {
+    const doc = archivedDocuments.splice(idx, 1)[0];
+    documents.push(doc);
+    currentIndex = documents.length - 1;
+    closeArchiveModal();
+    updateUI();
+  }
+
+  function exportToExcel() {
+    saveCurrentState();
+    const exportData = documents.map(d => ({
+      'ชื่อหัวข้อเอกสาร': d.DocTitle || 'ฎีกาเบิกเงินอื่น',
+      'เลขที่ผู้เบิก': d.DocNo,
+      'วันที่จัดทำ': d.DocDate,
+      'มูลค่าสินค้าหรือบริการ': parseNum(d.Cost),
+      'ภาษีมูลค่าเพิ่ม': parseNum(d.VAT),
+      'ภาษี ณ ที่จ่าย': parseNum(d.Tax),
+      'ค่าปรับ': parseNum(d.Penalty),
+      'จำนวนอนุมัติ': parseNum(d.ApprovedAmount),
+      'หัวข้อหมายเหตุ': d.NoteHeader,
+      'รายละเอียดหมายเหตุ': d.Note,
+      'หน่วยงานผู้เบิก': d.Agency,
+      'แหล่งที่มาของเงิน': d.FundSource,
+      'ยอดยกมา': parseNum(d.BroughtForward),
+      'ยอดยกไป': parseNum(d.CarriedForward),
+      'ชื่อผู้เบิก': d.Signer1Name,
+      'ตำแหน่งผู้เบิก': d.Signer1Pos,
+      'ชื่อผู้ตรวจสอบ': d.InspectorName,
+      'ตำแหน่งผู้ตรวจสอบ': d.InspectorPos,
+      'ชื่อผู้ตรวจฎีกา': d.CheckerName,
+      'ตำแหน่งผู้ตรวจฎีกา': d.CheckerPos,
+      'ชื่อหัวหน้าคลัง': d.FinanceHeadName,
+      'ตำแหน่งหัวหน้าคลัง': d.FinanceHeadPos,
+      'ชื่อปลัด': d.DeputyName,
+      'ตำแหน่งปลัด': d.DeputyPos,
+      'ชื่อผู้อนุมัติ': d.ActingHeadName,
+      'ตำแหน่งผู้อนุมัติ': d.ActingHeadPos,
+      'ธนาคาร': d.BankName,
+      'บัญชีเลขที่': d.AccountNo,
+      'จ่ายให้': d.Payee
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ฎีกาเบิกเงิน");
+    XLSX.writeFile(workbook, "รายการฎีกาเบิกเงิน_ส่งออก.xlsx");
+  }
+
+  document.getElementById('DocNo').addEventListener('input', e => {
+    document.getElementById('DocNoRef').innerText = e.target.value;
+    saveCurrentState();
+  });
+  document.getElementById('DocDate').addEventListener('input', e => {
+    document.getElementById('DocDateRef').innerText = e.target.value;
+    saveCurrentState();
+  });
+  document.getElementById('Agency').addEventListener('input', e => {
+    document.getElementById('AgencyRef').innerText = e.target.value;
+    saveCurrentState();
+  });
+
+  getFieldKeys().forEach(key => {
+    const el = document.getElementId(key);
+    if (el) {
+      el.addEventListener('input', saveCurrentState);
+      el.addEventListener('change', saveCurrentState);
+    }
+  });
+
+  function printCurrentDoc() {
+    saveCurrentState();
+    window.print();
+  }
+
+  function printAllDocs() {
+    saveCurrentState();
+    const container = document.getElementById('a4Container');
+    const singlePageBackup = container.innerHTML;
+
+    let allHtml = '';
+    documents.forEach((doc, idx) => {
+      loadDocumentIntoDOM(doc);
+      allHtml += document.getElementById('docPage').outerHTML;
+    });
+
+    container.innerHTML = allHtml;
+
+    setTimeout(() => {
+      window.print();
+      container.innerHTML = singlePageBackup;
+      rebindDynamicListeners();
+      updateUI();
+    }, 200);
+  }
+
+  function rebindDynamicListeners() {
+    document.getElementById('DocNo').addEventListener('input', e => {
+      document.getElementById('DocNoRef').innerText = e.target.value;
+      saveCurrentState();
+    });
+    document.getElementById('DocDate').addEventListener('input', e => {
+      document.getElementById('DocDateRef').innerText = e.target.value;
+      saveCurrentState();
+    });
+    document.getElementById('Agency').addEventListener('input', e => {
+      document.getElementById('AgencyRef').innerText = e.target.value;
+      saveCurrentState();
+    });
+
+    getFieldKeys().forEach(key => {
+      const el = document.getElementById(key);
+      if (el) {
+        el.addEventListener('input', saveCurrentState);
+        el.addEventListener('change', saveCurrentState);
+      }
+    });
+  }
+
+  document.getElementById('excelFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const data = new Uint8Array(event.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      if (rows && rows.length > 0) {
+        let importedDocs = [];
+
+        rows.forEach((row, i) => {
+          let doc = JSON.parse(JSON.stringify(defaultDoc));
+          
+          if (row.DocTitle || row['ชื่อหัวข้อเอกสาร']) doc.DocTitle = row.DocTitle || row['ชื่อหัวข้อเอกสาร'];
+          if (row.DocNo || row['เลขที่ผู้เบิก']) doc.DocNo = row.DocNo || row['เลขที่ผู้เบิก'];
+          if (row.DocDate || row['วันที่จัดทำ']) doc.DocDate = row.DocDate || row['วันที่จัดทำ'];
+          if (row.Cost !== undefined || row['มูลค่าสินค้าหรือบริการ'] !== undefined) doc.Cost = row.Cost !== undefined ? row.Cost : row['มูลค่าสินค้าหรือบริการ'];
+          if (row.VAT !== undefined || row['ภาษีมูลค่าเพิ่ม'] !== undefined) doc.VAT = row.VAT !== undefined ? row.VAT : row['ภาษีมูลค่าเพิ่ม'];
+          if (row.Tax !== undefined || row['ภาษี ณ ที่จ่าย'] !== undefined) doc.Tax = row.Tax !== undefined ? row.Tax : row['ภาษี ณ ที่จ่าย'];
+          if (row.Penalty !== undefined || row['ค่าปรับ'] !== undefined) doc.Penalty = row.Penalty !== undefined ? row.Penalty : row['ค่าปรับ'];
+          if (row.ApprovedAmount !== undefined || row['จำนวนอนุมัติ'] !== undefined) doc.ApprovedAmount = row.ApprovedAmount !== undefined ? row.ApprovedAmount : row['จำนวนอนุมัติ'];
+          if (row.NoteHeader || row['หัวข้อหมายเหตุ']) doc.NoteHeader = row.NoteHeader || row['หัวข้อหมายเหตุ'];
+          if (row.Note || row['รายละเอียดหมายเหตุ'] || row['หมายเหตุ']) doc.Note = row.Note || row['รายละเอียดหมายเหตุ'] || row['หมายเหตุ'];
+          if (row.Agency || row['หน่วยงานผู้เบิก']) doc.Agency = row.Agency || row['หน่วยงานผู้เบิก'];
+          if (row.FundSource || row['แหล่งที่มาของเงิน']) doc.FundSource = row.FundSource || row['แหล่งที่มาของเงิน'];
+          if (row.BroughtForward !== undefined || row['ยอดยกมา'] !== undefined) doc.BroughtForward = row.BroughtForward !== undefined ? row.BroughtForward : row['ยอดยกมา'];
+          if (row.CarriedForward !== undefined || row['ยอดยกไป'] !== undefined) doc.CarriedForward = row.CarriedForward !== undefined ? row.CarriedForward : row['ยอดยกไป'];
+          
+          if (row.Signer1Name || row['ชื่อผู้เบิก']) doc.Signer1Name = row.Signer1Name || row['ชื่อผู้เบิก'];
+          if (row.Signer1Pos || row['ตำแหน่งผู้เบิก']) doc.Signer1Pos = row.Signer1Pos || row['ตำแหน่งผู้เบิก'];
+          if (row.InspectorName || row['ชื่อผู้ตรวจสอบ']) doc.InspectorName = row.InspectorName || row['ชื่อผู้ตรวจสอบ'];
+          if (row.InspectorPos || row['ตำแหน่งผู้ตรวจสอบ']) doc.InspectorPos = row.InspectorPos || row['ตำแหน่งผู้ตรวจสอบ'];
+          if (row.CheckerName || row['ชื่อผู้ตรวจฎีกา']) doc.CheckerName = row.CheckerName || row['ชื่อผู้ตรวจฎีกา'];
+          if (row.CheckerPos || row['ตำแหน่งผู้ตรวจฎีกา']) doc.CheckerPos = row.CheckerPos || row['ตำแหน่งผู้ตรวจฎีกา'];
+          if (row.FinanceHeadName || row['ชื่อหัวหน้าคลัง']) doc.FinanceHeadName = row.FinanceHeadName || row['ชื่อหัวหน้าคลัง'];
+          if (row.FinanceHeadPos || row['ตำแหน่งหัวหน้าคลัง']) doc.FinanceHeadPos = row.FinanceHeadPos || row['ตำแหน่งหัวหน้าคลัง'];
+          if (row.DeputyName || row['ชื่อปลัด']) doc.DeputyName = row.DeputyName || row['ชื่อปลัด'];
+          if (row.DeputyPos || row['ตำแหน่งปลัด']) doc.DeputyPos = row.DeputyPos || row['ตำแหน่งปลัด'];
+          if (row.ActingHeadName || row['ชื่อผู้อนุมัติ']) doc.ActingHeadName = row.ActingHeadName || row['ชื่อผู้อนุมัติ'];
+          if (row.ActingHeadPos || row['ตำแหน่งผู้อนุมัติ']) doc.ActingHeadPos = row.ActingHeadPos || row['ตำแหน่งผู้อนุมัติ'];
+          
+          if (row.BankName || row['ธนาคาร']) doc.BankName = row.BankName || row['ธนาคาร'];
+          if (row.AccountNo || row['บัญชีเลขที่']) doc.AccountNo = row.AccountNo || row['บัญชีเลขที่'];
+          if (row.Payee || row['จ่ายให้']) doc.Payee = row.Payee || row['จ่ายให้'];
+
+          importedDocs.push(doc);
+        });
+
+        documents = importedDocs;
+        currentIndex = 0;
+        updateUI();
+        alert(`นำเข้าสำเร็จเรียบร้อยแล้ว จำนวน ${importedDocs.length} รายการ!`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  window.onload = function() {
+    document.getElementById('docPage').style.fontSize = '16pt';
+    document.getElementById('fontSizeDisplay').innerText = '16 pt';
+    updateUI();
+    window.addEventListener('resize', adjustPayeeAmountFontSize);
+  };
+</script>
+</body>
+</html>

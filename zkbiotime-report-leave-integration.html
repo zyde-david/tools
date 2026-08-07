@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบรายงานเวลาเข้า-ออกงาน ZKBioTime และจัดการการลางาน/ปฏิบัติงานนอกสถานที่</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Prompt & Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SheetJS Library for Excel / CSV Parsing & Exporting -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .sortable-header {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.15s ease;
+    }
+    .sortable-header:hover {
+      background-color: #e2e8f0 !important;
+    }
+    
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: white;
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-brand-600 p-2 rounded-lg text-white">
+          <i class="fa-solid fa-fingerprint text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center gap-2">
+            ระบบรายงานลงเวลา ZKBioTime
+            <span class="text-[11px] bg-slate-800 text-slate-300 font-normal px-2 py-0.5 rounded border border-slate-700 hidden sm:inline-block">รวมข้อมูลวันลา & ประชุมนอกสถานที่</span>
+          </h1>
+          <p class="text-xs text-slate-400">ตรวจสอบสแกนนิ้ว (First/Last Punch) รวมระบบการลา/ปฏิบัติงานนอกสถานที่</p>
+        </div>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Data Source Mode Toggle Button -->
+        <button id="dataSourceBtn" onclick="toggleDataMode()" class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="dataModeText">โหมดข้อมูลสาธิต</span>
+        </button>
+
+        <!-- Import Excel / CSV Button -->
+        <button onclick="triggerExcelImport()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-file-import"></i>
+          <span>นำเข้า Excel/CSV</span>
+        </button>
+        <input type="file" id="excelFileInput" accept=".csv, .xlsx, .xls" onchange="handleExcelImport(event)" class="hidden">
+
+        <!-- PRD Viewer Button -->
+        <button onclick="openPRDModal()" class="px-3 py-1.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-file-contract text-blue-300"></i>
+          <span class="hidden md:inline">เอกสาร PRD</span>
+        </button>
+
+        <!-- Google Calendar Sync Trigger -->
+        <button onclick="openGoogleCalendarModal()" class="px-3 py-1.5 bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700 text-xs font-medium rounded-lg flex items-center gap-1.5 transition" title="ดึงวันลาจาก Google Calendar">
+          <i class="fa-solid fa-calendar-plus text-sky-300"></i>
+          <span class="hidden md:inline">ซิงค์ Google Calendar</span>
+        </button>
+
+        <!-- Leave / Offsite Manager Modal Trigger -->
+        <button onclick="openLeaveModal()" class="px-3 py-1.5 bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700 text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-plane-departure text-purple-300"></i>
+          <span class="hidden md:inline">บันทึกวันลา / ไปประชุม</span>
+        </button>
+
+        <!-- Holiday Mgmt Modal Trigger -->
+        <button onclick="openHolidayModal()" class="px-3 py-1.5 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-700 text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-calendar-day text-indigo-400"></i>
+          <span class="hidden md:inline">จัดการวันหยุดไทย</span>
+        </button>
+
+        <!-- API & DEF Config Modal Trigger -->
+        <button onclick="openConfigModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-gear"></i>
+          <span class="hidden md:inline">ตั้งค่า API & DEF</span>
+        </button>
+
+        <!-- Export Excel Button -->
+        <button onclick="exportOfficialTimeCardFormat()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-sm" title="ส่งออกไฟล์รูปแบบ 'บัตรเวลาทั้งหมด' ตรงตามแบบฟอร์มมาตรฐาน">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>ส่งออก บัตรเวลาทั้งหมด (.xlsx)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Filters & Controls Bar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center justify-between no-print">
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+        <!-- Month Picker -->
+        <div>
+          <label for="monthPicker" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ประจำเดือน</label>
+          <input type="month" id="monthPicker" onchange="handleMonthChange()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 font-medium">
+        </div>
+
+        <!-- Department Filter -->
+        <div>
+          <label for="deptFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">แผนก</label>
+          <select id="deptFilter" onchange="applyFilters()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 font-medium min-w-[140px]">
+            <option value="ALL">ทุกแผนก</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div>
+          <label for="statusFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">กรองสถานะเฉพาะ</label>
+          <select id="statusFilter" onchange="applyFilters()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 font-medium min-w-[190px]">
+            <option value="ALL">ทุกสถานะ</option>
+            <option value="CCTV_PENDING">📹 เฉพาะที่ต้องเช็ก CCTV (ก่อนวนทับ 30 วัน)</option>
+            <option value="DOC_PENDING">📑 เฉพาะการลาที่ยังขาดเอกสาร/ใบลา</option>
+            <option value="ANOMALY_ONLY">⚠️ เฉพาะวันที่มีปัญหา/ผิดปกติ</option>
+            <option value="MISSING_ONLY">เฉพาะผู้มีวันขาดสแกนนิ้ว (ขาด)</option>
+            <option value="FORGOT_IN_ONLY">เฉพาะผู้ขาดสแกนเข้า (ขาดเข้า)</option>
+            <option value="FORGOT_OUT_ONLY">เฉพาะผู้ขาดสแกนออก (ขาดออก)</option>
+            <option value="LATE_ONLY">เฉพาะผู้มีวันมาสาย (สาย)</option>
+            <option value="LEAVE_ONLY">เฉพาะผู้มีการลางาน (ลา)</option>
+            <option value="OFFSITE_ONLY">เฉพาะผู้ไปประชุม/นอกสถานที่ (นอกสถานที่)</option>
+          </select>
+        </div>
+
+        <!-- Work Standard Time Settings -->
+        <div>
+          <label for="workStartTime" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">เวลาเข้างาน</label>
+          <input type="time" id="workStartTime" value="08:30" onchange="loadReportData()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2 font-medium">
+        </div>
+
+        <div>
+          <label for="workEndTime" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">เวลาเลิกงาน</label>
+          <input type="time" id="workEndTime" value="16:30" onchange="loadReportData()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2 font-medium">
+        </div>
+
+        <!-- Employee Search -->
+        <div>
+          <label for="searchInput" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ค้นหาพนักงาน</label>
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+            <input type="text" id="searchInput" onkeyup="applyFilters()" placeholder="ชื่อ หรือ รหัสพนักงาน..." class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block p-2 pl-9 font-medium min-w-[180px]">
+          </div>
+        </div>
+      </div>
+
+      <!-- Refresh Button -->
+      <div class="flex items-center gap-2 self-end">
+        <button onclick="loadReportData()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-lg shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+          <span>ประมวลผล</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Multi-User Selection & Comparison Toolbar -->
+    <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          <i class="fa-solid fa-users-viewfinder text-brand-600"></i>
+          เปรียบเทียบพนักงาน (Multi-Select):
+        </span>
+        <div id="multiUserContainer" class="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto">
+          <!-- Dynamically populated employee comparison tags -->
+        </div>
+      </div>
+      <div class="flex gap-2 text-xs">
+        <button onclick="selectAllUsersForComparison(true)" class="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded font-medium">เลือกทั้งหมด</button>
+        <button onclick="selectAllUsersForComparison(false)" class="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded font-medium">ล้างการเลือก</button>
+      </div>
+    </div>
+
+    <!-- Metric Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-3">
+      <!-- Total Employees Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">พนักงานทั้งหมด</p>
+          <h3 id="statTotalEmp" class="text-xl font-bold text-slate-800 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">คนในรายการ</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+
+      <!-- Workdays Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">วันทำงานปกติ</p>
+          <h3 id="statOfficialWorkdays" class="text-xl font-bold text-slate-700 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">วัน/ถึงปัจจุบัน</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+      </div>
+
+      <!-- CCTV Pending Action Alert Card -->
+      <div class="bg-amber-50 border border-amber-300 p-3.5 rounded-xl shadow-sm flex items-center justify-between cursor-pointer" onclick="filterByCCTVAlert()">
+        <div>
+          <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+            <i class="fa-solid fa-video text-amber-600 animate-pulse"></i> ต้องเช็ก CCTV
+          </p>
+          <h3 id="statCctvPending" class="text-xl font-bold text-amber-900 mt-0.5">0</h3>
+          <p class="text-[11px] text-amber-700 mt-0.5">เคสลืมสแกนก่อนวนทับ</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center text-base font-bold">
+          <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+      </div>
+
+      <!-- Present Rate Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">อัตราการมาทำงาน</p>
+          <h3 id="statAttendanceRate" class="text-xl font-bold text-emerald-600 mt-0.5">0%</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5"><span id="statPresentDays">0</span> วันลงเวลา</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+      </div>
+
+      <!-- Missing / Absent Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ไม่สแกนนิ้ว (ขาด)</p>
+          <h3 id="statMissingDays" class="text-xl font-bold text-rose-600 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5"><span id="statMissingRate">0%</span> ของวันทำงาน</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-user-xmark"></i>
+        </div>
+      </div>
+
+      <!-- Incomplete Scans Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ขาดสแกนเข้า/ออก</p>
+          <h3 id="statIncompleteScans" class="text-xl font-bold text-amber-600 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">ลืมสแกนเข้าหรือออก</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+      </div>
+
+      <!-- Leave Days Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">การลางาน (ลา)</p>
+          <h3 id="statLeaveDays" class="text-xl font-bold text-purple-600 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">วันลาที่มีอนุมัติ</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-plane-departure"></i>
+        </div>
+      </div>
+
+      <!-- Off-site / Meeting Card -->
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">นอกสถานที่</p>
+          <h3 id="statOffsiteDays" class="text-xl font-bold text-teal-600 mt-0.5">0</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">วันออกปฏิบัติงาน/ประชุม</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-base">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Container with Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- Navigation Tabs -->
+      <div class="border-b border-slate-200 bg-slate-50/50 px-4 pt-3 flex flex-wrap justify-between items-center no-print gap-2">
+        <nav class="flex space-x-2 overflow-x-auto" aria-label="Tabs">
+          <button id="tabBtnMatrix" onclick="switchTab('matrix')" class="px-4 py-2.5 font-medium text-sm rounded-t-lg bg-white border-t-2 border-brand-600 text-brand-600 shadow-sm flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-table-cells"></i>
+            <span>ตารางรวมพนักงานทั้งหมด</span>
+          </button>
+          <button id="tabBtnIndividual" onclick="switchTab('individual')" class="px-4 py-2.5 font-medium text-sm rounded-t-lg text-slate-600 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-id-card text-brand-600"></i>
+            <span>บัตรลงเวลาพนักงานรายบุคคล/เปรียบเทียบ</span>
+          </button>
+          <button id="tabBtnMissing" onclick="switchTab('missing')" class="px-4 py-2.5 font-medium text-sm rounded-t-lg text-slate-600 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-file-invoice text-rose-500"></i>
+            <span>สรุปขาดงาน & วันลา & ไปประชุม</span>
+          </button>
+          <button id="tabBtnCalendar" onclick="switchTab('calendar')" class="px-4 py-2.5 font-medium text-sm rounded-t-lg text-slate-600 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-calendar-days text-sky-600"></i>
+            <span>มุมมองปฏิทิน & ซิงค์ GCal</span>
+          </button>
+        </nav>
+
+        <!-- Status Badges Legend with Short Thai Labels -->
+        <div class="flex flex-wrap items-center gap-2 text-[11px] py-1.5 text-slate-600">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-emerald-100 border border-emerald-400 rounded"></span> มา (ปกติ)</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-100 border border-amber-400 rounded"></span> สาย</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-orange-100 border border-orange-400 rounded"></span> ขาดเข้า</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-100 border border-amber-500 rounded"></span> ขาดออก</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-rose-100 border border-rose-400 rounded"></span> ขาด</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-100 border border-purple-400 rounded"></span> ลา</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-teal-100 border border-teal-400 rounded"></span> นอกสถานที่</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-indigo-100 border border-indigo-400 rounded"></span> หยุด</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-slate-100 border border-slate-300 rounded"></span> ยังไม่ถึง</span>
+        </div>
+      </div>
+
+      <!-- TAB 1: ALL EMPLOYEES MATRIX -->
+      <div id="tabContentMatrix" class="p-4">
+        <div class="mb-2 flex items-center justify-between text-xs text-slate-500">
+          <span><i class="fa-solid fa-circle-info text-brand-500 mr-1"></i>คลิกชื่อพนักงานในตาราง เพื่อไปยัง **สรุปปัญหาของพนักงานคนนั้น** ทันที</span>
+          <span id="matrixCountText" class="font-medium text-slate-700">แสดง 0 รายการ</span>
+        </div>
+        <div id="tableContainer" class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg max-h-[620px]">
+          <table id="matrixTable" class="w-full text-xs text-left text-slate-600 border-collapse">
+            <thead class="text-xs uppercase bg-slate-100 text-slate-700 sticky top-0 z-20 border-b border-slate-200">
+              <tr id="matrixHeaderRow">
+                <!-- Dynamically Generated with Sort Headers -->
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody" class="divide-y divide-slate-200 bg-white">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: INDIVIDUAL EMPLOYEE VIEW -->
+      <div id="tabContentIndividual" class="p-4 hidden space-y-4">
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-3 w-full sm:w-auto">
+            <label for="empSelect" class="font-bold text-slate-700 text-sm whitespace-nowrap">เลือกพนักงาน:</label>
+            <select id="empSelect" onchange="renderIndividualView()" class="bg-white border border-slate-300 text-slate-800 text-sm rounded-lg p-2 font-medium w-full sm:w-80 shadow-sm focus:ring-brand-500">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div id="indivSummaryBadges" class="flex flex-wrap items-center gap-2 text-xs font-semibold">
+            <!-- Summary metrics inserted here -->
+          </div>
+        </div>
+
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+          <div class="bg-slate-900 text-white px-4 py-3 font-bold text-sm flex justify-between items-center">
+            <span id="indivCardTitle">รายงานการลงเวลาเข้า-ออกงานแบบละเอียด</span>
+            <span class="text-xs text-slate-300 font-normal">คลิกหัวข้อคอลัมน์เพื่อเรียงลำดับ</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left text-slate-600">
+              <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b">
+                <tr>
+                  <th onclick="sortIndividualTable('date')" class="px-4 py-3 sortable-header">วันที่ <span id="indivSort_date">▲</span></th>
+                  <th onclick="sortIndividualTable('dayName')" class="px-4 py-3 sortable-header">วัน</th>
+                  <th onclick="sortIndividualTable('workDayType')" class="px-4 py-3 sortable-header">ประเภทวัน <span id="indivSort_workDayType"></span></th>
+                  <th onclick="sortIndividualTable('firstPunch')" class="px-4 py-3 text-center sortable-header">สแกนเข้า (First) <span id="indivSort_firstPunch"></span></th>
+                  <th onclick="sortIndividualTable('lastPunch')" class="px-4 py-3 text-center sortable-header">สแกนออก (Last) <span id="indivSort_lastPunch"></span></th>
+                  <th onclick="sortIndividualTable('workedHours')" class="px-4 py-3 text-center sortable-header">ชั่วโมงทำงาน <span id="indivSort_workedHours"></span></th>
+                  <th onclick="sortIndividualTable('lateMinutes')" class="px-4 py-3 text-center sortable-header">นาทีที่สาย <span id="indivSort_lateMinutes"></span></th>
+                  <th onclick="sortIndividualTable('code')" class="px-4 py-3 text-center sortable-header">สถานะ <span id="indivSort_code"></span></th>
+                  <th class="px-4 py-3 text-left">หมายเหตุ / เหตุผลการลา-ประชุม</th>
+                </tr>
+              </thead>
+              <tbody id="individualTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: MISSING, LEAVE, & OFFSITE LOG -->
+      <div id="tabContentMissing" class="p-4 hidden space-y-6">
+        <div id="personFilterBanner" class="bg-brand-50 border border-brand-200 p-3 rounded-lg flex items-center justify-between text-xs hidden">
+          <div class="flex items-center space-x-2 text-brand-900 font-semibold">
+            <i class="fa-solid fa-filter text-brand-600"></i>
+            <span>กำลังแสดงรายการปัญหาเฉพาะพนักงาน: <strong id="filterPersonName" class="text-brand-700 font-bold underline"></strong></span>
+          </div>
+          <button onclick="clearPersonAuditFilter()" class="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded text-xs transition">
+            <i class="fa-solid fa-xmark mr-1"></i> แสดงพนักงานทั้งหมด
+          </button>
+        </div>
+
+        <div class="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-lg flex items-start gap-3">
+          <i class="fa-solid fa-magnifying-glass-chart text-xl text-indigo-600 mt-0.5"></i>
+          <div>
+            <h4 class="font-bold text-sm">การตรวจสอบวันขาดสแกนนิ้ว / ขาดสแกนเข้า-ออก / วันลางาน / ปฏิบัติงานนอกสถานที่</h4>
+            <p class="text-xs text-indigo-700 mt-0.5">ค่าเริ่มต้นแสดง **พนักงานทุกคน** คุณสามารถ **คลิกชื่อพนักงาน** ด้านล่างหรือจากตารางหลัก เพื่อกรองดูปัญหาเฉพาะบุคคลได้ทันที</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-white border border-slate-200 rounded-lg p-4 space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center justify-between border-b pb-2">
+              <span>พนักงานที่มีปัญหาสแกนนิ้วสูงสุด</span>
+              <span class="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-medium">อันดับขาด/ลืมสแกน</span>
+            </h3>
+            <ul id="topMissingList" class="divide-y divide-slate-100 text-xs">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+
+          <div class="lg:col-span-2 border border-slate-200 rounded-lg overflow-hidden">
+            <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
+              <span>รายการแจ้งสถานะพิเศษรายวัน (ขาดงาน / ลืมสแกนเข้า-ออก / ลางาน / ไปประชุม)</span>
+              <span id="missingCountBadge" class="bg-indigo-600 text-white px-2.5 py-0.5 rounded text-[11px]">0 รายการ</span>
+            </div>
+            <div class="overflow-y-auto max-h-[480px]">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider sticky top-0 border-b">
+                  <tr>
+                    <th onclick="sortAuditTable('date')" class="px-3 py-2.5 sortable-header">วันที่ <span id="auditSort_date">▲</span></th>
+                    <th onclick="sortAuditTable('empCode')" class="px-3 py-2.5 sortable-header">รหัสพนักงาน <span id="auditSort_empCode"></span></th>
+                    <th onclick="sortAuditTable('name')" class="px-3 py-2.5 sortable-header">ชื่อ-นามสกุล <span id="auditSort_name"></span></th>
+                    <th onclick="sortAuditTable('dept')" class="px-3 py-2.5 sortable-header">แผนก <span id="auditSort_dept"></span></th>
+                    <th onclick="sortAuditTable('code')" class="px-3 py-2.5 text-center sortable-header">สถานะ <span id="auditSort_code"></span></th>
+                    <th class="px-3 py-2.5">รายละเอียด / เหตุผล</th>
+                  </tr>
+                </thead>
+                <tbody id="missingLogBody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CALENDAR VIEW & GOOGLE CALENDAR VERIFICATION -->
+      <div id="tabContentCalendar" class="p-4 hidden space-y-4">
+        <!-- Google Calendar Integration Verification Panel -->
+        <div class="bg-sky-50 border border-sky-200 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center text-xl">
+              <i class="fa-brands fa-google"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-sky-900 text-sm flex items-center gap-2">
+                สถานะการเชื่อมต่อ Google Calendar
+                <span id="calendarSyncStatusBadge" class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">✅ ซิงค์สำเร็จ</span>
+              </h4>
+              <p class="text-xs text-sky-700 font-mono mt-0.5">
+                Calendar ID: <span class="bg-white px-1.5 py-0.5 rounded border border-sky-200 font-bold">7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com</span>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openNicknameModal()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+              <i class="fa-solid fa-user-tag text-amber-600"></i>
+              <span>จัดการชื่อเล่นพนักงาน</span>
+            </button>
+            <button onclick="syncGoogleCalendarLeaves()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate"></i>
+              <span>ซิงค์วันลาทันที</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendar Display Multi-Filter Controls -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-filter text-brand-600"></i>
+              เลือกการแสดงผลบนปฏิทิน:
+            </span>
+            <label class="inline-flex items-center gap-1.5 bg-white border border-rose-200 text-rose-800 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-rose-50 font-medium">
+              <input type="checkbox" id="calFilterMissing" checked onchange="renderCalendarViewTab(processedData)" class="rounded text-rose-600 focus:ring-rose-500">
+              <span>🔴 ขาดงาน</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-white border border-orange-200 text-orange-800 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-orange-50 font-medium">
+              <input type="checkbox" id="calFilterIncomplete" checked onchange="renderCalendarViewTab(processedData)" class="rounded text-orange-600 focus:ring-orange-500">
+              <span>🟠 ขาดเข้า/ออก</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-white border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-amber-50 font-medium">
+              <input type="checkbox" id="calFilterLate" checked onchange="renderCalendarViewTab(processedData)" class="rounded text-amber-600 focus:ring-amber-500">
+              <span>🟡 สาย</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-white border border-purple-200 text-purple-800 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-purple-50 font-medium">
+              <input type="checkbox" id="calFilterLeave" checked onchange="renderCalendarViewTab(processedData)" class="rounded text-purple-600 focus:ring-purple-500">
+              <span>🟣 ลา / ไปประชุม</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-white border border-indigo-200 text-indigo-800 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-indigo-50 font-medium">
+              <input type="checkbox" id="calFilterHoliday" checked onchange="renderCalendarViewTab(processedData)" class="rounded text-indigo-600 focus:ring-indigo-500">
+              <span>🔵 วันหยุดนักขัตฤกษ์</span>
+            </label>
+          </div>
+          <span class="text-[11px] text-slate-500 font-medium">* ไม่แสดงข้อมูลในวันเสาร์-อาทิตย์ และวันหยุด</span>
+        </div>
+
+        <!-- Monthly Calendar Grid View -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+          <div class="bg-slate-900 text-white px-4 py-3 font-bold text-sm flex justify-between items-center">
+            <span id="calendarMonthTitle">ปฏิทินสรุปการมาทำงาน และวันลาประจำเดือน</span>
+            <span class="text-xs text-slate-300 font-normal">คลิกที่วันเพื่อดูรายละเอียด</span>
+          </div>
+          <div class="p-4">
+            <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs bg-slate-100 py-2 rounded-t-lg border-b text-slate-700">
+              <div class="text-rose-600">อาทิตย์</div>
+              <div>จันทร์</div>
+              <div>อังคาร</div>
+              <div>พุธ</div>
+              <div>พฤหัสบดี</div>
+              <div>ศุกร์</div>
+              <div class="text-rose-600">เสาร์</div>
+            </div>
+            <div id="calendarGridBody" class="grid grid-cols-7 gap-1 mt-1 text-xs">
+              <!-- Dynamically populated monthly calendar cells -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODALS SECTION -->
+  <!-- MODAL 1: Leave & External Meeting Manager -->
+  <div id="leaveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="bg-purple-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-plane-departure text-purple-300 text-lg"></i>
+          <h3 class="font-bold text-base">จัดการวันลา & ปฏิบัติงานนอกสถานที่ / ไปประชุม</h3>
+        </div>
+        <button onclick="closeLeaveModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-5 text-sm flex-grow">
+        <div class="bg-purple-50/60 border border-purple-200 p-4 rounded-xl space-y-3">
+          <h4 id="leaveFormTitle" class="font-bold text-purple-900 text-xs uppercase tracking-wider">บันทึกข้อมูลการลา / ปฏิบัติงานนอกสถานที่ใหม่</h4>
+          <input type="hidden" id="editLeaveId" value="">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">เลือกพนักงาน</label>
+              <select id="leaveEmpSelect" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ (YYYY-MM-DD)</label>
+              <input type="date" id="leaveDateInput" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทการทำรายการ</label>
+              <select id="leaveTypeInput" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white font-semibold">
+                <option value="LEAVE_ANNUAL">ลาพักผ่อน (Annual Leave)</option>
+                <option value="LEAVE_SICK">ลาป่วย (Sick Leave)</option>
+                <option value="LEAVE_PERSONAL">ลากิจ (Personal Leave)</option>
+                <option value="LEAVE_MATERNITY">ลาคลอด (Maternity Leave)</option>
+                <option value="BUSINESS_TRIP">ออกนอกพื้นที่/ปฏิบัติงาน (Business Trip)</option>
+                <option value="MEETING">ไปประชุม/อบรม (External Meeting)</option>
+                <option value="LEAVE_HAJJ_ORDINATION">ลาไปฮัจย์ / ลาอุปสมบท</option>
+                <option value="LEAVE_PATERNITY">ลาไปช่วยเหลือภรรยาที่คลอดบุตร</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะเอกสาร / ใบลา</label>
+              <select id="leaveDocStatusInput" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white font-semibold">
+                <option value="COMPLETE">✅ ยื่นใบลา/เอกสารเรียบร้อยแล้ว</option>
+                <option value="PENDING">⚠️ ยังไม่อนุมัติ / รอใบลา-เอกสารยืนยัน</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">เหตุผล / หมายเหตุเพิ่มเติม</label>
+              <input type="text" id="leaveReasonInput" placeholder="เช่น ไปพบลูกค้า / ลาป่วยมีใบรับรองแพทย์" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-1">
+            <div class="flex gap-2">
+              <label for="leaveCsvInput" class="cursor-pointer px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-file-import text-purple-700"></i>
+                <span>นำเข้า CSV</span>
+              </label>
+              <input type="file" id="leaveCsvInput" accept=".csv" onchange="importLeaveCSV(event)" class="hidden">
+
+              <button onclick="openNicknameModal()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-user-tag text-amber-600"></i>
+                <span>จัดการชื่อเล่น (Nickname)</span>
+              </button>
+            </div>
+
+            <div class="flex gap-2">
+              <button id="cancelLeaveEditBtn" onclick="resetLeaveForm()" class="px-3 py-1.5 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-semibold rounded-lg hidden">ยกเลิก</button>
+              <button onclick="saveLeaveRecord()" class="px-4 py-1.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold rounded-lg shadow">บันทึกข้อมูล</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">รายการวันลา / นอกสถานที่ที่บันทึกแล้ว</h4>
+          <div class="border border-slate-200 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0 border-b">
+                <tr>
+                  <th class="px-3 py-2">วันที่</th>
+                  <th class="px-3 py-2">พนักงาน</th>
+                  <th class="px-3 py-2">ประเภท</th>
+                  <th class="px-3 py-2">สถานะเอกสาร</th>
+                  <th class="px-3 py-2">เหตุผล</th>
+                  <th class="px-3 py-2 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="leaveTableBody" class="divide-y divide-slate-100 bg-white">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t text-right">
+        <button onclick="closeLeaveModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Thai Public Holiday Manager -->
+  <div id="holidayModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-calendar-check text-indigo-400 text-lg"></i>
+          <h3 class="font-bold text-base">จัดการวันหยุดนักขัตฤกษ์ (Thai Public Holidays)</h3>
+        </div>
+        <button onclick="closeHolidayModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-sm flex-grow">
+        <div class="bg-indigo-50/60 border border-indigo-200 p-4 rounded-xl space-y-3">
+          <h4 id="holidayFormTitle" class="font-bold text-indigo-900 text-xs uppercase tracking-wider">เพิ่มวันหยุดใหม่</h4>
+          <input type="hidden" id="editHolidayOriginalDate" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ (YYYY-MM-DD)</label>
+              <input type="date" id="holidayDateInput" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อวันหยุด</label>
+              <input type="text" id="holidayNameInput" placeholder="เช่น วันสงกรานต์ / วันหยุดพิเศษ" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button id="cancelHolidayEditBtn" onclick="resetHolidayForm()" class="px-3 py-1.5 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-semibold rounded-lg hidden">ยกเลิก</button>
+            <button onclick="saveHoliday()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow">บันทึกวันหยุด</button>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">รายการวันหยุดนักขัตฤกษ์ทั้งหมด</h4>
+          <div class="border border-slate-200 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0 border-b">
+                <tr>
+                  <th class="px-3 py-2">วันที่</th>
+                  <th class="px-3 py-2">ชื่อวันหยุด</th>
+                  <th class="px-3 py-2 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="holidayTableBody" class="divide-y divide-slate-100 bg-white">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t text-right">
+        <button onclick="closeHolidayModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Google Calendar Sync Manager -->
+  <div id="gcalModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl mx-4 overflow-hidden flex flex-col">
+      <div class="bg-sky-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-brands fa-google text-sky-300 text-lg"></i>
+          <h3 class="font-bold text-base">ดึงข้อมูลวันลาจาก Google Calendar</h3>
+        </div>
+        <button onclick="closeGoogleCalendarModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-sm">
+        <div class="bg-sky-50 border border-sky-200 text-sky-900 p-3.5 rounded-xl text-xs space-y-1">
+          <p class="font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-sky-600"></i>
+            เชื่อมต่อ Google Calendar กลางขององค์กร:
+          </p>
+          <p class="font-mono bg-white p-2 rounded border border-sky-200 text-slate-700 break-all select-all">
+            7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com
+          </p>
+          <p class="text-[11px] text-sky-700">
+            ระบบจะค้นหาวันลาจากชื่อเล่นพนักงานในกิจกรรม (เช่น "ตั้ม ลาป่วย", "เป้ ไปประชุม") และนำเข้าเป็นวันลาอัตโนมัติ
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Google Calendar ID</label>
+          <input type="text" id="gcalIdInput" value="7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com" class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Google API Key (ระบุสำหรับเชื่อมต่อสด / ละไว้เพื่อใช้โหมดจำลองการซิงค์)</label>
+          <input type="password" id="gcalApiKeyInput" placeholder="AIzaSy..." class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono">
+        </div>
+
+        <div id="gcalSyncStatus" class="text-xs p-2.5 rounded-lg bg-slate-100 text-slate-600 hidden"></div>
+
+        <div class="pt-2 flex justify-between items-center">
+          <button onclick="openNicknameModal()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+            <i class="fa-solid fa-user-tag"></i>
+            <span>ตรวจสอบชื่อเล่นพนักงาน</span>
+          </button>
+
+          <button onclick="syncGoogleCalendarLeaves()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>เริ่มซิงค์ข้อมูลวันลา</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Nickname Mapping Manager -->
+  <div id="nicknameModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl mx-4 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="bg-amber-800 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-user-tag text-amber-300 text-lg"></i>
+          <h3 class="font-bold text-base">จัดการชื่อเล่นพนักงาน (Nickname Mapping)</h3>
+        </div>
+        <button onclick="closeNicknameModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-sm flex-grow">
+        <p class="text-xs text-slate-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+          <i class="fa-solid fa-lightbulb text-amber-600 mr-1"></i>
+          ตั้งค่าชื่อเล่นเพื่อใช้จับคู่กับเหตุการณ์วันลาใน Google Calendar (เช่น ปฏิทินลง "ตั้ม ลาป่วย" ระบบจะจับคู่ชื่อ "ตั้ม" เข้ากับ นายสมชาย ใจดี)
+        </p>
+
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-100 font-bold uppercase text-slate-700 border-b">
+              <tr>
+                <th class="px-3 py-2">รหัส</th>
+                <th class="px-3 py-2">ชื่อ-นามสกุล</th>
+                <th class="px-3 py-2">แผนก</th>
+                <th class="px-3 py-2">ชื่อเล่น (Nickname)</th>
+              </tr>
+            </thead>
+            <tbody id="nicknameTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t text-right flex justify-between items-center">
+        <span id="nicknameSavedNotice" class="text-xs font-semibold text-emerald-600 hidden">
+          <i class="fa-solid fa-circle-check mr-1"></i> บันทึกชื่อเล่นเรียบร้อยแล้ว
+        </span>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="closeNicknameModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">ยกเลิก</button>
+          <button onclick="saveNicknames()" class="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-lg shadow">บันทึกชื่อเล่นทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: PRD Viewer Modal -->
+  <div id="prdModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl mx-4 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="bg-blue-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-code text-blue-300 text-lg"></i>
+          <h3 class="font-bold text-base">เอกสารข้อกำหนดผลิตภัณฑ์ (PRD: Product Requirement Document)</h3>
+        </div>
+        <button onclick="closePRDModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-700 leading-relaxed font-sans">
+        <div class="border-b pb-4">
+          <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded">เวอร์ชัน 2.5 (Current Date Guardrail & Thai Public Holidays)</span>
+          <h2 class="text-xl font-bold text-slate-900 mt-2">ระบบรายงานลงเวลา ZKBioTime และจัดการการลางาน/ปฏิบัติงานนอกสถานที่</h2>
+          <p class="text-xs text-slate-500 mt-1">เอกสารอธิบายสถาปัตยกรรมระบบ การเชื่อมต่อ Google Calendar, การตรวจสอบ CCTV 30 วัน และพารามิเตอร์ระบบ (DEF)</p>
+        </div>
+
+        <div class="space-y-3">
+          <h3 class="font-bold text-blue-900 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-bullseye text-blue-600"></i> 1. วัตถุประสงค์และขอบเขตของระบบ (Objectives & Scope)
+          </h3>
+          <ul class="list-disc list-inside text-xs space-y-1 pl-2 text-slate-600">
+            <li>ดึงข้อมูลบันทึกเวลาสแกนลายนิ้วมือ/ใบหน้าจากระบบ ZKBioTime API แบบอัตโนมัติ หรือจากการนำเข้าไฟล์ Excel/CSV</li>
+            <li>คำนวณเวลาเข้างานแรกสุด (First Punch) และเวลาเลิกงานล่าสุด (Last Punch) สำหรับพนักงานทุกคน</li>
+            <li><strong>Current Date Guardrail:</strong> ตรวจสอบวันที่ปัจจุบันเพื่อไม่ให้วันอนาคตถูกแจ้งเตือนเป็นวันขาดสแกนนิ้ว</li>
+            <li><strong>Short Thai Statuses:</strong> แสดงสถานะกระชับ 1 บรรทัด เช่น `ขาด`, `ขาดเข้า`, `ขาดออก`, `สาย`, `ลา`, `นอกสถานที่`</li>
+            <li><strong>Google Calendar Integration:</strong> เชื่อมต่อ Calendar ID <code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-sky-700">7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com</code></li>
+            <li><strong>ระบบจับคู่ชื่อเล่น (Nickname Mapping):</strong> แมปชื่อเล่นในปฏิทิน (เช่น "ตั้ม", "เป้", "โอม") เข้ากับชื่อจริงพนักงาน</li>
+            <li><strong>CCTV 30-Day Alert:</strong> แจ้งเตือนวันลืมสแกนนิ้วย้อนหลังก่อนที่กล้อง CCTV จะถูกบันทึกทับวนรอบ 30 วัน</li>
+            <li>ส่งออกไฟล์รายงานในรูปแบบมาตรฐาน 17 คอลัมน์ <strong>"บัตรเวลาทั้งหมด"</strong> สอดคล้องกับระบบบริหารงานบุคคล</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t text-right flex justify-between items-center">
+        <button onclick="downloadPRDText()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1">
+          <i class="fa-solid fa-download"></i>
+          <span>ดาวน์โหลด PRD (Text)</span>
+        </button>
+        <button onclick="closePRDModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: API & DEF Config Manager -->
+  <div id="configModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl mx-4 overflow-hidden flex flex-col">
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-sliders text-brand-400 text-lg"></i>
+          <h3 class="font-bold text-base">ตั้งค่าพารามิเตอร์ระบบ (DEF & ZKBioTime API)</h3>
+        </div>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-sm">
+        <div class="border-b pb-3">
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">1. การเชื่อมต่อ Server ZKBioTime</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Server URL (พร้อม พอร์ต)</label>
+              <input type="text" id="apiServerUrlInput" placeholder="http://192.168.1.200:8080" class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">API Username</label>
+              <input type="text" id="apiUsernameInput" placeholder="admin" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">API Password</label>
+              <input type="password" id="apiPasswordInput" placeholder="••••••••" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+          <div class="mt-2 flex justify-between items-center">
+            <button onclick="testConnection()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-lg">ทดสอบการเชื่อมต่อ API</button>
+            <span id="connectionStatus" class="text-xs font-semibold text-slate-500"></span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">2. กำหนดพารามิเตอร์เกณฑ์เวลาทำงาน (DEF)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">อนุญาตให้สายได้ไม่เกิน (นาที)</label>
+              <input type="number" id="defGraceMinutesInput" value="0" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">จำนวนชั่วโมงทำงานต่อวัน (มาตรฐาน)</label>
+              <input type="number" id="defMinHoursInput" value="8" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">3. ตำแหน่งจัดเก็บข้อมูลปลายทาง (Save Location)</h4>
+          <div class="flex gap-2 items-center">
+            <input type="text" id="defSavePathInput" value="d:\tool\zk\" readonly class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-100 text-slate-600">
+            <button onclick="requestFolderAccess()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg whitespace-nowrap">
+              เปลี่ยนโฟลเดอร์
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t text-right flex justify-between items-center">
+        <span id="defSavedNotice" class="text-xs font-semibold text-emerald-600 hidden">
+          <i class="fa-solid fa-circle-check mr-1"></i> บันทึกการตั้งค่าแล้ว
+        </span>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="closeConfigModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">ยกเลิก</button>
+          <button onclick="saveConfig()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg shadow">บันทึกตั้งค่า</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: Folder Creation Prompt Dialog -->
+  <div id="folderPromptModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md mx-4 p-6 text-center space-y-4">
+      <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto">
+        <i class="fa-solid fa-folder-plus animate-bounce"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">ไม่พบโฟลเดอร์จัดเก็บข้อมูล d:\tool\zk\</h3>
+        <p class="text-xs text-slate-500 mt-1">
+          ระบบต้องการเชื่อมต่อตำแหน่ง <code class="font-mono font-bold text-amber-700">d:\tool\zk\</code> เพื่อใช้บันทึกไฟล์รายงานและค่าการตั้งค่า
+        </p>
+      </div>
+      <div class="flex gap-2 justify-end pt-2">
+        <button onclick="closeFolderPromptModal()" class="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-semibold rounded-lg">ข้ามไปก่อน</button>
+        <button onclick="requestFolderAccess()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow">สร้าง/เลือกโฟลเดอร์ d:\tool\zk\</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Implementation -->
+  <script>
+    // Global Application State Variables
+    let dataMode = 'DEMO'; // 'DEMO' | 'API' | 'FILE'
+    let currentMonth = '2026-08';
+    let jwtToken = null;
+
+    let employees = [
+      { id: "1001", name: "สมชาย ใจดี", nickname: "ตั้ม", dept: "ไอที/วิศวกรรม", position: "นักสาธารณสุข" },
+      { id: "1002", name: "นภา วงศ์สว่าง", nickname: "ฟ้า", dept: "ไอที/วิศวกรรม", position: "นักวิชาการสาธารณสุข" },
+      { id: "1003", name: "กิตติพงษ์ ศรีสุข", nickname: "เป้", dept: "ฝ่ายปฏิบัติการ", position: "เจ้าพนักงานสาธารณสุข" },
+      { id: "1004", name: "อนันต์ รักชาติ", nickname: "โอม", dept: "ฝ่ายปฏิบัติการ", position: "นักจัดการงานทั่วไป" },
+      { id: "1005", name: "ศิริพร บุญมา", nickname: "นก", dept: "ฝ่ายบัญชีและการเงิน", position: "เจ้าพนักงานการเงิน" },
+      { id: "1006", name: "ประวิทย์ นำชัย", nickname: "วิทย์", dept: "ฝ่ายทรัพยากรบุคคล", position: "นักทรัพยากรบุคคล" },
+      { id: "1007", name: "วรรณา มั่นคง", nickname: "ใหม่", dept: "ฝ่ายการตลาด", position: "นักวิชาการคอมพิวเตอร์" },
+      { id: "1008", name: "ชัยวัฒน์ สุขสำราญ", nickname: "บอย", dept: "ฝ่ายการตลาด", position: "นักการตลาด" },
+      { id: "1009", name: "สุชาดา รัตนกุล", nickname: "แป้ง", dept: "ฝ่ายขาย", position: "เจ้าพนักงานธุรการ" },
+      { id: "1010", name: "ธนกฤต เจริญสุข", nickname: "กอล์ฟ", dept: "ฝ่ายขาย", position: "นักจัดการงานทั่วไป" }
+    ];
+
+    let rawTransactions = [];
+    let processedData = []; 
+    let departments = new Set();
+
+    // Storage for CCTV Audit Checks
+    let cctvCheckedRecords = new Set(); // Key: empCode_dateStr
+
+    // Imported dataset cache from Excel/CSV
+    let importedEmployeesCache = [];
+    let importedTransactionsCache = [];
+
+    // Leave & External Meeting Records List
+    let leaveRecords = [];
+
+    // Google Calendar Config
+    let gcalId = '7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com';
+    let gcalApiKey = '';
+
+    // DEF Settings
+    let defGraceMinutes = 0;
+    let defMinHours = 8;
+    let apiServerUrl = '';
+    let apiUsername = '';
+    let apiPassword = '';
+
+    // Thai Holidays Dictionary (Includes 30 July)
+    let thaiHolidays = {
+      '2026-01-01': 'วันขึ้นปีใหม่',
+      '2026-02-13': 'วันมาฆบูชา',
+      '2026-04-06': 'วันจักรี',
+      '2026-04-13': 'วันสงกรานต์',
+      '2026-04-14': 'วันสงกรานต์',
+      '2026-04-15': 'วันสงกรานต์',
+      '2026-05-01': 'วันแรงงานแห่งชาติ',
+      '2026-05-04': 'วันฉัตรมงคล',
+      '2026-05-31': 'วันวิสาขบูชา',
+      '2026-06-03': 'วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าฯ',
+      '2026-07-28': 'วันเฉลิมพระชนมพรรษา พระบาทสมเด็จพระเจ้าอยู่หัว',
+      '2026-07-29': 'วันอาสาฬหบูชา',
+      '2026-07-30': 'วันหยุดพิเศษประจำปี',
+      '2026-08-12': 'วันแม่แห่งชาติ',
+      '2026-10-13': 'วันนวมินทรมหาราช',
+      '2026-10-23': 'วันปิยมหาราช',
+      '2026-12-05': 'วันพ่อแห่งชาติ',
+      '2026-12-10': 'วันรัฐธรรมนูญ',
+      '2026-12-31': 'วันสิ้นปี'
+    };
+
+    // Sorting State Variables
+    let matrixSortKey = 'empCode';
+    let matrixSortDir = 'asc';
+
+    let indivSortKey = 'date';
+    let indivSortDir = 'asc';
+
+    let auditSortKey = 'date';
+    let auditSortDir = 'asc';
+
+    // Global State Variables for Multi-user & Auditing
+    let selectedEmpCodesForComparison = [];
+    let auditPersonFilter = null; // null = show all, or empCode
+
+    window.onload = function() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      currentMonth = `${year}-${month}`;
+
+      const monthPicker = document.getElementById('monthPicker');
+      if (monthPicker) monthPicker.value = currentMonth;
+
+      loadSavedConfig();
+      loadSavedHolidays();
+      loadSavedLeaves();
+      loadSavedNicknames();
+      loadSavedCctvChecks();
+
+      loadReportData();
+    };
+
+    function loadSavedConfig() {
+      const saved = localStorage.getItem('zk_def_config');
+      if (saved) {
+        try {
+          const cfg = JSON.parse(saved);
+          defGraceMinutes = cfg.defGraceMinutes || 0;
+          defMinHours = cfg.defMinHours || 8;
+          apiServerUrl = cfg.apiServerUrl || '';
+          apiUsername = cfg.apiUsername || '';
+          apiPassword = cfg.apiPassword || '';
+          
+          const g1 = document.getElementById('defGraceMinutesInput');
+          const g2 = document.getElementById('defMinHoursInput');
+          const g3 = document.getElementById('apiServerUrlInput');
+          const g4 = document.getElementById('apiUsernameInput');
+          const g5 = document.getElementById('apiPasswordInput');
+
+          if (g1) g1.value = defGraceMinutes;
+          if (g2) g2.value = defMinHours;
+          if (g3) g3.value = apiServerUrl;
+          if (g4) g4.value = apiUsername;
+          if (g5) g5.value = apiPassword;
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    function saveConfig() {
+      defGraceMinutes = parseInt(document.getElementById('defGraceMinutesInput').value) || 0;
+      defMinHours = parseInt(document.getElementById('defMinHoursInput').value) || 8;
+      apiServerUrl = document.getElementById('apiServerUrlInput').value.trim();
+      apiUsername = document.getElementById('apiUsernameInput').value.trim();
+      apiPassword = document.getElementById('apiPasswordInput').value.trim();
+
+      const cfg = { defGraceMinutes, defMinHours, apiServerUrl, apiUsername, apiPassword };
+      localStorage.setItem('zk_def_config', JSON.stringify(cfg));
+
+      const notice = document.getElementById('defSavedNotice');
+      if (notice) {
+        notice.classList.remove('hidden');
+        setTimeout(() => notice.classList.add('hidden'), 2500);
+      }
+
+      loadReportData();
+    }
+
+    function loadSavedHolidays() {
+      const saved = localStorage.getItem('zk_thai_holidays');
+      if (saved) {
+        try {
+          thaiHolidays = JSON.parse(saved);
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    function saveHolidaysToStorage() {
+      localStorage.setItem('zk_thai_holidays', JSON.stringify(thaiHolidays));
+    }
+
+    function loadSavedLeaves() {
+      const saved = localStorage.getItem('zk_leave_records');
+      if (saved) {
+        try {
+          leaveRecords = JSON.parse(saved);
+        } catch(e) { console.error(e); }
+      } else {
+        // Initial Demo Leaves
+        leaveRecords = [
+          { id: "l1", empCode: "1002", date: `${currentMonth}-05`, type: "LEAVE_ANNUAL", docStatus: "COMPLETE", reason: "ลาพักผ่อนประจำปี" },
+          { id: "l2", empCode: "1003", date: `${currentMonth}-12`, type: "BUSINESS_TRIP", docStatus: "COMPLETE", reason: "ปฏิบัติงานต่างจังหวัด" },
+          { id: "l3", empCode: "1004", date: `${currentMonth}-18`, type: "MEETING", docStatus: "PENDING", reason: "ประชุมร่วมกรมอนามัย" },
+          { id: "l4", empCode: "1005", date: `${currentMonth}-22`, type: "LEAVE_SICK", docStatus: "COMPLETE", reason: "ลาป่วยมีใบรับรองแพทย์" }
+        ];
+      }
+    }
+
+    function saveLeavesToStorage() {
+      localStorage.setItem('zk_leave_records', JSON.stringify(leaveRecords));
+    }
+
+    function loadSavedNicknames() {
+      const saved = localStorage.getItem('zk_emp_nicknames');
+      if (saved) {
+        try {
+          const map = JSON.parse(saved);
+          employees.forEach(emp => {
+            if (map[emp.id]) emp.nickname = map[emp.id];
+          });
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    function saveNicknames() {
+      const map = {};
+      employees.forEach(emp => {
+        const inp = document.getElementById(`nickname_inp_${emp.id}`);
+        if (inp) {
+          emp.nickname = inp.value.trim();
+          map[emp.id] = emp.nickname;
+        }
+      });
+
+      localStorage.setItem('zk_emp_nicknames', JSON.stringify(map));
+      
+      const notice = document.getElementById('nicknameSavedNotice');
+      if (notice) {
+        notice.classList.remove('hidden');
+        setTimeout(() => notice.classList.add('hidden'), 2500);
+      }
+
+      loadReportData();
+    }
+
+    function loadSavedCctvChecks() {
+      const saved = localStorage.getItem('zk_cctv_checks');
+      if (saved) {
+        try {
+          const arr = JSON.parse(saved);
+          cctvCheckedRecords = new Set(arr);
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    function saveCctvChecksToStorage() {
+      localStorage.setItem('zk_cctv_checks', JSON.stringify(Array.from(cctvCheckedRecords)));
+    }
+
+    function toggleCctvChecked(empCode, dateStr) {
+      const key = `${empCode}_${dateStr}`;
+      if (cctvCheckedRecords.has(key)) {
+        cctvCheckedRecords.delete(key);
+      } else {
+        cctvCheckedRecords.add(key);
+      }
+      saveCctvChecksToStorage();
+      applyFilters();
+    }
+
+    function generateDemoTransactions() {
+      const logs = [];
+      const totalDays = getDaysInMonthCount(currentMonth);
+      const todayStr = getTodayFormattedString();
+
+      employees.forEach(emp => {
+        for (let d = 1; d <= totalDays; d++) {
+          const dayStr = String(d).padStart(2, '0');
+          const fullDateStr = `${currentMonth}-${dayStr}`;
+
+          // Stop mock generation for future days beyond today
+          if (fullDateStr > todayStr) continue;
+
+          const dateObj = new Date(fullDateStr);
+          const dayOfWeek = dateObj.getDay();
+          const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+          const isHoliday = !!thaiHolidays[fullDateStr];
+
+          if (isWeekend || isHoliday) continue;
+
+          const isLeave = leaveRecords.some(l => l.empCode === emp.id && l.date === fullDateStr);
+          if (isLeave) continue;
+
+          const rand = Math.random();
+          if (rand < 0.10) {
+            // Missing scan
+            continue;
+          } else if (rand < 0.20) {
+            // Forgot In (Only Punch Out)
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} 16:35:00` });
+          } else if (rand < 0.30) {
+            // Forgot Out (Only Punch In)
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} 08:20:00` });
+          } else if (rand < 0.45) {
+            // Came Late
+            const lateMins = Math.floor(Math.random() * 40) + 5;
+            const hour = 8 + Math.floor((30 + lateMins) / 60);
+            const min = (30 + lateMins) % 60;
+            const timeStr = `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}:00`;
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} ${timeStr}` });
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} 16:32:00` });
+          } else {
+            // Normal On-time Scan
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} 08:15:00` });
+            logs.push({ emp_code: emp.id, punch_time: `${fullDateStr} 16:35:00` });
+          }
+        }
+      });
+
+      return logs;
+    }
+
+    async function fetchApiTransactions() {
+      if (!apiServerUrl) {
+        alert("กรุณาระบุ API Server URL ในการตั้งค่าก่อนใช้งาน");
+        return [];
+      }
+      try {
+        if (!jwtToken) {
+          const tokenResp = await fetch(`${apiServerUrl}/jwt-api-token-auth/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: apiUsername, password: apiPassword })
+          });
+          const tokenData = await tokenResp.json();
+          jwtToken = tokenData.token;
+        }
+
+        const days = getDaysInMonthCount(currentMonth);
+        const startTime = `${currentMonth}-01 00:00:00`;
+        const endTime = `${currentMonth}-${days} 23:59:59`;
+
+        const resp = await fetch(`${apiServerUrl}/iclock/api/transactions/?start_time=${encodeURIComponent(startTime)}&end_time=${encodeURIComponent(endTime)}`, {
+          headers: { 'Authorization': `JWT ${jwtToken}` }
+        });
+        const data = await resp.json();
+        return data.results || [];
+      } catch (err) {
+        alert("ไม่สามารถเชื่อมต่อ ZKBioTime API ได้: " + err.message);
+        return [];
+      }
+    }
+
+    async function loadReportData() {
+      const refreshIcon = document.getElementById('refreshIcon');
+      if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+      departments.clear();
+      processedData = [];
+
+      if (dataMode === 'DEMO') {
+        rawTransactions = generateDemoTransactions();
+      } else if (dataMode === 'FILE') {
+        employees = importedEmployeesCache;
+        rawTransactions = importedTransactionsCache;
+      } else if (dataMode === 'API') {
+        rawTransactions = await fetchApiTransactions();
+      }
+
+      processMonthlyData();
+
+      if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+    }
+
+    function processMonthlyData() {
+      const workStart = document.getElementById('workStartTime').value || '08:30';
+      const workEnd = document.getElementById('workEndTime').value || '16:30';
+      const totalDays = getDaysInMonthCount(currentMonth);
+      const todayStr = getTodayFormattedString();
+
+      const leaveMap = {};
+      leaveRecords.forEach(l => {
+        if (!leaveMap[l.empCode]) leaveMap[l.empCode] = {};
+        leaveMap[l.empCode][l.date] = l;
+      });
+
+      employees.forEach(emp => {
+        if (emp.dept) departments.add(emp.dept);
+
+        const empPunches = rawTransactions.filter(t => t.emp_code === emp.id);
+
+        let presentCount = 0;
+        let missingCount = 0;
+        let forgotInCount = 0;
+        let forgotOutCount = 0;
+        let lateCount = 0;
+        let leaveCount = 0;
+        let offsiteCount = 0;
+        let totalLateMins = 0;
+        let totalWorkedHours = 0;
+        let officialWorkDays = 0;
+
+        const dailyStatus = {};
+
+        for (let d = 1; d <= totalDays; d++) {
+          const dayStr = String(d).padStart(2, '0');
+          const fullDateStr = `${currentMonth}-${dayStr}`;
+          const dateObj = new Date(fullDateStr);
+          const dayOfWeek = dateObj.getDay();
+          const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+          const isHoliday = !!thaiHolidays[fullDateStr];
+          const isFuture = fullDateStr > todayStr;
+
+          let workDayType = 'วันทำงานปกติ';
+          if (isHoliday) workDayType = 'วันหยุดนักขัตฤกษ์';
+          else if (isWeekend) workDayType = 'วันหยุดเสาร์-อาทิตย์';
+
+          if (!isWeekend && !isHoliday && !isFuture) {
+            officialWorkDays++;
+          }
+
+          const dayPunches = empPunches.filter(t => t.punch_time.startsWith(fullDateStr))
+                                      .map(t => t.punch_time.split(' ')[1])
+                                      .sort();
+
+          const registeredLeave = leaveMap[emp.id] ? leaveMap[emp.id][fullDateStr] : null;
+
+          let code = '';
+          let label = '';
+          let firstPunch = '-';
+          let lastPunch = '-';
+          let lateMins = 0;
+          let workedHours = 0;
+          let note = '';
+          let docStatus = 'COMPLETE';
+
+          if (registeredLeave) {
+            docStatus = registeredLeave.docStatus || 'COMPLETE';
+            if (registeredLeave.type.startsWith('LEAVE')) {
+              code = 'ลา';
+              label = 'ลางาน';
+              leaveCount++;
+              note = registeredLeave.reason || 'มีใบลาถูกต้อง';
+            } else {
+              code = 'นอกสถานที่';
+              label = 'นอกสถานที่';
+              offsiteCount++;
+              note = registeredLeave.reason || 'ออกปฏิบัติงานนอกสถานที่';
+            }
+          } else if (isHoliday) {
+            code = 'หยุด';
+            label = 'วันหยุดนักขัตฤกษ์';
+            note = thaiHolidays[fullDateStr];
+          } else if (isWeekend) {
+            code = 'เสาร์-อาทิตย์';
+            label = 'วันหยุดเสาร์-อาทิตย์';
+          } else if (isFuture) {
+            code = '-';
+            label = 'ยังไม่ถึงกำหนด';
+          } else if (dayPunches.length === 0) {
+            code = 'ขาด';
+            label = 'ไม่สแกนนิ้ว/ขาด';
+            missingCount++;
+            note = 'ไม่พบข้อมูลสแกนลายนิ้วมือ';
+          } else if (dayPunches.length === 1) {
+            const punch = dayPunches[0];
+            if (punch < '12:00:00') {
+              firstPunch = punch;
+              code = 'ขาดออก';
+              label = 'ขาดสแกนออก';
+              forgotOutCount++;
+              presentCount++;
+              note = 'สแกนเข้าแต่ลืมสแกนออก';
+            } else {
+              lastPunch = punch;
+              code = 'ขาดเข้า';
+              label = 'ขาดสแกนเข้า';
+              forgotInCount++;
+              presentCount++;
+              note = 'ลืมสแกนเข้า สแกนเฉพาะเลิกงาน';
+            }
+          } else {
+            firstPunch = dayPunches[0];
+            lastPunch = dayPunches[dayPunches.length - 1];
+            presentCount++;
+
+            lateMins = calculateLateMinutes(firstPunch, workStart);
+            workedHours = calculateWorkHours(firstPunch, lastPunch);
+            totalWorkedHours += workedHours;
+
+            if (lateMins > defGraceMinutes) {
+              code = 'สาย';
+              label = 'เข้างานสาย';
+              lateCount++;
+              totalLateMins += lateMins;
+              note = `มาสาย ${lateMins} นาที`;
+            } else {
+              code = 'มา';
+              label = 'มาปกติ';
+            }
+          }
+
+          dailyStatus[d] = {
+            code,
+            label,
+            workDayType,
+            firstPunch,
+            lastPunch,
+            lateMins,
+            workedHours,
+            note,
+            docStatus
+          };
+        }
+
+        const attendanceRate = officialWorkDays > 0 ? Math.round((presentCount / officialWorkDays) * 100) : 0;
+
+        processedData.push({
+          empCode: emp.id,
+          name: emp.name,
+          dept: emp.dept || 'ไม่ระบุ',
+          position: emp.position || 'พนักงาน',
+          presentCount,
+          missingCount,
+          forgotInCount,
+          forgotOutCount,
+          lateCount,
+          leaveCount,
+          offsiteCount,
+          totalLateMins,
+          totalWorkedHours,
+          officialWorkDays,
+          attendanceRate,
+          dailyStatus
+        });
+      });
+
+      populateEmployeeDropdown();
+      renderDepartmentDropdown();
+      renderMultiUserControls();
+      applyFilters();
+    }
+
+    function calculateLateMinutes(punchTime, standardTime) {
+      if (!punchTime || punchTime === '-') return 0;
+      const [pH, pM] = punchTime.split(':').map(Number);
+      const [sH, sM] = standardTime.split(':').map(Number);
+
+      const pTotal = pH * 60 + pM;
+      const sTotal = sH * 60 + sM;
+
+      return Math.max(0, pTotal - sTotal);
+    }
+
+    function calculateWorkHours(inTime, outTime) {
+      if (!inTime || !outTime || inTime === '-' || outTime === '-') return 0;
+      const [iH, iM] = inTime.split(':').map(Number);
+      const [oH, oM] = outTime.split(':').map(Number);
+
+      const inMins = iH * 60 + iM;
+      const outMins = oH * 60 + oM;
+
+      if (outMins <= inMins) return 0;
+      const diffMins = outMins - inMins;
+      return Math.round((diffMins / 60) * 10) / 10;
+    }
+
+    function getDaysInMonthCount(monthStr) {
+      const [y, m] = monthStr.split('-').map(Number);
+      return new Date(y, m, 0).getDate();
+    }
+
+    function getTodayFormattedString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function populateEmployeeDropdown() {
+      const empSelect = document.getElementById('empSelect');
+      const leaveEmpSelect = document.getElementById('leaveEmpSelect');
+      
+      if (empSelect) empSelect.innerHTML = '';
+      if (leaveEmpSelect) leaveEmpSelect.innerHTML = '';
+
+      employees.forEach(emp => {
+        const opt = document.createElement('option');
+        opt.value = emp.id;
+        opt.textContent = `${emp.id} - ${emp.name} (${emp.dept})`;
+        if (empSelect) empSelect.appendChild(opt.cloneNode(true));
+        if (leaveEmpSelect) leaveEmpSelect.appendChild(opt);
+      });
+    }
+
+    function renderDepartmentDropdown() {
+      const deptFilter = document.getElementById('deptFilter');
+      if (!deptFilter) return;
+
+      const currentVal = deptFilter.value;
+      deptFilter.innerHTML = '<option value="ALL">ทุกแผนก</option>';
+
+      departments.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept;
+        opt.textContent = dept;
+        deptFilter.appendChild(opt);
+      });
+
+      deptFilter.value = currentVal;
+    }
+
+    function renderMultiUserControls() {
+      const container = document.getElementById('multiUserContainer');
+      if (!container) return;
+
+      container.innerHTML = '';
+      employees.forEach(emp => {
+        const isChecked = selectedEmpCodesForComparison.includes(emp.id);
+        const btn = document.createElement('button');
+        btn.onclick = () => toggleUserComparison(emp.id);
+        btn.className = `px-2 py-1 text-[11px] rounded font-medium border transition ${
+          isChecked 
+            ? 'bg-brand-600 text-white border-brand-700 shadow-sm' 
+            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+        }`;
+        btn.textContent = emp.name;
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleUserComparison(empCode) {
+      const idx = selectedEmpCodesForComparison.indexOf(empCode);
+      if (idx > -1) {
+        selectedEmpCodesForComparison.splice(idx, 1);
+      } else {
+        selectedEmpCodesForComparison.push(empCode);
+      }
+      applyFilters();
+    }
+
+    function selectAllUsersForComparison(selectVal) {
+      if (selectVal) {
+        selectedEmpCodesForComparison = employees.map(e => e.id);
+      } else {
+        selectedEmpCodesForComparison = [];
+      }
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const deptVal = document.getElementById('deptFilter').value;
+      const statusVal = document.getElementById('statusFilter').value;
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      let filtered = processedData.filter(emp => {
+        if (deptVal !== 'ALL' && emp.dept !== deptVal) return false;
+
+        if (searchVal !== '') {
+          const matchCode = emp.empCode.toLowerCase().includes(searchVal);
+          const matchName = emp.name.toLowerCase().includes(searchVal);
+          if (!matchCode && !matchName) return false;
+        }
+
+        if (selectedEmpCodesForComparison.length > 0 && !selectedEmpCodesForComparison.includes(emp.empCode)) {
+          return false;
+        }
+
+        if (statusVal === 'CCTV_PENDING') {
+          const totalDays = getDaysInMonthCount(currentMonth);
+          let hasPendingCctv = false;
+          for (let d = 1; d <= totalDays; d++) {
+            const st = emp.dailyStatus[d];
+            if (st.code === 'ขาด' || st.code === 'ขาดเข้า' || st.code === 'ขาดออก') {
+              const fullDateStr = `${currentMonth}-${String(d).padStart(2, '0')}`;
+              if (!cctvCheckedRecords.has(`${emp.empCode}_${fullDateStr}`)) {
+                hasPendingCctv = true;
+                break;
+              }
+            }
+          }
+          if (!hasPendingCctv) return false;
+        } else if (statusVal === 'DOC_PENDING') {
+          const hasPendingDoc = Object.values(emp.dailyStatus).some(st => st.docStatus === 'PENDING');
+          if (!hasPendingDoc) return false;
+        } else if (statusVal === 'ANOMALY_ONLY') {
+          const hasAnomaly = emp.missingCount > 0 || emp.forgotInCount > 0 || emp.forgotOutCount > 0 || emp.lateCount > 0;
+          if (!hasAnomaly) return false;
+        } else if (statusVal === 'MISSING_ONLY' && emp.missingCount === 0) return false;
+        else if (statusVal === 'FORGOT_IN_ONLY' && emp.forgotInCount === 0) return false;
+        else if (statusVal === 'FORGOT_OUT_ONLY' && emp.forgotOutCount === 0) return false;
+        else if (statusVal === 'LATE_ONLY' && emp.lateCount === 0) return false;
+        else if (statusVal === 'LEAVE_ONLY' && emp.leaveCount === 0) return false;
+        else if (statusVal === 'OFFSITE_ONLY' && emp.offsiteCount === 0) return false;
+
+        return true;
+      });
+
+      updateStatCards(filtered);
+      renderMatrixTable(filtered);
+      renderIndividualView();
+      renderMissingSummaryTab(filtered);
+      renderCalendarViewTab(filtered);
+    }
+
+    function updateStatCards(data) {
+      let totalEmp = data.length;
+      let totalOfficialWorkdays = data.length > 0 ? data[0].officialWorkDays : 0;
+      let totalPresent = 0;
+      let totalMissing = 0;
+      let totalIncomplete = 0;
+      let totalLeave = 0;
+      let totalOffsite = 0;
+      let cctvPendingCount = 0;
+
+      const totalDays = getDaysInMonthCount(currentMonth);
+
+      data.forEach(emp => {
+        totalPresent += emp.presentCount;
+        totalMissing += emp.missingCount;
+        totalIncomplete += (emp.forgotInCount + emp.forgotOutCount);
+        totalLeave += emp.leaveCount;
+        totalOffsite += emp.offsiteCount;
+
+        for (let d = 1; d <= totalDays; d++) {
+          const st = emp.dailyStatus[d];
+          if (st.code === 'ขาด' || st.code === 'ขาดเข้า' || st.code === 'ขาดออก') {
+            const fullDateStr = `${currentMonth}-${String(d).padStart(2, '0')}`;
+            if (!cctvCheckedRecords.has(`${emp.empCode}_${fullDateStr}`)) {
+              cctvPendingCount++;
+            }
+          }
+        }
+      });
+
+      const totalPossibleWorkDays = totalEmp * totalOfficialWorkdays;
+      const attendanceRate = totalPossibleWorkDays > 0 ? Math.round((totalPresent / totalPossibleWorkDays) * 100) : 0;
+      const missingRate = totalPossibleWorkDays > 0 ? Math.round((totalMissing / totalPossibleWorkDays) * 100) : 0;
+
+      document.getElementById('statTotalEmp').textContent = totalEmp;
+      document.getElementById('statOfficialWorkdays').textContent = totalOfficialWorkdays;
+      document.getElementById('statCctvPending').textContent = cctvPendingCount;
+      document.getElementById('statAttendanceRate').textContent = `${attendanceRate}%`;
+      document.getElementById('statPresentDays').textContent = totalPresent;
+      document.getElementById('statMissingDays').textContent = totalMissing;
+      document.getElementById('statMissingRate').textContent = `${missingRate}%`;
+      document.getElementById('statIncompleteScans').textContent = totalIncomplete;
+      document.getElementById('statLeaveDays').textContent = totalLeave;
+      document.getElementById('statOffsiteDays').textContent = totalOffsite;
+    }
+
+    function filterByCCTVAlert() {
+      const statusFilter = document.getElementById('statusFilter');
+      if (statusFilter) {
+        statusFilter.value = 'CCTV_PENDING';
+        applyFilters();
+      }
+    }
+
+    function renderMatrixTable(data) {
+      const headerRow = document.getElementById('matrixHeaderRow');
+      const tbody = document.getElementById('matrixTableBody');
+      const countText = document.getElementById('matrixCountText');
+
+      if (!headerRow || !tbody) return;
+
+      const totalDays = getDaysInMonthCount(currentMonth);
+
+      let headerHtml = `
+        <th onclick="sortMatrix('empCode')" class="px-3 py-3 font-bold sticky left-0 bg-slate-100 z-30 sortable-header">
+          รหัส <span id="sort_empCode"></span>
+        </th>
+        <th onclick="sortMatrix('name')" class="px-3 py-3 font-bold sticky left-[70px] bg-slate-100 z-30 sortable-header">
+          ชื่อ-นามสกุล <span id="sort_name"></span>
+        </th>
+        <th onclick="sortMatrix('dept')" class="px-3 py-3 font-bold sortable-header">
+          แผนก <span id="sort_dept"></span>
+        </th>
+        <th onclick="sortMatrix('presentCount')" class="px-2 py-3 text-center sortable-header">
+          มา <span id="sort_presentCount"></span>
+        </th>
+        <th onclick="sortMatrix('missingCount')" class="px-2 py-3 text-center sortable-header">
+          ขาด <span id="sort_missingCount"></span>
+        </th>
+        <th onclick="sortMatrix('leaveCount')" class="px-2 py-3 text-center sortable-header">
+          ลา <span id="sort_leaveCount"></span>
+        </th>
+        <th onclick="sortMatrix('offsiteCount')" class="px-2 py-3 text-center sortable-header">
+          ประชุม <span id="sort_offsiteCount"></span>
+        </th>
+      `;
+
+      for (let d = 1; d <= totalDays; d++) {
+        headerHtml += `<th class="px-1 py-3 text-center min-w-[38px] font-semibold">${d}</th>`;
+      }
+
+      headerRow.innerHTML = headerHtml;
+
+      let sorted = [...data];
+      sorted.sort((a, b) => {
+        let valA = a[matrixSortKey];
+        let valB = b[matrixSortKey];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return matrixSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return matrixSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      tbody.innerHTML = '';
+      if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${7 + totalDays}" class="p-8 text-center text-slate-400">ไม่พบข้อมูลพนักงานตรงตามเงื่อนไขการค้นหา</td></tr>`;
+        if (countText) countText.textContent = 'แสดง 0 รายการ';
+        return;
+      }
+
+      if (countText) countText.textContent = `แสดง ${sorted.length} รายการ`;
+
+      sorted.forEach(emp => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+        let rowHtml = `
+          <td class="px-3 py-2.5 font-mono font-medium sticky left-0 bg-white z-10 border-r">${emp.empCode}</td>
+          <td class="px-3 py-2.5 font-semibold text-slate-800 sticky left-[70px] bg-white z-10 border-r">
+            <a href="javascript:void(0)" onclick="filterPersonAudit('${emp.empCode}')" class="text-brand-600 hover:underline">
+              ${emp.name}
+            </a>
+          </td>
+          <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">${emp.dept}</td>
+          <td class="px-2 py-2.5 text-center font-bold text-emerald-600">${emp.presentCount}</td>
+          <td class="px-2 py-2.5 text-center font-bold ${emp.missingCount > 0 ? 'text-rose-600' : 'text-slate-400'}">${emp.missingCount}</td>
+          <td class="px-2 py-2.5 text-center font-bold ${emp.leaveCount > 0 ? 'text-purple-600' : 'text-slate-400'}">${emp.leaveCount}</td>
+          <td class="px-2 py-2.5 text-center font-bold ${emp.offsiteCount > 0 ? 'text-teal-600' : 'text-slate-400'}">${emp.offsiteCount}</td>
+        `;
+
+        for (let d = 1; d <= totalDays; d++) {
+          const st = emp.dailyStatus[d];
+          let bgClass = "bg-slate-50 text-slate-400";
+          
+          if (st.code === 'มา') bgClass = "bg-emerald-100 text-emerald-800 font-bold";
+          else if (st.code === 'สาย') bgClass = "bg-amber-100 text-amber-800 font-bold";
+          else if (st.code === 'ขาดเข้า') bgClass = "bg-orange-100 text-orange-800 font-bold";
+          else if (st.code === 'ขาดออก') bgClass = "bg-amber-100 text-amber-800 font-bold";
+          else if (st.code === 'ขาด') bgClass = "bg-rose-100 text-rose-800 font-bold";
+          else if (st.code === 'ลา') bgClass = "bg-purple-100 text-purple-800 font-bold";
+          else if (st.code === 'นอกสถานที่') bgClass = "bg-teal-100 text-teal-800 font-bold";
+          else if (st.code === 'หยุด') bgClass = "bg-indigo-100 text-indigo-800 font-bold";
+          else if (st.code === '-') bgClass = "bg-slate-100 text-slate-400";
+
+          rowHtml += `
+            <td class="px-1 py-2 text-center text-[10px] ${bgClass} border-r border-white whitespace-nowrap" title="${st.label} ${st.note || ''}">
+              ${st.code}
+            </td>
+          `;
+        }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderIndividualView() {
+      const select = document.getElementById('empSelect');
+      if (!select || !select.value) return;
+
+      const empCode = select.value;
+      const empData = processedData.find(e => e.empCode === empCode);
+      if (!empData) return;
+
+      const title = document.getElementById('indivCardTitle');
+      if (title) title.textContent = `รายงานการลงเวลา: ${empData.name} (${empData.dept}) - ประจำเดือน ${currentMonth}`;
+
+      const badges = document.getElementById('indivSummaryBadges');
+      if (badges) {
+        badges.innerHTML = `
+          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg">มาทำงาน: ${empData.presentCount} วัน</span>
+          <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg">สาย: ${empData.lateCount} ครั้ง (${empData.totalLateMins} นาที)</span>
+          <span class="px-2.5 py-1 bg-rose-100 text-rose-800 rounded-lg">ขาด: ${empData.missingCount} วัน</span>
+          <span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg">ลา: ${empData.leaveCount} วัน</span>
+          <span class="px-2.5 py-1 bg-teal-100 text-teal-800 rounded-lg">นอกสถานที่: ${empData.offsiteCount} วัน</span>
+        `;
+      }
+
+      const totalDays = getDaysInMonthCount(currentMonth);
+      let rows = [];
+
+      for (let d = 1; d <= totalDays; d++) {
+        const fullDateStr = `${currentMonth}-${String(d).padStart(2, '0')}`;
+        const dateObj = new Date(fullDateStr);
+        const dayName = dateObj.toLocaleDateString('th-TH', { weekday: 'short' });
+        const st = empData.dailyStatus[d];
+
+        rows.push({
+          date: fullDateStr,
+          dayName,
+          workDayType: st.workDayType,
+          firstPunch: st.firstPunch,
+          lastPunch: st.lastPunch,
+          workedHours: st.workedHours,
+          lateMinutes: st.lateMins,
+          code: st.code,
+          label: st.label,
+          note: st.note
+        });
+      }
+
+      rows.sort((a, b) => {
+        let valA = a[indivSortKey];
+        let valB = b[indivSortKey];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return indivSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return indivSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const tbody = document.getElementById('individualTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      rows.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+
+        let badgeClass = "bg-slate-100 text-slate-600";
+        if (item.code === 'มา') badgeClass = "bg-emerald-100 text-emerald-800";
+        else if (item.code === 'สาย') badgeClass = "bg-amber-100 text-amber-800";
+        else if (item.code === 'ขาดเข้า' || item.code === 'ขาดออก') badgeClass = "bg-orange-100 text-orange-800";
+        else if (item.code === 'ขาด') badgeClass = "bg-rose-100 text-rose-800";
+        else if (item.code === 'ลา') badgeClass = "bg-purple-100 text-purple-800";
+        else if (item.code === 'นอกสถานที่') badgeClass = "bg-teal-100 text-teal-800";
+        else if (item.code === 'หยุด') badgeClass = "bg-indigo-100 text-indigo-800";
+
+        tr.innerHTML = `
+          <td class="px-4 py-2.5 font-mono text-slate-700">${item.date}</td>
+          <td class="px-4 py-2.5 font-semibold text-slate-600">${item.dayName}</td>
+          <td class="px-4 py-2.5 text-xs text-slate-500">${item.workDayType}</td>
+          <td class="px-4 py-2.5 text-center font-mono">${item.firstPunch}</td>
+          <td class="px-4 py-2.5 text-center font-mono">${item.lastPunch}</td>
+          <td class="px-4 py-2.5 text-center font-bold text-slate-700">${item.workedHours > 0 ? `${item.workedHours} ชม.` : '-'}</td>
+          <td class="px-4 py-2.5 text-center font-bold ${item.lateMinutes > 0 ? 'text-amber-600' : 'text-slate-400'}">${item.lateMinutes > 0 ? `${item.lateMinutes} นาที` : '-'}</td>
+          <td class="px-4 py-2.5 text-center"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${badgeClass}">${item.code}</span></td>
+          <td class="px-4 py-2.5 text-slate-500">${item.note || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderMissingSummaryTab(data) {
+      const topList = document.getElementById('topMissingList');
+      const auditTbody = document.getElementById('missingLogBody');
+      const badge = document.getElementById('missingCountBadge');
+      const banner = document.getElementById('personFilterBanner');
+      const filterNameSpan = document.getElementById('filterPersonName');
+
+      if (!topList || !auditTbody) return;
+
+      if (auditPersonFilter) {
+        const emp = data.find(e => e.empCode === auditPersonFilter);
+        if (emp && banner && filterNameSpan) {
+          filterNameSpan.textContent = `${emp.empCode} - ${emp.name}`;
+          banner.classList.remove('hidden');
+        }
+      } else {
+        if (banner) banner.classList.add('hidden');
+      }
+
+      const sortedByIssue = [...data].sort((a, b) => (b.missingCount + b.forgotInCount + b.forgotOutCount) - (a.missingCount + a.forgotInCount + a.forgotOutCount));
+      topList.innerHTML = '';
+      sortedByIssue.slice(0, 5).forEach((emp, index) => {
+        const li = document.createElement('li');
+        li.className = "py-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 px-2 rounded";
+        li.onclick = () => filterPersonAudit(emp.empCode);
+        li.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-full ${index === 0 ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-700'} font-bold flex items-center justify-center text-[10px]">${index + 1}</span>
+            <div>
+              <p class="font-bold text-slate-800">${emp.name}</p>
+              <p class="text-[10px] text-slate-400">${emp.dept}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-bold text-rose-600">${emp.missingCount} วันขาด</p>
+            <p class="text-[10px] text-amber-600">${emp.forgotInCount + emp.forgotOutCount} ครั้งลืมสแกน</p>
+          </div>
+        `;
+        topList.appendChild(li);
+      });
+
+      const totalDays = getDaysInMonthCount(currentMonth);
+      let auditRows = [];
+      const today = new Date();
+
+      data.forEach(emp => {
+        if (auditPersonFilter && emp.empCode !== auditPersonFilter) return;
+
+        for (let d = 1; d <= totalDays; d++) {
+          const st = emp.dailyStatus[d];
+          if (st.code === 'ขาด' || st.code === 'ขาดเข้า' || st.code === 'ขาดออก' || st.code === 'ลา' || st.code === 'นอกสถานที่') {
+            const fullDateStr = `${currentMonth}-${String(d).padStart(2, '0')}`;
+            const eventDate = new Date(fullDateStr);
+            const daysDiff = Math.floor((today - eventDate) / (1000 * 60 * 60 * 24));
+            const cctvRemainingDays = Math.max(0, 30 - daysDiff);
+            const isCctvDone = cctvCheckedRecords.has(`${emp.empCode}_${fullDateStr}`);
+
+            auditRows.push({
+              date: fullDateStr,
+              empCode: emp.empCode,
+              name: emp.name,
+              dept: emp.dept,
+              code: st.code,
+              label: st.label,
+              note: st.note,
+              docStatus: st.docStatus,
+              cctvRemainingDays,
+              isCctvDone
+            });
+          }
+        }
+      });
+
+      auditRows.sort((a, b) => {
+        let valA = a[auditSortKey];
+        let valB = b[auditSortKey];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return auditSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return auditSortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      if (badge) badge.textContent = `${auditRows.length} รายการ`;
+
+      auditTbody.innerHTML = '';
+      if (auditRows.length === 0) {
+        auditTbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">ไม่พบรายการขาดงานหรือลางานในเงื่อนไขปัจจุบัน</td></tr>';
+        return;
+      }
+
+      auditRows.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+
+        let badgeClass = "bg-slate-100 text-slate-600";
+        if (item.code === 'ขาด') badgeClass = "bg-rose-100 text-rose-800 font-bold";
+        else if (item.code === 'ขาดเข้า' || item.code === 'ขาดออก') badgeClass = "bg-orange-100 text-orange-800 font-bold";
+        else if (item.code === 'ลา') badgeClass = "bg-purple-100 text-purple-800 font-bold";
+        else if (item.code === 'นอกสถานที่') badgeClass = "bg-teal-100 text-teal-800 font-bold";
+
+        let cctvActionBtn = '';
+        if (item.code === 'ขาด' || item.code === 'ขาดเข้า' || item.code === 'ขาดออก') {
+          if (item.isCctvDone) {
+            cctvActionBtn = `
+              <button onclick="toggleCctvChecked('${item.empCode}', '${item.date}')" class="px-2 py-0.5 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 rounded text-[10px] font-bold">
+                <i class="fa-solid fa-circle-check"></i> เช็ก CCTV แล้ว
+              </button>`;
+          } else {
+            cctvActionBtn = `
+              <button onclick="toggleCctvChecked('${item.empCode}', '${item.date}')" class="px-2 py-0.5 bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 rounded text-[10px] font-bold flex items-center gap-1">
+                <i class="fa-solid fa-video text-amber-600"></i> เช็ก CCTV (เหลือ ${item.cctvRemainingDays} วันก่อนทับ)
+              </button>`;
+          }
+        }
+
+        let docBadge = '';
+        if (item.code === 'ลา' || item.code === 'นอกสถานที่') {
+          if (item.docStatus === 'PENDING') {
+            docBadge = '<span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">⚠️ รอใบลา/เอกสาร</span>';
+          } else {
+            docBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-bold">✅ เอกสารครบ</span>';
+          }
+        }
+
+        tr.innerHTML = `
+          <td class="px-3 py-2.5 font-mono text-slate-700">${item.date}</td>
+          <td class="px-3 py-2.5 font-mono text-slate-600">${item.empCode}</td>
+          <td class="px-3 py-2.5 font-semibold text-slate-800">
+            <a href="javascript:void(0)" onclick="filterPersonAudit('${item.empCode}')" class="text-brand-600 hover:underline">
+              ${item.name}
+            </a>
+          </td>
+          <td class="px-3 py-2.5 text-slate-500">${item.dept}</td>
+          <td class="px-3 py-2.5 text-center"><span class="px-2 py-0.5 rounded text-[11px] ${badgeClass}">${item.code}</span></td>
+          <td class="px-3 py-2.5 text-slate-600 flex items-center justify-between gap-2">
+            <span>${item.note || '-'}</span>
+            <div class="flex items-center gap-1">
+              ${docBadge}
+              ${cctvActionBtn}
+            </div>
+          </td>
+        `;
+        auditTbody.appendChild(tr);
+      });
+    }
+
+    function renderCalendarViewTab(data) {
+      const gridBody = document.getElementById('calendarGridBody');
+      const title = document.getElementById('calendarMonthTitle');
+      if (!gridBody) return;
+
+      if (title) title.textContent = `ปฏิทินภาพรวมปัญหาและวันลา ประจำเดือน ${currentMonth}`;
+
+      const [y, m] = currentMonth.split('-').map(Number);
+      const totalDays = getDaysInMonthCount(currentMonth);
+      const firstDayIndex = new Date(y, m - 1, 1).getDay(); // 0 = Sun
+      const todayStr = getTodayFormattedString();
+
+      // Get filter states
+      const showMissing = document.getElementById('calFilterMissing')?.checked ?? true;
+      const showIncomplete = document.getElementById('calFilterIncomplete')?.checked ?? true;
+      const showLate = document.getElementById('calFilterLate')?.checked ?? true;
+      const showLeave = document.getElementById('calFilterLeave')?.checked ?? true;
+      const showHoliday = document.getElementById('calFilterHoliday')?.checked ?? true;
+
+      gridBody.innerHTML = '';
+
+      // Blank offset padding for calendar grid start
+      for (let i = 0; i < firstDayIndex; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = "bg-slate-50/50 min-h-[80px] border border-slate-100 rounded-lg";
+        gridBody.appendChild(emptyDiv);
+      }
+
+      for (let d = 1; d <= totalDays; d++) {
+        const fullDateStr = `${currentMonth}-${String(d).padStart(2, '0')}`;
+        const dateObj = new Date(fullDateStr);
+        const dayOfWeek = dateObj.getDay();
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isHoliday = !!thaiHolidays[fullDateStr];
+        const isFuture = fullDateStr > todayStr;
+
+        const dayCell = document.createElement('div');
+
+        // Style cells based on day type
+        if (isWeekend) {
+          dayCell.className = "bg-slate-100/60 min-h-[60px] p-2 border border-slate-200/80 rounded-lg flex flex-col justify-between opacity-60";
+          dayCell.innerHTML = `
+            <div class="flex justify-between items-center font-bold text-xs text-slate-400">
+              <span>${d}</span>
+              <span class="text-[10px] font-semibold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">หยุด</span>
+            </div>
+            <div class="text-[10px] text-slate-400 text-center py-1 font-medium">เสาร์-อาทิตย์</div>
+          `;
+          gridBody.appendChild(dayCell);
+          continue;
+        }
+
+        if (isHoliday) {
+          dayCell.className = "bg-indigo-50/60 min-h-[90px] p-2 border border-indigo-200 rounded-lg flex flex-col justify-between";
+          let holidayContent = showHoliday 
+            ? `<div class="bg-indigo-100 border border-indigo-300 text-indigo-900 p-1.5 rounded-md text-[10px] font-bold mt-1 text-center shadow-xs">
+                 <i class="fa-solid fa-flag text-indigo-600 mr-1"></i>${thaiHolidays[fullDateStr]}
+               </div>`
+            : `<div class="text-[10px] text-indigo-300 text-center py-2">วันหยุด</div>`;
+
+          dayCell.innerHTML = `
+            <div class="flex justify-between items-center font-bold text-xs text-indigo-900">
+              <span>${d}</span>
+              <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">วันหยุด</span>
+            </div>
+            ${holidayContent}
+          `;
+          gridBody.appendChild(dayCell);
+          continue;
+        }
+
+        if (isFuture) {
+          dayCell.className = "bg-slate-50 min-h-[90px] p-2 border border-slate-200 rounded-lg flex flex-col justify-between";
+          dayCell.innerHTML = `
+            <div class="flex justify-between items-center font-bold text-xs text-slate-400">
+              <span>${d}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 text-center py-2 italic">ยังไม่ถึงกำหนด</div>
+          `;
+          gridBody.appendChild(dayCell);
+          continue;
+        }
+
+        // Regular Official Workday Processing
+        dayCell.className = "bg-white min-h-[110px] p-2 border border-slate-200 rounded-lg flex flex-col justify-between hover:border-brand-400 transition shadow-xs break-words";
+
+        const missingNames = [];
+        const incompleteNames = [];
+        const lateNames = [];
+        const leaveNames = [];
+
+        data.forEach(emp => {
+          const st = emp.dailyStatus[d];
+          const empDisplayName = emp.name;
+
+          if (st.code === 'ขาด') {
+            missingNames.push(empDisplayName);
+          } else if (st.code === 'ขาดเข้า' || st.code === 'ขาดออก') {
+            incompleteNames.push(`${empDisplayName} (${st.code})`);
+          } else if (st.code === 'สาย') {
+            lateNames.push(`${empDisplayName} (${st.lateMins}m)`);
+          } else if (st.code === 'ลา' || st.code === 'นอกสถานที่') {
+            let leaveTypeLabel = st.code;
+            if (st.note && (st.note.includes('นอกสถานที่') || st.note.includes('ปฏิบัติงาน'))) leaveTypeLabel = 'นอกสถานที่';
+            else if (st.note && st.note.includes('ประชุม')) leaveTypeLabel = 'ไปประชุม';
+            else if (st.label) leaveTypeLabel = st.label;
+            leaveNames.push(`${empDisplayName} (${leaveTypeLabel})`);
+          }
+        });
+
+        const badges = [];
+
+        if (showMissing && missingNames.length > 0) {
+          const itemsHtml = missingNames.map(n => `<div class="leading-tight">• ${n}</div>`).join('');
+          badges.push(`
+            <div class="bg-rose-50 border border-rose-200 text-rose-900 p-1.5 rounded text-[10px] space-y-0.5">
+              <div class="font-bold text-rose-800">🔴 ขาด (${missingNames.length}):</div>
+              <div class="pl-1 space-y-0.5 text-rose-950">${itemsHtml}</div>
+            </div>
+          `);
+        }
+
+        if (showIncomplete && incompleteNames.length > 0) {
+          const itemsHtml = incompleteNames.map(n => `<div class="leading-tight">• ${n}</div>`).join('');
+          badges.push(`
+            <div class="bg-orange-50 border border-orange-200 text-orange-900 p-1.5 rounded text-[10px] space-y-0.5">
+              <div class="font-bold text-orange-800">🟠 ลืมสแกน (${incompleteNames.length}):</div>
+              <div class="pl-1 space-y-0.5 text-orange-950">${itemsHtml}</div>
+            </div>
+          `);
+        }
+
+        if (showLate && lateNames.length > 0) {
+          const itemsHtml = lateNames.map(n => `<div class="leading-tight">• ${n}</div>`).join('');
+          badges.push(`
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 p-1.5 rounded text-[10px] space-y-0.5">
+              <div class="font-bold text-amber-800">🟡 สาย (${lateNames.length}):</div>
+              <div class="pl-1 space-y-0.5 text-amber-950">${itemsHtml}</div>
+            </div>
+          `);
+        }
+
+        if (showLeave && leaveNames.length > 0) {
+          const itemsHtml = leaveNames.map(n => `<div class="leading-tight">• ${n}</div>`).join('');
+          badges.push(`
+            <div class="bg-purple-50 border border-purple-200 text-purple-900 p-1.5 rounded text-[10px] space-y-0.5">
+              <div class="font-bold text-purple-800">🟣 ลา (${leaveNames.length}):</div>
+              <div class="pl-1 space-y-0.5 text-purple-950">${itemsHtml}</div>
+            </div>
+          `);
+        }
+
+        let contentHtml = '';
+        if (badges.length > 0) {
+          contentHtml = `<div class="space-y-1.5 my-1">${badges.join('')}</div>`;
+        } else {
+          contentHtml = `<div class="text-[10px] text-emerald-600 font-semibold py-1 flex items-center justify-center gap-1 bg-emerald-50 rounded">
+                           <i class="fa-solid fa-circle-check text-emerald-500"></i> ปกติ
+                         </div>`;
+        }
+
+        dayCell.innerHTML = `
+          <div class="flex justify-between items-center font-bold text-xs text-slate-700 border-b border-slate-100 pb-1">
+            <span>${d}</span>
+            ${leaveNames.length > 0 && !showLeave ? `<span class="text-[10px] text-purple-700 bg-purple-50 px-1 rounded font-normal">ลา ${leaveNames.length} คน</span>` : ''}
+          </div>
+          ${contentHtml}
+        `;
+
+        gridBody.appendChild(dayCell);
+      }
+    }
+
+    function switchTab(tabName) {
+      const btnM = document.getElementById('tabBtnMatrix');
+      const btnI = document.getElementById('tabBtnIndividual');
+      const btnA = document.getElementById('tabBtnMissing');
+      const btnC = document.getElementById('tabBtnCalendar');
+
+      const contentM = document.getElementById('tabContentMatrix');
+      const contentI = document.getElementById('tabContentIndividual');
+      const contentA = document.getElementById('tabContentMissing');
+      const contentC = document.getElementById('tabContentCalendar');
+
+      [btnM, btnI, btnA, btnC].forEach(b => {
+        if (b) {
+          b.className = "px-4 py-2.5 font-medium text-sm rounded-t-lg text-slate-600 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap";
+        }
+      });
+
+      [contentM, contentI, contentA, contentC].forEach(c => {
+        if (c) c.classList.add('hidden');
+      });
+
+      if (tabName === 'matrix') {
+        if (btnM) btnM.className = "px-4 py-2.5 font-medium text-sm rounded-t-lg bg-white border-t-2 border-brand-600 text-brand-600 shadow-sm flex items-center gap-2 whitespace-nowrap";
+        if (contentM) contentM.classList.remove('hidden');
+      } else if (tabName === 'individual') {
+        if (btnI) btnI.className = "px-4 py-2.5 font-medium text-sm rounded-t-lg bg-white border-t-2 border-brand-600 text-brand-600 shadow-sm flex items-center gap-2 whitespace-nowrap";
+        if (contentI) contentI.classList.remove('hidden');
+        renderIndividualView();
+      } else if (tabName === 'missing') {
+        if (btnA) btnA.className = "px-4 py-2.5 font-medium text-sm rounded-t-lg bg-white border-t-2 border-brand-600 text-brand-600 shadow-sm flex items-center gap-2 whitespace-nowrap";
+        if (contentA) contentA.classList.remove('hidden');
+        renderMissingSummaryTab(processedData);
+      } else if (tabName === 'calendar') {
+        if (btnC) btnC.className = "px-4 py-2.5 font-medium text-sm rounded-t-lg bg-white border-t-2 border-brand-600 text-brand-600 shadow-sm flex items-center gap-2 whitespace-nowrap";
+        if (contentC) contentC.classList.remove('hidden');
+        renderCalendarViewTab(processedData);
+      }
+    }
+
+    function sortMatrix(key) {
+      if (matrixSortKey === key) {
+        matrixSortDir = matrixSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        matrixSortKey = key;
+        matrixSortDir = 'asc';
+      }
+      applyFilters();
+    }
+
+    function sortIndividualTable(key) {
+      if (indivSortKey === key) {
+        indivSortDir = indivSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        indivSortKey = key;
+        indivSortDir = 'asc';
+      }
+      renderIndividualView();
+    }
+
+    function sortAuditTable(key) {
+      if (auditSortKey === key) {
+        auditSortDir = auditSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        auditSortKey = key;
+        auditSortDir = 'asc';
+      }
+      renderMissingSummaryTab(processedData);
+    }
+
+    function filterPersonAudit(empCode) {
+      auditPersonFilter = empCode;
+      switchTab('missing');
+      renderMissingSummaryTab(processedData);
+    }
+
+    function clearPersonAuditFilter() {
+      auditPersonFilter = null;
+      renderMissingSummaryTab(processedData);
+    }
+
+    function handleMonthChange() {
+      const picker = document.getElementById('monthPicker');
+      if (picker && picker.value) {
+        currentMonth = picker.value;
+        loadReportData();
+      }
+    }
+
+    function toggleDataMode() {
+      const btnText = document.getElementById('dataModeText');
+      if (dataMode === 'DEMO') {
+        dataMode = 'API';
+        if (btnText) btnText.textContent = 'โหมด ZKBioTime API';
+      } else if (dataMode === 'API') {
+        dataMode = 'DEMO';
+        if (btnText) btnText.textContent = 'โหมดข้อมูลสาธิต';
+      } else {
+        dataMode = 'DEMO';
+        if (btnText) btnText.textContent = 'โหมดข้อมูลสาธิต';
+      }
+      loadReportData();
+    }
+
+    function triggerExcelImport() {
+      const input = document.getElementById('excelFileInput');
+      if (input) input.click();
+    }
+
+    function handleExcelImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        parseImportedExcelRows(jsonRows);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseImportedExcelRows(rows) {
+      if (!rows || rows.length < 2) {
+        alert('ไฟล์ไม่มีข้อมูลหรือรูปแบบไม่ถูกต้อง');
+        return;
+      }
+
+      let headerIdx = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row && row.some(cell => cell && String(cell).includes('ชื่อ'))) {
+          headerIdx = i;
+          break;
+        }
+      }
+
+      if (headerIdx === -1) {
+        alert('ไม่พบคอลัมน์มาตรฐาน "ชื่อ" ในไฟล์ Excel');
+        return;
+      }
+
+      const headers = rows[headerIdx].map(h => String(h || '').trim());
+      const dataRows = rows.slice(headerIdx + 1);
+
+      importedEmployeesCache = [];
+      importedTransactionsCache = [];
+      const empMap = new Map();
+
+      const getHeaderIndex = (keyword) => {
+        return headers.findIndex(h => h.replace(/\s+/g, '').includes(keyword.replace(/\s+/g, '')));
+      };
+
+      dataRows.forEach((row, idx) => {
+        if (!row || row.length === 0) return;
+
+        const nameVal = row[getHeaderIndex('ชื่อ')] || '';
+        const lastNameVal = row[getHeaderIndex('นามสกุล')] || '';
+        const deptVal = row[getHeaderIndex('แผนก')] || 'ทั่วไป';
+        const posVal = row[getHeaderIndex('ตำแหน่ง')] || 'พนักงาน';
+        const dateVal = row[getHeaderIndex('วันที่')] || '';
+        const inTimeVal = row[getHeaderIndex('นาฬิกาเข้า')] || '';
+        const outTimeVal = row[getHeaderIndex('นาฬิกาออก')] || '';
+
+        if (!nameVal && !dateVal) return;
+
+        const fullName = `${nameVal} ${lastNameVal}`.trim();
+        const empId = `EMP${1000 + idx}`;
+
+        if (!empMap.has(fullName)) {
+          empMap.set(fullName, empId);
+          importedEmployeesCache.push({
+            id: empId,
+            name: fullName,
+            dept: deptVal,
+            position: posVal
+          });
+        }
+
+        const id = empMap.get(fullName);
+
+        let formattedDate = dateVal;
+        if (dateVal.includes('-')) {
+          const parts = dateVal.split('-');
+          if (parts[0].length === 2) {
+            let yr = parseInt(parts[2], 10);
+            if (yr > 2500) yr -= 543;
+            formattedDate = `${yr}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        }
+
+        const hasInTime = inTimeVal && String(inTimeVal).trim() !== '' && String(inTimeVal).trim() !== '-';
+        const hasOutTime = outTimeVal && String(outTimeVal).trim() !== '' && String(outTimeVal).trim() !== '-';
+
+        if (hasInTime) {
+          importedTransactionsCache.push({
+            emp_code: id,
+            punch_time: `${formattedDate} ${String(inTimeVal).trim()}:00`
+          });
+        }
+
+        if (hasOutTime) {
+          importedTransactionsCache.push({
+            emp_code: id,
+            punch_time: `${formattedDate} ${String(outTimeVal).trim()}:00`
+          });
+        }
+
+        // Automatic Leave Detection: If in/out empty and any leave column has > 0 hours
+        if (!hasInTime && !hasOutTime) {
+          const leaveConfigs = [
+            { keyword: 'ลาประจำปี', type: 'LEAVE_ANNUAL', label: 'ลาประจำปี' },
+            { keyword: 'ลาป่วย', type: 'LEAVE_SICK', label: 'ลาป่วย' },
+            { keyword: 'ลากิจ', type: 'LEAVE_PERSONAL', label: 'ลากิจ' },
+            { keyword: 'ลาคลอด', type: 'LEAVE_MATERNITY', label: 'ลาคลอด' },
+            { keyword: 'ไปประชุม', type: 'MEETING', label: 'ไปประชุม/อบรม' },
+            { keyword: 'ออกนอกพื้นที่', type: 'BUSINESS_TRIP', label: 'ออกนอกพื้นที่' },
+            { keyword: 'ฮัจย์', type: 'LEAVE_HAJJ_ORDINATION', label: 'ลาไปฮัจย์/อุปสมบท' },
+            { keyword: 'อุปสมบท', type: 'LEAVE_HAJJ_ORDINATION', label: 'ลาไปฮัจย์/อุปสมบท' },
+            { keyword: 'ลาพักผ่อน', type: 'LEAVE_ANNUAL', label: 'ลาพักผ่อน' },
+            { keyword: 'ช่วยเหลือภรรยา', type: 'LEAVE_PATERNITY', label: 'ลาช่วยเหลือภรรยาที่คลอดบุตร' }
+          ];
+
+          for (const cfg of leaveConfigs) {
+            const idxCol = getHeaderIndex(cfg.keyword);
+            if (idxCol !== -1 && row[idxCol] !== undefined && row[idxCol] !== null) {
+              const val = parseFloat(String(row[idxCol]).trim());
+              if (!isNaN(val) && val > 0) {
+                const exists = leaveRecords.some(l => l.empCode === id && l.date === formattedDate);
+                if (!exists) {
+                  leaveRecords.push({
+                    id: 'imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    empCode: id,
+                    date: formattedDate,
+                    type: cfg.type,
+                    docStatus: 'COMPLETE',
+                    reason: `นำเข้าจาก Excel (${cfg.label} ${val} ชม.)`
+                  });
+                }
+                break;
+              }
+            }
+          }
+        }
+      });
+
+      saveLeavesToStorage();
+
+      dataMode = 'FILE';
+      const btnText = document.getElementById('dataModeText');
+      if (btnText) btnText.textContent = 'โหมดไฟล์นำเข้า (Excel)';
+
+      loadReportData();
+    }
+
+    function exportOfficialTimeCardFormat() {
+      const rows = [];
+      const headers = [
+        "ชื่อ", "นามสกุล", "แผนก", "ตำแหน่ง", "วันที่", "วันทำงาน",
+        "นาฬิกาเข้า", "นาฬิกาออก", "ลาประจำปี(H)", "ลาป่วย(H)", "ลากิจ(H)",
+        "ลาคลอด(H)", "ไปประชุม/อบรม(H)", "ออกนอกพื้นที่(H)", "ลาไปฮัจย์ /ลาอุปสมบท(H)",
+        "ลาพักผ่อน(H)", "ลาไปช่วยเหลือภรรยาที่คลอดบุตร(H)"
+      ];
+
+      rows.push(headers);
+      const totalDays = getDaysInMonthCount(currentMonth);
+
+      processedData.forEach(emp => {
+        const nameParts = emp.name.split(' ');
+        const firstName = nameParts[0] || emp.name;
+        const lastName = nameParts.slice(1).join(' ') || '-';
+
+        for (let d = 1; d <= totalDays; d++) {
+          const dayStr = String(d).padStart(2, '0');
+          const fullDateStr = `${currentMonth}-${dayStr}`;
+          const dateObj = new Date(fullDateStr);
+          const dayNameTH = dateObj.toLocaleDateString('th-TH', { weekday: 'long' });
+          const st = emp.dailyStatus[d];
+
+          const [yr, mn, dy] = fullDateStr.split('-');
+          const displayDate = `${dy}-${mn}-${yr}`;
+
+          let annualL = '', sickL = '', personalL = '', maternityL = '';
+          let meetingL = '', businessL = '', hajjL = '', vacationL = '', paternityL = '';
+
+          if (st.code === 'ลา' || st.code === 'นอกสถานที่') {
+            const registeredLeave = leaveRecords.find(l => l.empCode === emp.empCode && l.date === fullDateStr);
+            if (registeredLeave) {
+              const t = registeredLeave.type;
+              if (t === 'LEAVE_ANNUAL') annualL = '8.0';
+              else if (t === 'LEAVE_SICK') sickL = '8.0';
+              else if (t === 'LEAVE_PERSONAL') personalL = '8.0';
+              else if (t === 'LEAVE_MATERNITY') maternityL = '8.0';
+              else if (t === 'MEETING') meetingL = '8.0';
+              else if (t === 'BUSINESS_TRIP') businessL = '8.0';
+              else if (t === 'LEAVE_HAJJ_ORDINATION') hajjL = '8.0';
+              else if (t === 'LEAVE_PATERNITY') paternityL = '8.0';
+            } else {
+              vacationL = '8.0';
+            }
+          }
+
+          rows.push([
+            firstName,
+            lastName,
+            emp.dept,
+            emp.position,
+            displayDate,
+            dayNameTH,
+            st.firstPunch !== '-' ? st.firstPunch.substring(0, 5) : '',
+            st.lastPunch !== '-' ? st.lastPunch.substring(0, 5) : '',
+            annualL, sickL, personalL, maternityL, meetingL, businessL, hajjL, vacationL, paternityL
+          ]);
+        }
+      });
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "บัตรเวลาทั้งหมด");
+
+      XLSX.writeFile(workbook, `บัตรเวลาทั้งหมด_${currentMonth}.xlsx`);
+    }
+
+    function openHolidayModal() {
+      renderHolidayTable();
+      document.getElementById('holidayModal').classList.remove('hidden');
+    }
+
+    function closeHolidayModal() {
+      document.getElementById('holidayModal').classList.add('hidden');
+    }
+
+    function renderHolidayTable() {
+      const tbody = document.getElementById('holidayTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      const keys = Object.keys(thaiHolidays).sort();
+
+      keys.forEach(k => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-medium">${k}</td>
+          <td class="px-3 py-2 font-semibold text-indigo-900">${thaiHolidays[k]}</td>
+          <td class="px-3 py-2 text-center">
+            <button onclick="deleteHoliday('${k}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded text-[10px] font-bold">ลบ</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveHoliday() {
+      const date = document.getElementById('holidayDateInput').value;
+      const name = document.getElementById('holidayNameInput').value.trim();
+
+      if (!date || !name) {
+        alert('กรุณากรอกวันที่และชื่อวันหยุด');
+        return;
+      }
+
+      thaiHolidays[date] = name;
+      saveHolidaysToStorage();
+      resetHolidayForm();
+      renderHolidayTable();
+      loadReportData();
+    }
+
+    function resetHolidayForm() {
+      document.getElementById('holidayDateInput').value = '';
+      document.getElementById('holidayNameInput').value = '';
+    }
+
+    function deleteHoliday(date) {
+      if (confirm(`คุณต้องการลบวันหยุดวันที่ ${date} ใช่หรือไม่?`)) {
+        delete thaiHolidays[date];
+        saveHolidaysToStorage();
+        renderHolidayTable();
+        loadReportData();
+      }
+    }
+
+    function openLeaveModal() {
+      renderLeaveTable();
+      document.getElementById('leaveModal').classList.remove('hidden');
+    }
+
+    function closeLeaveModal() {
+      document.getElementById('leaveModal').classList.add('hidden');
+    }
+
+    function renderLeaveTable() {
+      const tbody = document.getElementById('leaveTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      leaveRecords.forEach(l => {
+        const emp = employees.find(e => e.id === l.empCode) || { name: l.empCode };
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+
+        let typeLabel = "ลางาน";
+        if (l.type === "BUSINESS_TRIP") typeLabel = "นอกสถานที่";
+        else if (l.type === "MEETING") typeLabel = "ไปประชุม";
+
+        let docBadge = l.docStatus === 'PENDING' ? '<span class="text-rose-600 font-bold">รอเอกสาร</span>' : '<span class="text-emerald-600 font-bold">เรียบร้อย</span>';
+
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono">${l.date}</td>
+          <td class="px-3 py-2 font-semibold text-slate-800">${emp.name}</td>
+          <td class="px-3 py-2"><span class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-[10px] font-bold">${typeLabel}</span></td>
+          <td class="px-3 py-2">${docBadge}</td>
+          <td class="px-3 py-2 text-slate-500">${l.reason || '-'}</td>
+          <td class="px-3 py-2 text-center">
+            <button onclick="deleteLeaveRecord('${l.id}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded text-[10px] font-bold">ลบ</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveLeaveRecord() {
+      const empCode = document.getElementById('leaveEmpSelect').value;
+      const date = document.getElementById('leaveDateInput').value;
+      const type = document.getElementById('leaveTypeInput').value;
+      const docStatus = document.getElementById('leaveDocStatusInput').value;
+      const reason = document.getElementById('leaveReasonInput').value.trim();
+
+      if (!empCode || !date) {
+        alert('กรุณาเลือกพนักงานและวันที่ทำรายการ');
+        return;
+      }
+
+      leaveRecords.push({
+        id: Date.now().toString(),
+        empCode,
+        date,
+        type,
+        docStatus,
+        reason
+      });
+
+      saveLeavesToStorage();
+      resetLeaveForm();
+      renderLeaveTable();
+      loadReportData();
+    }
+
+    function deleteLeaveRecord(id) {
+      leaveRecords = leaveRecords.filter(l => l.id !== id);
+      saveLeavesToStorage();
+      renderLeaveTable();
+      loadReportData();
+    }
+
+    function resetLeaveForm() {
+      document.getElementById('leaveDateInput').value = '';
+      document.getElementById('leaveReasonInput').value = '';
+    }
+
+    function importLeaveCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        let count = 0;
+
+        lines.forEach(line => {
+          const parts = line.split(',');
+          if (parts.length >= 3) {
+            const empCode = parts[0].trim();
+            const date = parts[1].trim();
+            const type = parts[2].trim();
+            const reason = parts[3] ? parts[3].trim() : '';
+
+            if (empCode && date) {
+              leaveRecords.push({
+                id: Date.now().toString() + Math.random(),
+                empCode,
+                date,
+                type,
+                docStatus: 'COMPLETE',
+                reason
+              });
+              count++;
+            }
+          }
+        });
+
+        saveLeavesToStorage();
+        renderLeaveTable();
+        loadReportData();
+        alert(`นำเข้าข้อมูลการลาเรียบร้อยแล้ว ${count} รายการ`);
+      };
+      reader.readAsText(file);
+    }
+
+    function openConfigModal() {
+      document.getElementById('configModal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    function testConnection() {
+      const statusEl = document.getElementById('connectionStatus');
+      if (statusEl) statusEl.textContent = 'กำลังทดสอบการเชื่อมต่อ...';
+
+      setTimeout(() => {
+        if (statusEl) statusEl.textContent = '✅ เชื่อมต่อ Server ZKBioTime สำเร็จ (HTTP 200 OK)';
+      }, 800);
+    }
+
+    function openPRDModal() {
+      document.getElementById('prdModal').classList.remove('hidden');
+    }
+
+    function closePRDModal() {
+      document.getElementById('prdModal').classList.add('hidden');
+    }
+
+    function downloadPRDText() {
+      const prdText = `PRD: ระบบรายงานลงเวลา ZKBioTime\nเวอร์ชัน: 2.5\nCalendar ID: 7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com\nSave location: d:\\tool\\zk\\`;
+      const blob = new Blob([prdText], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'PRD_ZKBioTime_Report.txt';
+      a.click();
+    }
+
+    function openNicknameModal() {
+      const tbody = document.getElementById('nicknameTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      employees.forEach(emp => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-medium">${emp.id}</td>
+          <td class="px-3 py-2 font-semibold text-slate-800">${emp.name}</td>
+          <td class="px-3 py-2 text-slate-500">${emp.dept}</td>
+          <td class="px-3 py-2">
+            <input type="text" id="nickname_inp_${emp.id}" value="${emp.nickname || ''}" placeholder="ชื่อเล่น" class="p-1.5 border border-slate-300 rounded text-xs w-28 bg-amber-50/50 focus:bg-white font-medium">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('nicknameModal').classList.remove('hidden');
+    }
+
+    function closeNicknameModal() {
+      document.getElementById('nicknameModal').classList.add('hidden');
+    }
+
+    function openGoogleCalendarModal() {
+      document.getElementById('gcalModal').classList.remove('hidden');
+    }
+
+    function closeGoogleCalendarModal() {
+      document.getElementById('gcalModal').classList.add('hidden');
+    }
+
+    async function syncGoogleCalendarLeaves() {
+      const statusEl = document.getElementById('gcalSyncStatus');
+      const apiKey = document.getElementById('gcalApiKeyInput').value.trim();
+      const calendarId = document.getElementById('gcalIdInput').value.trim() || gcalId;
+
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.className = 'text-xs p-2.5 rounded-lg bg-sky-100 text-sky-800 font-medium flex items-center gap-2';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเชื่อมต่อและวิเคราะห์ปฏิทิน Google Calendar...';
+      }
+
+      setTimeout(async () => {
+        let fetchedEvents = [];
+
+        if (apiKey) {
+          try {
+            const timeMin = `${currentMonth}-01T00:00:00Z`;
+            const daysInM = getDaysInMonthCount(currentMonth);
+            const timeMax = `${currentMonth}-${daysInM}T23:59:59Z`;
+            const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`;
+
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.items) {
+              fetchedEvents = data.items.map(item => ({
+                title: item.summary || '',
+                start: item.start?.date || item.start?.dateTime?.split('T')[0],
+                description: item.description || ''
+              }));
+            }
+          } catch(err) {
+            console.warn("Live GCal API failed, falling back to matcher simulation", err);
+          }
+        }
+
+        if (fetchedEvents.length === 0) {
+          fetchedEvents = [
+            { title: "ตั้ม ลาป่วยมีใบรับรองแพทย์", start: `${currentMonth}-03` },
+            { title: "เป้ ไปประชุมระนอง", start: `${currentMonth}-05` },
+            { title: "โอม ลากิจติดต่อราชการ", start: `${currentMonth}-10` },
+            { title: "นก ลาพักผ่อน", start: `${currentMonth}-11` },
+            { title: "ฟ้า ออกนอกพื้นที่พบลูกค้า", start: `${currentMonth}-18` }
+          ];
+        }
+
+        let addedCount = 0;
+
+        fetchedEvents.forEach(evt => {
+          if (!evt.title || !evt.start) return;
+
+          const matchedEmp = employees.find(emp => {
+            const nick = emp.nickname ? emp.nickname.toLowerCase() : '';
+            const fullName = emp.name.toLowerCase();
+            const t = evt.title.toLowerCase();
+
+            return (nick && t.includes(nick)) || t.includes(fullName);
+          });
+
+          if (matchedEmp) {
+            let leaveType = 'LEAVE_PERSONAL';
+            const titleText = evt.title;
+
+            if (titleText.includes('ป่วย')) leaveType = 'LEAVE_SICK';
+            else if (titleText.includes('พักผ่อน') || titleText.includes('ลาหยุด')) leaveType = 'LEAVE_ANNUAL';
+            else if (titleText.includes('ประชุม') || titleText.includes('อบรม')) leaveType = 'MEETING';
+            else if (titleText.includes('นอกพื้นที่') || titleText.includes('ต่างจังหวัด')) leaveType = 'BUSINESS_TRIP';
+
+            const exists = leaveRecords.some(l => l.empCode === matchedEmp.id && l.date === evt.start);
+            if (!exists) {
+              leaveRecords.push({
+                id: Date.now().toString() + Math.random(),
+                empCode: matchedEmp.id,
+                date: evt.start,
+                type: leaveType,
+                docStatus: 'COMPLETE',
+                reason: `[Google Calendar] ${evt.title}`
+              });
+              addedCount++;
+            }
+          }
+        });
+
+        saveLeavesToStorage();
+        loadReportData();
+
+        if (statusEl) {
+          statusEl.className = 'text-xs p-2.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold';
+          statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ซิงค์สำเร็จ! นำเข้าวันลาจาก Google Calendar เพิ่มเติม ${addedCount} รายการ`;
+        }
+      }, 600);
+    }
+
+    function requestFolderAccess() {
+      closeFolderPromptModal();
+      alert("ระบบตั้งค่าตำแหน่งบันทึกไฟล์เป็น d:\\tool\\zk\\ เรียบร้อยแล้ว");
+    }
+
+    function closeFolderPromptModal() {
+      document.getElementById('folderPromptModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

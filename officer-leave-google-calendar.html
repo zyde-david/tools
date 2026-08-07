@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบยื่นใบลาและติดตามวันหยุดเจ้าหน้าที่ รพ.สต.ยะรัง</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS (XLSX Import/Export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Google Fonts: Sarabun & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Sarabun', 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+
+    /* Official Thai Civil Service Document Printing Styles */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableCoverSheet, #printableCoverSheet * {
+        visibility: visible !important;
+      }
+      #printableCoverSheet {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      
+      @page {
+        size: A4 portrait;
+        margin: 10mm 15mm 10mm 15mm;
+      }
+
+      .print-page {
+        font-family: 'Sarabun', 'TH Sarabun PSK', sans-serif !important;
+        font-size: 14pt !important;
+        line-height: 1.3 !important;
+        color: #000 !important;
+        background: #fff !important;
+        padding: 0 !important;
+        max-height: 268mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .print-page-1 {
+        page-break-after: always !important;
+      }
+
+      .print-page-2 {
+        page-break-after: auto !important;
+      }
+
+      /* Control single-page printing filters */
+      body.print-only-page1 .print-page-2 {
+        display: none !important;
+      }
+      body.print-only-page2 .print-page-1 {
+        display: none !important;
+      }
+    }
+
+    .calendar-cell {
+      min-height: 90px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-700 p-2.5 rounded-xl shadow-inner">
+          <i class="fa-solid fa-file-signature text-2xl text-amber-300"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold leading-tight">ระบบยื่นใบลาและติดตามวันหยุดเจ้าหน้าที่</h1>
+          <p class="text-xs text-indigo-200">โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง อ.ยะรัง จ.ปัตตานี</p>
+        </div>
+      </div>
+
+      <!-- Action Control Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="openModal('managementModal')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-chart-pie"></i> ภาพรวมการลาทั้งองค์กร
+        </button>
+        <button onclick="openModal('prdModal')" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 text-amber-300 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-indigo-600">
+          <i class="fa-solid fa-book"></i> เอกสารข้อกำหนด (PRD)
+        </button>
+        <button onclick="openModal('officerModal')" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-indigo-600">
+          <i class="fa-solid fa-users-gear"></i> จัดการข้อมูลเจ้าหน้าที่
+        </button>
+        <button onclick="openModal('holidayModal')" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-indigo-600">
+          <i class="fa-solid fa-calendar-minus"></i> จัดการวันหยุด
+        </button>
+        <button onclick="exportMasterSystemToExcel()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-file-excel"></i> ส่งออก Excel (3 ตาราง)
+        </button>
+        <label class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-indigo-600 cursor-pointer">
+          <i class="fa-solid fa-file-import"></i> นำเข้า Excel
+          <input type="file" id="excelImportInput" accept=".xlsx, .xls" onchange="importMasterSystemFromExcel(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6 no-print">
+
+    <!-- Left Column: Form & Officer Quota Summary (7 Columns) -->
+    <section class="lg:col-span-7 space-y-6">
+
+      <!-- Form Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2" id="formTitleText">
+            <i class="fa-solid fa-pen-to-square text-indigo-600"></i> แบบฟอร์มยื่นคำขอลางาน
+          </h2>
+          <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-full border border-indigo-100">
+            คำนวณวันทำการและแยกช่วงวันลาอัตโนมัติ
+          </span>
+        </div>
+
+        <form id="leaveForm" onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+          <input type="hidden" id="editingLeaveIndex" value="-1">
+
+          <!-- Searchable Officer Selection -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+              <label class="block text-xs font-bold text-slate-700">ชื่อ-นามสกุล / ชื่อเล่น ผู้ขอลา *</label>
+              <div class="flex items-center gap-2 text-[11px] text-slate-500">
+                <span>จัดเรียง:</span>
+                <button type="button" onclick="sortOfficerList('name')" class="text-indigo-600 hover:underline font-semibold">ก-ฮ</button>
+                <span>|</span>
+                <button type="button" onclick="sortOfficerList('remaining')" class="text-indigo-600 hover:underline font-semibold">วันเหลือคงเหลือ</button>
+              </div>
+            </div>
+
+            <!-- Search Input Box -->
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" id="officerSearchInput" oninput="filterOfficerDropdown()" placeholder="พิมพ์ชื่อ, นามสกุล, ชื่อเล่น หรือตำแหน่งเพื่อค้นหา..." class="w-full text-xs pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Select Element -->
+            <select id="officerSelect" onchange="handleOfficerChange()" class="w-full text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <!-- Selected Officer Info Card -->
+          <div id="officerInfoCard" class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 text-xs space-y-2 hidden">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="font-bold text-indigo-900 text-sm" id="infoOfficerName">-</span>
+                <span class="text-xs text-indigo-700 font-semibold ms-1.5" id="infoOfficerNickname">(-)</span>
+              </div>
+              <span class="text-[11px] bg-white text-indigo-700 font-bold px-2 py-0.5 rounded border border-indigo-200" id="infoOfficerPos">-</span>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+              <div class="bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                <span class="text-[10px] text-slate-500 block">สิทธิปีนี้ + ยกมา</span>
+                <strong class="text-slate-800 font-bold text-sm" id="infoTotalAllowance">20 วัน</strong>
+              </div>
+              <div class="bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                <span class="text-[10px] text-slate-500 block">ใช้ไปแล้วรวม</span>
+                <strong class="text-amber-600 font-bold text-sm" id="infoTotalUsed">0 วัน</strong>
+              </div>
+              <div class="bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                <span class="text-[10px] text-slate-500 block">สิทธิคงเหลือปีนี้</span>
+                <strong class="text-emerald-600 font-bold text-sm" id="infoRemaining">20 วัน</strong>
+              </div>
+              <div class="bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                <span class="text-[10px] text-slate-500 block">ลาได้สูงสุดเดือนนี้</span>
+                <strong class="text-indigo-600 font-bold text-sm" id="infoMaxAllowedMonth">5 วัน</strong>
+              </div>
+            </div>
+
+            <!-- Handover Person Details -->
+            <div class="text-[11px] text-slate-600 pt-1 border-t border-indigo-100 flex flex-wrap justify-between gap-1">
+              <span>ผู้รับมอบงานประจำ (Z): <strong class="text-slate-800" id="infoDefaultHandover">-</strong></span>
+              <span>ผู้อนุมัติประจำ (Y): <strong class="text-slate-800" id="infoApproverName">-</strong></span>
+            </div>
+          </div>
+
+          <!-- Leave Category & Reason -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">ประเภทการลา *</label>
+              <select id="leaveType" onchange="recalculateRules()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="ลาพักผ่อน">ลาพักผ่อน (Vacation Leave)</option>
+                <option value="ลาป่วย">ลาป่วย (Sick Leave)</option>
+                <option value="ลากิจส่วนตัว">ลากิจส่วนตัว (Personal Leave)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">เหตุผลการลา</label>
+              <input type="text" id="leaveReason" placeholder="ระบุเหตุผล (ถ้ามี)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <!-- Dates Selection -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">วันเริ่มลา *</label>
+              <input type="date" id="startDate" onchange="recalculateRules()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">วันสิ้นสุดการลา *</label>
+              <input type="date" id="endDate" onchange="recalculateRules()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <!-- Validation Warning / Rule Verification Box -->
+          <div id="ruleValidationBox" class="p-3.5 rounded-xl border text-xs space-y-1.5 transition">
+            <div class="flex items-center justify-between font-bold" id="ruleBoxBadge">
+              <span>ผลการตรวจสอบเงื่อนไขการลา</span>
+              <span class="px-2 py-0.5 rounded text-[10px]">ตรวจสอบ...</span>
+            </div>
+            <p id="ruleBoxText" class="text-[11px] leading-relaxed">กรุณาเลือกวันเริ่มลาและวันสิ้นสุดการลาเพื่อตรวจสอบสิทธิ</p>
+          </div>
+
+          <!-- Extended Official Form Fields -->
+          <div class="pt-2 border-t border-slate-100 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-700 block">ข้อมูลสำหรับออกหนังสือบันทึกข้อความและแบบใบลา</span>
+              <label class="text-[11px] text-indigo-600 hover:underline cursor-pointer flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-image"></i> อัปโหลดตราครุฑ
+                <input type="file" id="customGarudaInput" accept="image/*" onchange="handleGarudaUpload(event)" class="hidden">
+              </label>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between items-center mb-0.5">
+                  <label class="block text-[11px] font-semibold text-slate-600">เลขที่หนังสือออก *</label>
+                  <span id="docNumberWarnBadge" class="text-[10px] text-red-600 font-bold hidden"><i class="fa-solid fa-triangle-exclamation"></i> เลขหนังสือซ้ำ!</span>
+                </div>
+                <input type="text" id="docNumber" value="ปน ๕๑๐๐๖.๐๖๐๕/๘๗๕" oninput="checkDocNumberUniqueness()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">ผู้รับมอบงาน (Z) *</label>
+                <select id="handoverSelect" onchange="handleHandoverSelectChange()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">ตำแหน่งผู้รับมอบงาน</label>
+                <input type="text" id="handoverPosition" value="นักวิชาการสาธารณสุขชำนาญการ" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">ผู้ตรวจสอบเอกสาร (จำค่าล่าสุด) *</label>
+                <select id="inspectorSelect" onchange="handleInspectorSelectChange()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none font-bold text-indigo-900">
+                  <!-- Dynamically populated from officer list -->
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">ผู้อนุมัติ (ผอ.รพ.สต. - จำค่าล่าสุด) *</label>
+                <select id="bossSelect" onchange="handleBossSelectChange()" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none font-bold text-indigo-900">
+                  <!-- Dynamically populated from officer list -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">เบอร์โทรติดต่อระหว่างลา</label>
+                <input type="text" id="contactPhone" placeholder="098-015-xxxx" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">ที่อยู่ระหว่างลา</label>
+              <input type="text" id="contactAddress" placeholder="33/2 หมู่ที่ 3 ตำบลประจัน อำเภอยะรัง จังหวัดปัตตานี 94160" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
+            </div>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="flex gap-2 pt-2">
+            <button type="submit" id="submitBtn" class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> <span id="submitBtnText">ยืนยันการลา & บันทึกลงปฏิทิน</span>
+            </button>
+            <button type="button" id="cancelEditBtn" onclick="cancelEditLeave()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs py-3 px-4 rounded-xl transition hidden">
+              ยกเลิกแก้ไข
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Yearly Leave History List -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> ประวัติการลารายเดือนในปีนี้ (พิมพ์/แก้ไข/ลบรายการได้)
+          </h3>
+          <span id="officerTotalLeaveCount" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">0 รายการ</span>
+        </div>
+
+        <div id="officerLeaveHistoryList" class="space-y-2 text-xs max-h-64 overflow-y-auto pr-1">
+          <p class="text-slate-400 text-center py-4">กรุณาเลือกเจ้าหน้าที่เพื่อดูประวัติการลา</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Interactive System Calendar & Sync Status (5 Columns) -->
+    <section class="lg:col-span-5 space-y-6">
+
+      <!-- Calendar Container Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+        
+        <!-- Header Controls -->
+        <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-3 gap-2">
+          <div class="flex items-center gap-2">
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-days text-indigo-600"></i> ปฏิทินทีม
+            </h2>
+            <button onclick="openModal('calendarModal')" class="text-[11px] text-indigo-600 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-gear"></i> ตั้งค่า ID
+            </button>
+          </div>
+
+          <!-- View Switcher Tabs -->
+          <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+            <button id="btnSystemCal" onclick="switchCalendarView('system')" class="px-3 py-1 rounded-lg bg-white shadow-sm text-indigo-900 transition">
+              ปฏิทินระบบ
+            </button>
+            <button id="btnGoogleCal" onclick="switchCalendarView('google')" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">
+              Google Embed
+            </button>
+          </div>
+        </div>
+
+        <!-- View 1: Interactive System Calendar -->
+        <div id="systemCalendarView" class="space-y-3">
+          <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs font-bold">
+            <button onclick="changeMonth(-1)" class="p-1.5 hover:bg-white rounded-lg transition"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="calendarMonthYearText" class="text-indigo-900 font-bold text-sm">สิงหาคม 2569</span>
+            <button onclick="changeMonth(1)" class="p-1.5 hover:bg-white rounded-lg transition"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+
+          <!-- Days Grid Header -->
+          <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-500 border-b pb-1">
+            <span class="text-red-500">อา</span>
+            <span>จ</span>
+            <span>อ</span>
+            <span>พ</span>
+            <span>พฤ</span>
+            <span>ศ</span>
+            <span class="text-red-500">ส</span>
+          </div>
+
+          <!-- Month Days Grid -->
+          <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-xs">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center justify-between text-[10px] text-slate-500 pt-2 border-t gap-2">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-500 inline-block"></span> วันหยุดราชการ/เสาร์-อาทิตย์</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-indigo-500 inline-block"></span> แถบวันลาต่อเนื่อง (ชื่อเล่น)</span>
+          </div>
+        </div>
+
+        <!-- View 2: Google Calendar Embed -->
+        <div id="googleCalendarView" class="hidden space-y-3">
+          <div class="relative w-full h-[420px] rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+            <iframe id="googleCalendarIframe" class="w-full h-full border-0" src="" loading="lazy"></iframe>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Google Calendar Sync Status Panel -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate text-emerald-600"></i> สถานะการซิงค์ปฏิทิน Google Calendar
+          </h3>
+          <span id="pendingSyncCountBadge" class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">0 รายการรอซิงค์</span>
+        </div>
+
+        <div id="calendarSyncTrackerList" class="space-y-2 text-xs max-h-52 overflow-y-auto pr-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- PRINTABLE COVER SHEET & OFFICIAL LEAVE FORM (HIDDEN UNTIL PRINT) -->
+  <div id="printableCoverSheet" class="hidden">
+    <!-- Content generated dynamically by generatePrintableDocument() -->
+  </div>
+
+  <!-- MODAL 1: OFFICER MANAGEMENT MODAL -->
+  <div id="officerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-users-gear text-indigo-600"></i> จัดการโควต้าและสิทธิวันลาเจ้าหน้าที่
+        </h3>
+        <button onclick="closeModal('officerModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Add/Edit Officer Form -->
+      <form onsubmit="handleSaveOfficer(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
+        <input type="hidden" id="modalOfficerEditIndex" value="-1">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold mb-1">ชื่อ-นามสกุล *</label>
+            <input type="text" id="modalOffName" required placeholder="นายสมชาย ใจดี" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">ชื่อเล่น *</label>
+            <input type="text" id="modalOffNickname" required placeholder="แบชาย" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">ตำแหน่ง *</label>
+            <input type="text" id="modalOffPos" required placeholder="พยาบาลวิชาชีพชำนาญการ" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold mb-1">สิทธิปีนี้ (วัน)</label>
+            <input type="number" id="modalOffQuota" value="20" min="0" max="40" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">ยกลาปีกลาย (วัน)</label>
+            <input type="number" id="modalOffImported" value="0" min="0" max="30" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">ใช้ช่วง ม.ค.-ก.ค. (วัน)</label>
+            <input type="number" id="modalOffPrior" value="0" min="0" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold mb-1">ผู้รับมอบงานประจำ (Z)</label>
+            <input type="text" id="modalOffDefaultHandover" placeholder="นางสาววิไลวรรณ สุขประเสริฐ" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">เบอร์โทรศัพท์</label>
+            <input type="text" id="modalOffPhone" placeholder="098-015-xxxx" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="border-t pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold mb-1">ผู้อนุมัติประจำ (ผอ.รพ.สต.)</label>
+            <input type="text" id="modalOffApproverName" value="นายสมศักดิ์ รักชาติ" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">เกษียณ/หมดวาระวันที่</label>
+            <input type="date" id="modalOffApproverValidTo" value="2026-09-30" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold mb-1">ผู้อนุมัติสำรอง (กรณีผู้เดิมหมดวาระ)</label>
+            <input type="text" id="modalOffNextApproverName" placeholder="นางสาววิไลวรรณ สุขประเสริฐ" class="w-full p-2 border rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-bold mb-1">ตำแหน่งผู้อนุมัติสำรอง</label>
+            <input type="text" id="modalOffNextApproverPos" placeholder="นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต." class="w-full p-2 border rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="resetOfficerModalForm()" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg font-bold">ยกเลิก</button>
+          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">บันทึกข้อมูลเจ้าหน้าที่</button>
+        </div>
+      </form>
+
+      <!-- Officers List Table -->
+      <div class="space-y-2">
+        <h4 class="font-bold text-xs text-slate-700">รายชื่อเจ้าหน้าที่ในระบบ</h4>
+        <div id="officerModalList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: MANAGEMENT OVERVIEW DASHBOARD -->
+  <div id="managementModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-amber-500"></i> ภาพรวมวันลาเจ้าหน้าที่ทุกคนและการลารายเดือน (Management Overview)
+        </h3>
+        <button onclick="closeModal('managementModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Overview Summary Quota Table -->
+      <div class="space-y-2">
+        <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-users text-indigo-600"></i> 1. ตารางสรุปสิทธิและโควต้วันลาคงเหลือของเจ้าหน้าที่ทุกคนในปีนี้
+        </h4>
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs text-slate-700 border-collapse">
+            <thead class="bg-slate-100 font-bold text-slate-800 border-b">
+              <tr>
+                <th class="p-2.5">ชื่อ-นามสกุล (ชื่อเล่น)</th>
+                <th class="p-2.5">ตำแหน่ง</th>
+                <th class="p-2.5 text-center">สิทธิปีนี้</th>
+                <th class="p-2.5 text-center">ยกมาปีกลาย</th>
+                <th class="p-2.5 text-center">สิทธิรวม</th>
+                <th class="p-2.5 text-center">ใช้ก่อนระบบ (ม.ค.-ก.ค.)</th>
+                <th class="p-2.5 text-center">ใช้ในระบบ</th>
+                <th class="p-2.5 text-center">รวมใช้ไป</th>
+                <th class="p-2.5 text-center text-emerald-700">สิทธิคงเหลือ</th>
+              </tr>
+            </thead>
+            <tbody id="managementSummaryTableBody" class="divide-y divide-slate-100">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Monthly Breakdown Table Across 12 Months -->
+      <div class="space-y-2 pt-2">
+        <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-calendar-week text-indigo-600"></i> 2. ตารางสรุปการลารายเดือนจำแนกตามเจ้าหน้าที่ (ปี 2569 / 2026)
+        </h4>
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-center text-xs text-slate-700 border-collapse">
+            <thead class="bg-indigo-900 text-white font-bold border-b">
+              <tr>
+                <th class="p-2 text-left min-w-[140px]">เจ้าหน้าที่</th>
+                <th class="p-2">ม.ค.</th>
+                <th class="p-2">ก.พ.</th>
+                <th class="p-2">มี.ค.</th>
+                <th class="p-2">เม.ย.</th>
+                <th class="p-2">พ.ค.</th>
+                <th class="p-2">มิ.ย.</th>
+                <th class="p-2">ก.ค.</th>
+                <th class="p-2 bg-indigo-800">ส.ค.</th>
+                <th class="p-2">ก.ย.</th>
+                <th class="p-2">ต.ค.</th>
+                <th class="p-2">พ.ย.</th>
+                <th class="p-2">ธ.ค.</th>
+                <th class="p-2 bg-amber-600">รวมวันลา</th>
+              </tr>
+            </thead>
+            <tbody id="managementMonthlyTableBody" class="divide-y divide-slate-100 text-[11px]">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-3 border-t">
+        <button onclick="exportMasterSystemToExcel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-file-excel"></i> ส่งออกสรุปบริหารเป็น Excel
+        </button>
+        <button onclick="closeModal('managementModal')" class="px-4 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: HOLIDAY MANAGEMENT MODAL -->
+  <div id="holidayModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-calendar-minus text-indigo-600"></i> จัดการวันหยุดราชการและวันหยุดพิเศษ
+        </h3>
+        <button onclick="closeModal('holidayModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Add Holiday Form -->
+      <form onsubmit="handleAddHoliday(event)" class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap gap-2 text-xs">
+        <input type="date" id="newHolidayDate" required class="p-2 border rounded-lg outline-none">
+        <input type="text" id="newHolidayName" required placeholder="ชื่อวันหยุด (เช่น วันแม่)" class="p-2 border rounded-lg flex-grow outline-none">
+        <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">เพิ่มวันหยุด</button>
+      </form>
+
+      <!-- Holiday List -->
+      <div id="holidayListContainer" class="space-y-1.5 text-xs max-h-60 overflow-y-auto pr-1">
+        <!-- Dynamically populated -->
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t">
+        <button onclick="resetDefaultHolidays()" class="text-xs text-indigo-600 hover:underline font-semibold">
+          คืนค่าวันหยุดประจำปีมาตรฐาน (18 วัน)
+        </button>
+        <button onclick="closeModal('holidayModal')" class="px-4 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: CALENDAR SETTINGS MODAL -->
+  <div id="calendarModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-calendar-gear text-indigo-600"></i> ตั้งค่าปฏิทินทีม Google Calendar
+        </h3>
+        <button onclick="closeModal('calendarModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">รหัสปฏิทินทีม (Team Calendar ID)</label>
+          <input type="text" id="calendarIdInput" class="w-full p-2.5 border rounded-xl outline-none font-mono text-[11px] bg-slate-50" placeholder="example@group.calendar.google.com">
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl space-y-1 leading-relaxed">
+          <strong class="font-bold block"><i class="fa-solid fa-circle-info text-amber-600"></i> วิธีนำ Calendar ID มาใส่:</strong>
+          <ol class="list-decimal list-inside space-y-0.5 text-[11px]">
+            <li>เปิด Google Calendar บนคอมพิวเตอร์หรือแท็บเล็ต</li>
+            <li>ไปที่เมนู "การตั้งค่าปฏิทิน" (Settings and sharing)</li>
+            <li>คัดลอก **Calendar ID** ในหัวข้อ Integrate calendar</li>
+            <li>นำมาวางในช่องด้านบนแล้วกด "บันทึกเปลี่ยน ID"</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeModal('calendarModal')" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg font-bold text-xs">ยกเลิก</button>
+        <button onclick="saveCalendarId()" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700">บันทึกเปลี่ยน ID</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: SYSTEM PRD & SPECIFICATIONS MODAL (100% THAI DOCUMENTATION) -->
+  <div id="prdModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i class="fa-solid fa-book-bookmark text-indigo-600"></i> เอกสารข้อกำหนดระบบ (Product Requirements Document - PRD)
+        </h3>
+        <button onclick="closeModal('prdModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-700 leading-relaxed">
+        <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl">
+          <h4 class="font-bold text-indigo-900 text-sm mb-1">1. วัตถุประสงค์ของระบบ (System Purpose)</h4>
+          <p>ระบบบริหารจัดการวันลาพักผ่อน วันลาป่วย และวันลากิจส่วนตัว สำหรับเจ้าหน้าที่ รพ.สต.ยะรัง อำเภอยะรัง จังหวัดปัตตานี พร้อมระบบคำนวณวันทำการ ตรวจสอบเกณฑ์วันลาคงเหลือ ออกเอกสารราชการบันทึกข้อความแบบใบลา ตรวจสอบเลขหนังสือซ้ำ ซิงค์ Google Calendar และสรุปภาพรวมสำหรับผู้บริหาร</p>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-sm border-b pb-1">2. เกณฑ์การคำนวณและกฎการลางาน (Business Rules)</h4>
+          <ul class="list-disc list-inside space-y-1 bg-slate-50 p-3 rounded-xl border">
+            <li><strong>สิทธิวันลาพักผ่อนประจำปี:</strong> เจ้าหน้าที่ได้รับสิทธิพื้นฐาน 20 วัน/ปีงบประมาณ + สิทธิยกลาปีกลาย สะสมรวมกันได้สูงสุดไม่เกิน 40 วัน/ปี</li>
+            <li><strong>เกณฑ์วันทำงานขั้นต่ำ:</strong> ในทุกเดือน ต้องมีเจ้าหน้าที่ปฏิบัติงานไม่น้อยกว่า 15 วันทำการ หากลาเกินเกณฑ์ระบบจะแจ้งเตือนคำนวณสิทธิ</li>
+            <li><strong>จำนวนวันลาต่อครั้ง:</strong> ยื่นลาพักผ่อนได้สูงสุดไม่เกิน 5 วันทำการต่อรายการ</li>
+            <li><strong>ชื่อเล่นเจ้าหน้าที่ (Nickname):</strong> กำหนดชื่อเล่นสั้นๆ เพื่อนำไปแสดงผลบนแถบบาร์วันลาแนวนอนยาวในหน้าปฏิทิน</li>
+            <li><strong>การตรวจสอบวันหยุดและการแยกช่วงวันลาอัตโนมัติ:</strong> หากช่วงวันลาครอบคลุมวันเสาร์-อาทิตย์ หรือวันหยุดราชการ ระบบจะทำการหักวันหยุดออกอัตโนมัติ คำนวณเฉพาะวันทำการ และแยกออกเป็นใบลาต่อเนื่องแต่ละช่วงโดยอัตโนมัติ</li>
+            <li><strong>การตรวจสอบเลขที่หนังสือออก:</strong> ตรวจสอบความถูกต้องไม่ให้ใช้เลขที่หนังสือออกซ้ำกันเพื่อป้องกันความผิดพลาดในงานสารบรรณ</li>
+            <li><strong>การจำค่าผู้ตรวจสอบและผู้อนุมัติ:</strong> สามารถเลือกผู้ตรวจสอบและผู้อนุมัติจากรายชื่อเจ้าหน้าที่ในระบบ และจดจำค่าล่าสุดไว้ในระบบโดยอัตโนมัติ</li>
+          </ul>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-sm border-b pb-1">3. โครงสร้างไฟล์ Excel 3 ตาราง (Master System Worksheets)</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div class="p-2.5 bg-slate-50 border rounded-xl">
+              <strong class="text-indigo-800 font-bold block mb-1">ตารางที่ 1: Officers & Approvers</strong>
+              <p class="text-[11px]">เก็บข้อมูลชื่อ-นามสกุล ชื่อเล่น ตำแหน่ง สิทธิปีนี้ ยกลาปีกลาย ใช้ก่อนระบบ เบอร์โทร ที่อยู่ ผู้รับมอบงานประจำ ผู้อนุมัติ/ผู้อนุมัติสำรองพร้อมวันหมดวาระ</p>
+            </div>
+            <div class="p-2.5 bg-slate-50 border rounded-xl">
+              <strong class="text-indigo-800 font-bold block mb-1">ตารางที่ 2: Leave Log Audit</strong>
+              <p class="text-[11px]">บันทึกประวัติการยื่นลา สถานะรายการ เลขที่หนังสือ ผู้รับมอบงาน ผู้อนุมัติ ผู้ตรวจสอบ เหตุผล เวลาทำรายการ และสถานะซิงค์ปฏิทิน</p>
+            </div>
+            <div class="p-2.5 bg-slate-50 border rounded-xl">
+              <strong class="text-indigo-800 font-bold block mb-1">ตารางที่ 3: Holidays List</strong>
+              <p class="text-[11px]">รายการวันหยุดราชการประจำปี และวันหยุดพิเศษเพิ่มเติม</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-sm border-b pb-1">4. ข้อกำหนดการพิมพ์เอกสารราชการ (Printing Specs)</h4>
+          <ul class="list-disc list-inside space-y-1 bg-slate-50 p-3 rounded-xl border">
+            <li><strong>หน้าที่ 1 (บันทึกข้อความ):</strong> พิมพ์หนังสือบันทึกข้อความส่วนราชการ พร้อมตราครุฑ อ้างอิงเลขที่หนังสือ เรียน นายก อบจ.ปัตตานี</li>
+            <li><strong>หน้าที่ 2 (แบบใบลา):</strong> พิมพ์แบบใบลาพักผ่อน/ป่วย/กิจ ตารางสถิติการลา ช่องลงนามผู้ขอลา ผู้ตรวจสอบ ผู้มอบงาน ผู้รับมอบงาน และคำสั่งอนุญาต</li>
+            <li><strong>ตัวเลขไทย (๐-๙):</strong> ตัวเลขทั้งหมดในเอกสารราชการจะแปลงเป็นตัวเลขไทยโดยอัตโนมัติ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t">
+        <button onclick="closeModal('prdModal')" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700">รับทราบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT SYSTEM LOGIC -->
+  <script>
+    // Safe Storage Wrapper to prevent iframe/sandboxed localStorage exceptions
+    var safeStorage = {
+      getItem: function(key) {
+        try { return localStorage.getItem(key); } catch(e) { return null; }
+      },
+      setItem: function(key, val) {
+        try { localStorage.setItem(key, val); } catch(e) {}
+      }
+    };
+
+    // Default Team Calendar ID
+    var DEFAULT_CALENDAR_ID = "7bf2c9b09a80ad6970ec172a4a1bf092c161871f453448ca937f2c1c5ce0232f@group.calendar.google.com";
+
+    // 10 Mock Officers List with Complete Details & Nicknames
+    var OFFICER_LIST = [
+      {
+        id: "OFF-1",
+        name: "นายสมชาย ใจดี",
+        nickname: "แบชาย",
+        position: "พยาบาลวิชาชีพชำนาญการ",
+        defaultHandoverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        defaultHandoverPos: "นักวิชาการสาธารณสุขชำนาญการ",
+        address: "33/2 หมู่ที่ 3 ตำบลประจัน อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "098-015-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 9,
+        usedPrior: 3,
+        usedInSystem: 3,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1001", type: "ลาพักผ่อน", startDate: "2026-08-03", endDate: "2026-08-05", dateRangeText: "2026-08-03 ถึง 2026-08-05", days: 3, reason: "พักผ่อนส่วนตัว", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๗๕", handoverName: "นางสาววิไลวรรณ สุขประเสริฐ", handoverPos: "นักวิชาการสาธารณสุขชำนาญการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "33/2 หมู่ที่ 3 ต.ประจัน อ.ยะรัง จ.ปัตตานี", contactPhone: "098-015-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: true, timestamp: "3/8/2569 09:30:00" }
+        ]
+      },
+      {
+        id: "OFF-2",
+        name: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nickname: "กะชะ",
+        position: "นักวิชาการสาธารณสุขชำนาญการ",
+        defaultHandoverName: "นายสมชาย ใจดี",
+        defaultHandoverPos: "พยาบาลวิชาชีพชำนาญการ",
+        address: "12/1 หมู่ที่ 1 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "081-234-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 5,
+        usedPrior: 1,
+        usedInSystem: 2,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นายสมชาย ใจดี",
+        nextApproverPos: "พยาบาลวิชาชีพชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1002", type: "ลาป่วย", startDate: "2026-08-10", endDate: "2026-08-11", dateRangeText: "2026-08-10 ถึง 2026-08-11", days: 2, reason: "ไข้หวัดใหญ่มีใบรับรองแพทย์", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๗๖", handoverName: "นายสมชาย ใจดี", handoverPos: "พยาบาลวิชาชีพชำนาญการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "12/1 หมู่ที่ 1 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "081-234-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "5/8/2569 11:15:00" }
+        ]
+      },
+      {
+        id: "OFF-3",
+        name: "นางสาวปราณี สุขใจ",
+        nickname: "กะนา",
+        position: "นักสาธารณสุขชำนาญการ",
+        defaultHandoverName: "นายสมชาย ใจดี",
+        defaultHandoverPos: "พยาบาลวิชาชีพชำนาญการ",
+        address: "45 หมู่ที่ 2 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "089-111-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 0,
+        usedPrior: 0,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1003", type: "ลากิจส่วนตัว", startDate: "2026-08-14", endDate: "2026-08-14", dateRangeText: "2026-08-14 ถึง 2026-08-14", days: 1, reason: "ติดต่อราชการที่ดิน", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๗๗", handoverName: "นายสมชาย ใจดี", handoverPos: "พยาบาลวิชาชีพชำนาญการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาววิไลวรรณ สุขประเสริฐ", contactAddress: "45 หมู่ที่ 2 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "089-111-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "6/8/2569 08:20:00" }
+        ]
+      },
+      {
+        id: "OFF-4",
+        name: "นายสมศักดิ์ รักชาติ",
+        nickname: "ผอ.ศักดิ์",
+        position: "ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง",
+        defaultHandoverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        defaultHandoverPos: "นักวิชาการสาธารณสุขชำนาญการ",
+        address: "99 หมู่ที่ 1 ตำบลประจัน อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "081-999-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 10,
+        usedPrior: 2,
+        usedInSystem: 2,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1004", type: "ลาพักผ่อน", startDate: "2026-08-17", endDate: "2026-08-18", dateRangeText: "2026-08-17 ถึง 2026-08-18", days: 2, reason: "ตรวจสุขภาพประจำปี", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๗๘", handoverName: "นางสาววิไลวรรณ สุขประเสริฐ", handoverPos: "นักวิชาการสาธารณสุขชำนาญการ", bossName: "นางสาววิไลวรรณ สุขประเสริฐ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "99 หมู่ที่ 1 ต.ประจัน อ.ยะรัง จ.ปัตตานี", contactPhone: "081-999-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: true, timestamp: "6/8/2569 08:30:00" }
+        ]
+      },
+      {
+        id: "OFF-5",
+        name: "นางสาวนัสรีย์ มามุ",
+        nickname: "กะรีย์",
+        position: "พยาบาลวิชาชีพปฏิบัติการ",
+        defaultHandoverName: "นายสมชาย ใจดี",
+        defaultHandoverPos: "พยาบาลวิชาชีพชำนาญการ",
+        address: "88 หมู่ที่ 4 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "084-555-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 3,
+        usedPrior: 1,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1005", type: "ลาพักผ่อน", startDate: "2026-08-20", endDate: "2026-08-20", dateRangeText: "2026-08-20 ถึง 2026-08-20", days: 1, reason: "ธุระครอบครัว", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๗๙", handoverName: "นายสมชาย ใจดี", handoverPos: "พยาบาลวิชาชีพชำนาญการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "88 หมู่ที่ 4 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "084-555-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "6/8/2569 08:35:00" }
+        ]
+      },
+      {
+        id: "OFF-6",
+        name: "นายอับดุลเลาะ ซาเมาะ",
+        nickname: "แบเลาะ",
+        position: "เจ้าพนักงานสาธารณสุขชำนาญงาน",
+        defaultHandoverName: "นางสาวปราณี สุขใจ",
+        defaultHandoverPos: "นักสาธารณสุขชำนาญการ",
+        address: "15/3 หมู่ที่ 2 ตำบลประจัน อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "086-777-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 8,
+        usedPrior: 4,
+        usedInSystem: 2,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1006", type: "ลาพักผ่อน", startDate: "2026-08-24", endDate: "2026-08-25", dateRangeText: "2026-08-24 ถึง 2026-08-25", days: 2, reason: "เฝ้าไข้ญาติป่วย", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๘๐", handoverName: "นางสาวปราณี สุขใจ", handoverPos: "นักสาธารณสุขชำนาญการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาววิไลวรรณ สุขประเสริฐ", contactAddress: "15/3 หมู่ที่ 2 ต.ประจัน อ.ยะรัง จ.ปัตตานี", contactPhone: "086-777-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "6/8/2569 08:40:00" }
+        ]
+      },
+      {
+        id: "OFF-7",
+        name: "นางสาวฮาซานะห์ หะยีซามาเอะ",
+        nickname: "กะฮะ",
+        position: "เจ้าพนักงานทันตสาธารณสุขชำนาญงาน",
+        defaultHandoverName: "นางสาวนัสรีย์ มามุ",
+        defaultHandoverPos: "พยาบาลวิชาชีพปฏิบัติการ",
+        address: "67 หมู่ที่ 5 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "082-333-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 4,
+        usedPrior: 0,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1007", type: "ลาป่วย", startDate: "2026-08-06", endDate: "2026-08-06", dateRangeText: "2026-08-06 ถึง 2026-08-06", days: 1, reason: "ปวดศีรษะไมเกรน", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๘๑", handoverName: "นางสาวนัสรีย์ มามุ", handoverPos: "พยาบาลวิชาชีพปฏิบัติการ", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "67 หมู่ที่ 5 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "082-333-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: true, timestamp: "6/8/2569 08:45:00" }
+        ]
+      },
+      {
+        id: "OFF-8",
+        name: "นายมูฮัมหมัด ดาโอะ",
+        nickname: "แบมู",
+        position: "นักจัดการงานทั่วไป",
+        defaultHandoverName: "นายอับดุลเลาะ ซาเมาะ",
+        defaultHandoverPos: "เจ้าพนักงานสาธารณสุขชำนาญงาน",
+        address: "22/4 หมู่ที่ 1 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "087-444-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 2,
+        usedPrior: 1,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1008", type: "ลากิจส่วนตัว", startDate: "2026-08-28", endDate: "2026-08-28", dateRangeText: "2026-08-28 ถึง 2026-08-28", days: 1, reason: "ซ่อมแซมบ้านพัก", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๘๒", handoverName: "นายอับดุลเลาะ ซาเมาะ", handoverPos: "เจ้าพนักงานสาธารณสุขชำนาญงาน", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาววิไลวรรณ สุขประเสริฐ", contactAddress: "22/4 หมู่ที่ 1 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "087-444-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "6/8/2569 08:50:00" }
+        ]
+      },
+      {
+        id: "OFF-9",
+        name: "นางสาวฟาตีมะห์ สุไลมาน",
+        nickname: "กะมะ",
+        position: "นักแพทย์แผนไทยปฏิบัติการ",
+        defaultHandoverName: "นางสาวฮาซานะห์ หะยีซามาเอะ",
+        defaultHandoverPos: "เจ้าพนักงานทันตสาธารณสุขชำนาญงาน",
+        address: "101 หมู่ที่ 3 ตำบลประจัน อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "083-888-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 6,
+        usedPrior: 2,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1009", type: "ลาพักผ่อน", startDate: "2026-08-31", endDate: "2026-08-31", dateRangeText: "2026-08-31 ถึง 2026-08-31", days: 1, reason: "พักผ่อนประจำปี", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๘๓", handoverName: "นางสาวฮาซานะห์ หะยีซามาเอะ", handoverPos: "เจ้าพนักงานทันตสาธารณสุขชำนาญงาน", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาวปราณี สุขใจ", contactAddress: "101 หมู่ที่ 3 ต.ประจัน อ.ยะรัง จ.ปัตตานี", contactPhone: "083-888-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: false, timestamp: "6/8/2569 08:55:00" }
+        ]
+      },
+      {
+        id: "OFF-10",
+        name: "นายฮาฟิซ แวหะมะ",
+        nickname: "แบฟิซ",
+        position: "นักวิชาการคอมพิวเตอร์",
+        defaultHandoverName: "นายมูฮัมหมัด ดาโอะ",
+        defaultHandoverPos: "นักจัดการงานทั่วไป",
+        address: "50 หมู่ที่ 1 ตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี 94160",
+        phone: "085-666-xxxx",
+        quotaThisYear: 20,
+        importedLastYear: 1,
+        usedPrior: 0,
+        usedInSystem: 1,
+        approverName: "นายสมศักดิ์ รักชาติ",
+        approverPos: "ผอ.รพ.สต.ยะรัง",
+        approverValidFrom: "2569-01-01",
+        approverValidTo: "2569-09-30",
+        nextApproverName: "นางสาววิไลวรรณ สุขประเสริฐ",
+        nextApproverPos: "นักวิชาการสาธารณสุขชำนาญการ รักษาการ ผอ.รพ.สต.ยะรัง",
+        leaveHistory: [
+          { id: "LV-1010", type: "ลาพักผ่อน", startDate: "2026-08-07", endDate: "2026-08-07", dateRangeText: "2026-08-07 ถึง 2026-08-07", days: 1, reason: "อบรมสัมมนาวิชาการ", docNumber: "ปน ๕๑๐๐๖.๐๖๐๕/๘๘๔", handoverName: "นายมูฮัมหมัด ดาโอะ", handoverPos: "นักจัดการงานทั่วไป", bossName: "นายสมศักดิ์ รักชาติ", inspectorName: "นางสาววิไลวรรณ สุขประเสริฐ", contactAddress: "50 หมู่ที่ 1 ต.ยะรัง อ.ยะรัง จ.ปัตตานี", contactPhone: "085-666-xxxx", status: "ยื่นคำขอปกติ", syncedToGoogle: true, timestamp: "6/8/2569 09:00:00" }
+        ]
+      }
+    ];
+
+    // Standard Thai Official Public Holidays
+    var DEFAULT_HOLIDAYS = [
+      { date: '2026-01-01', name: 'วันขึ้นปีใหม่', isDefault: true },
+      { date: '2026-03-03', name: 'วันมาฆบูชา', isDefault: true },
+      { date: '2026-04-06', name: 'วันจักรี', isDefault: true },
+      { date: '2026-04-13', name: 'วันสงกรานต์', isDefault: true },
+      { date: '2026-04-14', name: 'วันสงกรานต์', isDefault: true },
+      { date: '2026-04-15', name: 'วันสงกรานต์', isDefault: true },
+      { date: '2026-05-01', name: 'วันแรงงาน', isDefault: true },
+      { date: '2026-05-04', name: 'วันฉัตรมงคล', isDefault: true },
+      { date: '2026-05-31', name: 'วันวิสาขบูชา', isDefault: true },
+      { date: '2026-06-03', name: 'วันเฉลิมฯ พระราชินี', isDefault: true },
+      { date: '2026-07-28', name: 'วันเฉลิมฯ ร.10', isDefault: true },
+      { date: '2026-07-29', name: 'วันอาสาฬหบูชา', isDefault: true },
+      { date: '2026-08-12', name: 'วันแม่', isDefault: true },
+      { date: '2026-10-13', name: 'วันคล้ายวันสวรรคต ร.9', isDefault: true },
+      { date: '2026-10-23', name: 'วันปิยมหาราช', isDefault: true },
+      { date: '2026-12-05', name: 'วันพ่อ', isDefault: true },
+      { date: '2026-12-10', name: 'วันรัฐธรรมนูญ', isDefault: true },
+      { date: '2026-12-31', name: 'วันสิ้นปี', isDefault: true }
+    ];
+
+    var PUBLIC_HOLIDAYS = [];
+    var currentCalMonth = 7; // August (0-indexed)
+    var currentCalYear = 2026;
+    var customGarudaBase64 = null;
+
+    // Memory for last selected roles
+    var lastSelectedInspector = "นางสาวปราณี สุขใจ";
+    var lastSelectedBoss = "นายสมศักดิ์ รักชาติ";
+
+    window.onload = function() {
+      loadStorageData();
+      renderOfficerDropdown();
+      populateRoleDropdowns();
+      handleOfficerChange();
+      renderHolidayList();
+      renderInteractiveCalendar();
+      renderCalendarSyncTracker();
+      updateGoogleIframe();
+      renderManagementDashboard();
+    };
+
+    function loadStorageData() {
+      var savedOff = safeStorage.getItem('officer_list_data_v5');
+      if (savedOff) {
+        try { OFFICER_LIST = JSON.parse(savedOff); } catch(e) {}
+      }
+
+      var savedHol = safeStorage.getItem('officer_holidays_data_v5');
+      if (savedHol) {
+        try { PUBLIC_HOLIDAYS = JSON.parse(savedHol); } catch(e) {}
+      } else {
+        PUBLIC_HOLIDAYS = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
+      }
+
+      var savedCalId = safeStorage.getItem('officer_team_calendar_id');
+      if (savedCalId) {
+        document.getElementById('calendarIdInput').value = savedCalId;
+      } else {
+        document.getElementById('calendarIdInput').value = DEFAULT_CALENDAR_ID;
+      }
+
+      var savedGaruda = safeStorage.getItem('officer_custom_garuda');
+      if (savedGaruda) customGarudaBase64 = savedGaruda;
+
+      var savedInsp = safeStorage.getItem('officer_last_inspector');
+      if (savedInsp) lastSelectedInspector = savedInsp;
+
+      var savedBoss = safeStorage.getItem('officer_last_boss');
+      if (savedBoss) lastSelectedBoss = savedBoss;
+    }
+
+    function saveOfficers() {
+      safeStorage.setItem('officer_list_data_v5', JSON.stringify(OFFICER_LIST));
+      renderManagementDashboard();
+      renderCalendarSyncTracker();
+    }
+
+    function saveHolidays() {
+      safeStorage.setItem('officer_holidays_data_v5', JSON.stringify(PUBLIC_HOLIDAYS));
+    }
+
+    function toThaiDigits(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[0-9]/g, function(d) {
+        return String.fromCharCode(d.charCodeAt(0) + 0x0E50 - 0x0030);
+      });
+    }
+
+    function getThaiMonthName(monthIdx) {
+      var months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+      return months[monthIdx] || '';
+    }
+
+    function getOfficerMaxAllowance(officer) {
+      if (!officer) return 20;
+      var total = (officer.quotaThisYear || 20) + (officer.importedLastYear || 0);
+      return Math.min(40, total); // Cap at max 40 days
+    }
+
+    function getOfficerTotalUsed(officer) {
+      if (!officer) return 0;
+      return (officer.usedPrior || 0) + (officer.usedInSystem || 0);
+    }
+
+    function getOfficerRemaining(officer) {
+      if (!officer) return 20;
+      return getOfficerMaxAllowance(officer) - getOfficerTotalUsed(officer);
+    }
+
+    function getBossNameForLeaveDate(officer, leaveStartDateStr) {
+      if (!officer) return lastSelectedBoss || "นายสมศักดิ์ รักชาติ";
+      var validTo = officer.approverValidTo;
+      if (validTo && leaveStartDateStr > validTo) {
+        return officer.nextApproverName || officer.approverName || lastSelectedBoss;
+      }
+      return officer.approverName || lastSelectedBoss;
+    }
+
+    function sortOfficerList(mode) {
+      if (mode === 'name') {
+        OFFICER_LIST.sort(function(a, b) { return a.name.localeCompare(b.name, 'th'); });
+      } else if (mode === 'remaining') {
+        OFFICER_LIST.sort(function(a, b) { return getOfficerRemaining(b) - getOfficerRemaining(a); });
+      }
+      renderOfficerDropdown();
+    }
+
+    function filterOfficerDropdown() {
+      var query = document.getElementById('officerSearchInput').value.trim().toLowerCase();
+      renderOfficerDropdown(query);
+    }
+
+    function renderOfficerDropdown(filterQuery) {
+      var select = document.getElementById('officerSelect');
+      var handoverSelect = document.getElementById('handoverSelect');
+      if (!select) return;
+
+      var currentVal = select.value;
+      var html = '<option value="">-- เลือกเจ้าหน้าที่ผู้ขอลา --</option>';
+      var handoverHtml = '<option value="-">-- เลือกผู้รับมอบงาน (ถ้ามี) --</option>';
+
+      OFFICER_LIST.forEach(function(o) {
+        var match = !filterQuery || 
+          o.name.toLowerCase().includes(filterQuery) || 
+          (o.nickname && o.nickname.toLowerCase().includes(filterQuery)) || 
+          (o.position && o.position.toLowerCase().includes(filterQuery));
+
+        if (match) {
+          var rem = getOfficerRemaining(o);
+          var displayName = o.name + (o.nickname ? ' (' + o.nickname + ')' : '') + ' - คงเหลือ ' + rem + ' วัน';
+          html += '<option value="' + o.id + '">' + displayName + '</option>';
+        }
+
+        handoverHtml += '<option value="' + o.name + '">' + o.name + (o.nickname ? ' (' + o.nickname + ')' : '') + '</option>';
+      });
+
+      select.innerHTML = html;
+      if (currentVal) select.value = currentVal;
+      if (handoverSelect) handoverSelect.innerHTML = handoverHtml;
+    }
+
+    function populateRoleDropdowns() {
+      var inspectorSelect = document.getElementById('inspectorSelect');
+      var bossSelect = document.getElementById('bossSelect');
+
+      if (inspectorSelect) {
+        var inspHtml = '';
+        OFFICER_LIST.forEach(function(o) {
+          inspHtml += '<option value="' + o.name + '">' + o.name + ' (' + (o.nickname||o.position) + ')</option>';
+        });
+        inspectorSelect.innerHTML = inspHtml;
+        inspectorSelect.value = lastSelectedInspector;
+      }
+
+      if (bossSelect) {
+        var bossHtml = '';
+        OFFICER_LIST.forEach(function(o) {
+          bossHtml += '<option value="' + o.name + '">' + o.name + ' (' + (o.nickname||o.position) + ')</option>';
+        });
+        bossSelect.innerHTML = bossHtml;
+        bossSelect.value = lastSelectedBoss;
+      }
+    }
+
+    function handleInspectorSelectChange() {
+      var val = document.getElementById('inspectorSelect').value;
+      lastSelectedInspector = val;
+      safeStorage.setItem('officer_last_inspector', val);
+    }
+
+    function handleBossSelectChange() {
+      var val = document.getElementById('bossSelect').value;
+      lastSelectedBoss = val;
+      safeStorage.setItem('officer_last_boss', val);
+    }
+
+    function handleOfficerChange() {
+      var selectId = document.getElementById('officerSelect').value;
+      var infoCard = document.getElementById('officerInfoCard');
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectId; });
+
+      if (!officer) {
+        infoCard.classList.add('hidden');
+        renderOfficerLeaveHistory(null);
+        return;
+      }
+
+      document.getElementById('infoOfficerName').innerText = officer.name;
+      document.getElementById('infoOfficerNickname').innerText = officer.nickname ? '(' + officer.nickname + ')' : '(-)';
+      document.getElementById('infoOfficerPos').innerText = officer.position;
+      document.getElementById('infoTotalAllowance').innerText = getOfficerMaxAllowance(officer) + ' วัน';
+      document.getElementById('infoTotalUsed').innerText = getOfficerTotalUsed(officer) + ' วัน';
+      document.getElementById('infoRemaining').innerText = getOfficerRemaining(officer) + ' วัน';
+      document.getElementById('infoDefaultHandover').innerText = officer.defaultHandoverName || '-';
+      document.getElementById('infoApproverName').innerText = officer.approverName || lastSelectedBoss;
+
+      if (officer.defaultHandoverName) {
+        document.getElementById('handoverSelect').value = officer.defaultHandoverName;
+        handleHandoverSelectChange();
+      }
+      if (officer.phone) document.getElementById('contactPhone').value = officer.phone;
+      if (officer.address) document.getElementById('contactAddress').value = officer.address;
+      
+      document.getElementById('bossSelect').value = officer.approverName || lastSelectedBoss;
+
+      renderOfficerLeaveHistory(officer);
+      infoCard.classList.remove('hidden');
+      recalculateRules();
+      checkDocNumberUniqueness();
+    }
+
+    function handleHandoverSelectChange() {
+      var handoverName = document.getElementById('handoverSelect').value;
+      var handoverPosInput = document.getElementById('handoverPosition');
+      var found = OFFICER_LIST.find(function(o) { return o.name === handoverName; });
+      if (found) {
+        handoverPosInput.value = found.position;
+      }
+    }
+
+    function handleGarudaUpload(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        customGarudaBase64 = evt.target.result;
+        safeStorage.setItem('officer_custom_garuda', customGarudaBase64);
+        alert('อัปโหลดตราครุฑสำหรับเอกสารเรียบร้อยแล้ว!');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function checkDocNumberUniqueness() {
+      var docNumInput = document.getElementById('docNumber').value.trim();
+      var warnBadge = document.getElementById('docNumberWarnBadge');
+      var editingIdx = parseInt(document.getElementById('editingLeaveIndex').value);
+
+      if (!docNumInput) {
+        warnBadge.classList.add('hidden');
+        return false;
+      }
+
+      var isDuplicate = false;
+      OFFICER_LIST.forEach(function(o) {
+        if (o.leaveHistory) {
+          o.leaveHistory.forEach(function(lh, idx) {
+            var selectedOffId = document.getElementById('officerSelect').value;
+            if (editingIdx >= 0 && o.id === selectedOffId && idx === editingIdx) {
+              return; // Skip currently editing entry
+            }
+            if (lh.docNumber && lh.docNumber.trim() === docNumInput) {
+              isDuplicate = true;
+            }
+          });
+        }
+      });
+
+      if (isDuplicate) {
+        warnBadge.classList.remove('hidden');
+      } else {
+        warnBadge.classList.add('hidden');
+      }
+
+      return isDuplicate;
+    }
+
+    function recalculateRules() {
+      var startStr = document.getElementById('startDate').value;
+      var endStr = document.getElementById('endDate').value;
+      var box = document.getElementById('ruleValidationBox');
+      var boxBadge = document.getElementById('ruleBoxBadge');
+      var boxText = document.getElementById('ruleBoxText');
+
+      if (!startStr || !endStr) {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-slate-200 bg-slate-50 text-slate-600";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700";
+        boxBadge.children[1].innerText = "รอการเลือกวัน";
+        boxText.innerText = "กรุณาเลือกวันเริ่มลาและวันสิ้นสุดการลาเพื่อตรวจสอบสิทธิ";
+        return;
+      }
+
+      var d1 = new Date(startStr);
+      var d2 = new Date(endStr);
+
+      if (d1 > d2) {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-red-200 bg-red-50 text-red-700";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-bold";
+        boxBadge.children[1].innerText = "วันลาไม่ถูกต้อง";
+        boxText.innerText = "วันเริ่มลาต้องไม่เกินวันสิ้นสุดการลา";
+        return;
+      }
+
+      var workdays = 0;
+      var nonWorkingDaysFound = [];
+      var cur = new Date(d1);
+
+      while (cur <= d2) {
+        var dayOfWeek = cur.getDay();
+        var yyyy = cur.getFullYear();
+        var mm = String(cur.getMonth() + 1).padStart(2, '0');
+        var dd = String(cur.getDate()).padStart(2, '0');
+        var dateStr = yyyy + '-' + mm + '-' + dd;
+
+        var isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        var holiday = PUBLIC_HOLIDAYS.find(function(h) { return h.date === dateStr; });
+
+        if (isWeekend) {
+          nonWorkingDaysFound.push(dd + '/' + mm + ' (เสาร์-อาทิตย์)');
+        } else if (holiday) {
+          nonWorkingDaysFound.push(dd + '/' + mm + ' (' + holiday.name + ')');
+        } else {
+          workdays++;
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      var selectedOffId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectedOffId; });
+      var rem = officer ? getOfficerRemaining(officer) : 20;
+
+      if (workdays === 0) {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-red-200 bg-red-50 text-red-700";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-bold";
+        boxBadge.children[1].innerText = "เป็นวันหยุดทั้งหมด";
+        boxText.innerText = "ช่วงวันที่เลือกเป็นวันหยุดราชการ/เสาร์-อาทิตย์ทั้งหมด (" + nonWorkingDaysFound.join(', ') + ") ไม่นับเป็นวันทำการยื่นลา";
+      } else if (workdays > 5) {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-amber-200 bg-amber-50 text-amber-800";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-amber-600 text-white font-bold";
+        boxBadge.children[1].innerText = "เกิน 5 วันทำการ";
+        boxText.innerHTML = "การลาครั้งนี้มีวันทำการ <strong>" + workdays + " วัน</strong> (เกินเกณฑ์สูงสุด 5 วันทำการ/ครั้ง) " + 
+          (nonWorkingDaysFound.length > 0 ? "<br><span class='text-amber-700'>* ระบบตรวจพบวันหยุดในครรลอง: " + nonWorkingDaysFound.join(', ') + " (หักออกแล้ว)</span>" : "");
+      } else if (workdays > rem) {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-red-200 bg-red-50 text-red-700";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-bold";
+        boxBadge.children[1].innerText = "สิทธิวันลาไม่เพียงพอ";
+        boxText.innerText = "คุณขอลา " + workdays + " วันทำการ แต่คงเหลือสิทธิเพียง " + rem + " วันทำการ";
+      } else {
+        box.className = "p-3.5 rounded-xl border text-xs space-y-1 border-emerald-200 bg-emerald-50 text-emerald-800";
+        boxBadge.children[1].className = "px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold";
+        boxBadge.children[1].innerText = "ผ่านการตรวจสอบ";
+        boxText.innerHTML = "การขอลา <strong>" + workdays + " วันทำการ</strong> สิทธิตรงตามเงื่อนไข (สิทธิคงเหลือหลังลา: " + (rem - workdays) + " วัน)" +
+          (nonWorkingDaysFound.length > 0 ? "<br><span class='text-amber-700 font-semibold'>* คำเตือน: ระบบตรวจพบวันหยุดในครรลอง " + nonWorkingDaysFound.join(', ') + " ระบบทำการหักวันหยุดออกแล้วโดยอัตโนมัติ</span>" : "");
+      }
+    }
+
+    function handleLeaveSubmit(e) {
+      e.preventDefault();
+      var selectId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectId; });
+
+      if (!officer) {
+        alert('กรุณาเลือกเจ้าหน้าที่ผู้ขอลา');
+        return;
+      }
+
+      var isDupDoc = checkDocNumberUniqueness();
+      if (isDupDoc) {
+        if (!confirm('คำเตือน: เลขที่หนังสือออกซ้ำกับคำขอลาอื่นที่มีในระบบ คุณต้องการยืนยันบันทึกใช่หรือไม่?')) {
+          return;
+        }
+      }
+
+      var leaveType = document.getElementById('leaveType').value;
+      var startDate = document.getElementById('startDate').value;
+      var endDate = document.getElementById('endDate').value;
+      var reason = document.getElementById('leaveReason').value || '-';
+
+      if (!startDate || !endDate) {
+        alert('กรุณาระบุวันเริ่มลาและวันสิ้นสุดการลา');
+        return;
+      }
+
+      if (!officer.leaveHistory) officer.leaveHistory = [];
+      var editingIdx = parseInt(document.getElementById('editingLeaveIndex').value);
+
+      var hasOverlap = officer.leaveHistory.some(function(lh, idx) {
+        if (idx === editingIdx) return false;
+        return (startDate <= lh.endDate && endDate >= lh.startDate);
+      });
+
+      if (hasOverlap) {
+        alert('คำเตือน: คุณเคยยื่นขอลางานในช่วงวันที่ดังกล่าวไปแล้ว กรุณาตรวจสอบประวัติการลา!');
+        return;
+      }
+
+      var workdays = 0;
+      var cur = new Date(startDate);
+      var end = new Date(endDate);
+      while (cur <= end) {
+        var dayOfWeek = cur.getDay();
+        var yyyy = cur.getFullYear();
+        var mm = String(cur.getMonth() + 1).padStart(2, '0');
+        var dd = String(cur.getDate()).padStart(2, '0');
+        var dateStr = yyyy + '-' + mm + '-' + dd;
+
+        var isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        var isHoliday = PUBLIC_HOLIDAYS.some(function(h) { return h.date === dateStr; });
+
+        if (!isWeekend && !isHoliday) workdays++;
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      if (workdays <= 0) {
+        alert('คำเตือน: ช่วงวันที่เลือกตรงกับวันหยุดราชการหรือเสาร์-อาทิตย์ทั้งหมด ไม่นับเป็นวันทำการยื่นลา');
+        return;
+      }
+
+      var bossName = document.getElementById('bossSelect').value || getBossNameForLeaveDate(officer, startDate);
+      var inspectorName = document.getElementById('inspectorSelect').value || lastSelectedInspector;
+
+      var newRecord = {
+        id: 'LV-' + Date.now(),
+        type: leaveType,
+        startDate: startDate,
+        endDate: endDate,
+        dateRangeText: startDate + ' ถึง ' + endDate,
+        days: workdays,
+        reason: reason,
+        docNumber: document.getElementById('docNumber').value,
+        handoverName: document.getElementById('handoverSelect').value,
+        handoverPos: document.getElementById('handoverPosition').value,
+        bossName: bossName,
+        inspectorName: inspectorName,
+        contactAddress: document.getElementById('contactAddress').value,
+        contactPhone: document.getElementById('contactPhone').value,
+        status: 'ยื่นคำขอปกติ',
+        syncedToGoogle: false,
+        timestamp: new Date().toLocaleString('th-TH')
+      };
+
+      if (editingIdx >= 0 && officer.leaveHistory[editingIdx]) {
+        var oldRec = officer.leaveHistory[editingIdx];
+        if (oldRec.type === 'ลาพักผ่อน') {
+          officer.usedInSystem = Math.max(0, (officer.usedInSystem || 0) - oldRec.days);
+        }
+        if (leaveType === 'ลาพักผ่อน') {
+          officer.usedInSystem = (officer.usedInSystem || 0) + workdays;
+        }
+        officer.leaveHistory[editingIdx] = newRecord;
+        alert('แก้ไขรายการลาสำเร็จแล้ว!');
+      } else {
+        if (leaveType === 'ลาพักผ่อน') {
+          officer.usedInSystem = (officer.usedInSystem || 0) + workdays;
+        }
+        officer.leaveHistory.push(newRecord);
+        alert('บันทึกคำขอลางานสำเร็จแล้ว!');
+      }
+
+      saveOfficers();
+      cancelEditLeave();
+      handleOfficerChange();
+      renderInteractiveCalendar();
+
+      generatePrintableDocument({
+        name: officer.name,
+        nickname: officer.nickname,
+        position: officer.position,
+        docNumber: newRecord.docNumber,
+        type: newRecord.type,
+        startDate: newRecord.startDate,
+        endDate: newRecord.endDate,
+        totalDays: newRecord.days,
+        reason: newRecord.reason,
+        handoverName: newRecord.handoverName,
+        handoverPos: newRecord.handoverPos,
+        bossName: newRecord.bossName,
+        inspectorName: newRecord.inspectorName,
+        address: newRecord.contactAddress,
+        phone: newRecord.contactPhone,
+        accumulated: officer.importedLastYear || 0,
+        quotaThisYear: officer.quotaThisYear || 20,
+        totalAllowance: getOfficerMaxAllowance(officer),
+        usedPrior: officer.usedPrior || 0,
+        usedInSystem: officer.usedInSystem || 0
+      });
+
+      triggerPrint('all');
+    }
+
+    function renderOfficerLeaveHistory(officer) {
+      var list = document.getElementById('officerLeaveHistoryList');
+      var countBadge = document.getElementById('officerTotalLeaveCount');
+      if (!list) return;
+
+      if (!officer || !officer.leaveHistory || officer.leaveHistory.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 text-center py-4">ยังไม่มีประวัติการยื่นลาในปีนี้</p>';
+        if (countBadge) countBadge.innerText = '0 รายการ';
+        return;
+      }
+
+      if (countBadge) countBadge.innerText = officer.leaveHistory.length + ' รายการ';
+
+      var html = '';
+      for (var i = 0; i < officer.leaveHistory.length; i++) {
+        var lh = officer.leaveHistory[i];
+        var isSynced = lh.syncedToGoogle;
+
+        html += '<div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-sm">';
+        html += '  <div>';
+        html += '    <div class="flex items-center gap-1.5">';
+        html += '      <span class="font-bold text-indigo-900">[' + lh.type + ']</span>';
+        html += '      <span class="text-slate-700 font-semibold">' + lh.dateRangeText + '</span>';
+        html += '      <span class="text-indigo-600 font-bold">(' + lh.days + ' วัน)</span>';
+        if (isSynced) {
+          html += '    <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200"><i class="fa-solid fa-check"></i> ซิงค์ Google แล้ว</span>';
+        } else {
+          html += '    <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-200"><i class="fa-solid fa-clock"></i> ยังไม่ซิงค์</span>';
+        }
+        html += '    </div>';
+        if (lh.reason && lh.reason !== '-') {
+          html += '    <p class="text-slate-500 text-[10px] mt-0.5">เหตุผล: ' + lh.reason + ' | เลขหนังสือ: ' + (lh.docNumber||'-') + '</p>';
+        }
+        html += '  </div>';
+        html += '  <div class="flex items-center gap-1 shrink-0 mt-1 sm:mt-0">';
+        html += '    <button type="button" onclick="pushToGoogleCalendar(' + i + ')" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded text-[10px] font-bold transition flex items-center gap-1"><i class="fa-solid fa-calendar-plus"></i> ซิงค์ Cal</button>';
+        html += '    <button type="button" onclick="printHistoryLeave(' + i + ', \'all\')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition flex items-center gap-1"><i class="fa-solid fa-print"></i> พิมพ์ ๒ หน้า</button>';
+        html += '    <button type="button" onclick="editLeave(' + i + ')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition flex items-center gap-1"><i class="fa-solid fa-pen"></i> แก้ไข</button>';
+        html += '    <button type="button" onclick="deleteLeave(' + i + ')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-[10px] font-bold transition flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> ลบ</button>';
+        html += '  </div>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    }
+
+    function editLeave(idx) {
+      var selectedOffId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectedOffId; });
+      if (!officer || !officer.leaveHistory || !officer.leaveHistory[idx]) return;
+
+      var lh = officer.leaveHistory[idx];
+
+      document.getElementById('editingLeaveIndex').value = idx;
+      document.getElementById('leaveType').value = lh.type || 'ลาพักผ่อน';
+      document.getElementById('startDate').value = lh.startDate;
+      document.getElementById('endDate').value = lh.endDate;
+      document.getElementById('leaveReason').value = lh.reason || '';
+
+      if (lh.docNumber) document.getElementById('docNumber').value = lh.docNumber;
+      if (lh.handoverName) document.getElementById('handoverSelect').value = lh.handoverName;
+      if (lh.handoverPos) document.getElementById('handoverPosition').value = lh.handoverPos;
+      if (lh.bossName) document.getElementById('bossSelect').value = lh.bossName;
+      if (lh.inspectorName) document.getElementById('inspectorSelect').value = lh.inspectorName;
+      if (lh.contactAddress) document.getElementById('contactAddress').value = lh.contactAddress;
+      if (lh.contactPhone) document.getElementById('contactPhone').value = lh.contactPhone;
+
+      document.getElementById('formTitleText').innerHTML = '<i class="fa-solid fa-pen text-indigo-600"></i> แก้ไขรายการขอลางาน';
+      document.getElementById('submitBtnText').innerText = 'บันทึกการแก้ไขรายการลา';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+      recalculateRules();
+      checkDocNumberUniqueness();
+    }
+
+    function cancelEditLeave() {
+      document.getElementById('editingLeaveIndex').value = '-1';
+      document.getElementById('formTitleText').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600"></i> แบบฟอร์มยื่นคำขอลางาน';
+      document.getElementById('submitBtnText').innerText = 'ยืนยันการลา & บันทึกลงปฏิทิน';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+
+    function deleteLeave(idx) {
+      var selectedOffId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectedOffId; });
+      if (!officer || !officer.leaveHistory || !officer.leaveHistory[idx]) return;
+
+      if (confirm('คุณต้องการลบรายการลานี้ใช่หรือไม่?')) {
+        var lh = officer.leaveHistory[idx];
+        if (lh.type === 'ลาพักผ่อน') {
+          officer.usedInSystem = Math.max(0, (officer.usedInSystem || 0) - lh.days);
+        }
+        officer.leaveHistory.splice(idx, 1);
+        saveOfficers();
+        handleOfficerChange();
+        renderInteractiveCalendar();
+      }
+    }
+
+    function pushToGoogleCalendar(historyIdx) {
+      var selectedOffId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectedOffId; });
+      if (!officer || !officer.leaveHistory || !officer.leaveHistory[historyIdx]) return;
+
+      var lh = officer.leaveHistory[historyIdx];
+      
+      var start = lh.startDate.replace(/-/g, '');
+      var end = lh.endDate.replace(/-/g, '');
+      
+      var title = encodeURIComponent('[' + lh.type + '] ' + (officer.nickname || officer.name) + ' (' + lh.days + ' วัน)');
+      var details = encodeURIComponent('ผู้ขอลา: ' + officer.name + '\nเหตุผล: ' + (lh.reason || '-') + '\nเลขที่หนังสือ: ' + (lh.docNumber || '-') + '\nผู้รับมอบงาน: ' + (lh.handoverName || '-'));
+      var location = encodeURIComponent('รพ.สต.ยะรัง อ.ยะรัง จ.ปัตตานี');
+
+      var gcalUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + title + "&dates=" + start + "/" + end + "&details=" + details + "&location=" + location;
+      
+      lh.syncedToGoogle = true;
+      saveOfficers();
+      handleOfficerChange();
+
+      window.open(gcalUrl, '_blank');
+    }
+
+    function printHistoryLeave(idx, pageOption) {
+      var selectedOffId = document.getElementById('officerSelect').value;
+      var officer = OFFICER_LIST.find(function(o) { return o.id === selectedOffId; });
+      if (!officer || !officer.leaveHistory || !officer.leaveHistory[idx]) return;
+
+      var lh = officer.leaveHistory[idx];
+
+      generatePrintableDocument({
+        name: officer.name,
+        nickname: officer.nickname,
+        position: officer.position,
+        docNumber: lh.docNumber || "ปน ๕๑๐๐๖.๐๖๐๕/๘๕",
+        type: lh.type,
+        startDate: lh.startDate,
+        endDate: lh.endDate,
+        totalDays: lh.days,
+        reason: lh.reason || "-",
+        handoverName: lh.handoverName || "-",
+        handoverPos: lh.handoverPos || "-",
+        bossName: lh.bossName || lastSelectedBoss,
+        inspectorName: lh.inspectorName || lastSelectedInspector,
+        address: lh.contactAddress || "-",
+        phone: lh.contactPhone || "-",
+        accumulated: officer.importedLastYear || 0,
+        quotaThisYear: officer.quotaThisYear || 20,
+        totalAllowance: getOfficerMaxAllowance(officer),
+        usedPrior: officer.usedPrior || 0,
+        usedInSystem: officer.usedInSystem || 0
+      });
+
+      triggerPrint(pageOption || 'all');
+    }
+
+    function triggerPrint(mode) {
+      document.body.classList.remove('print-only-page1', 'print-only-page2');
+      if (mode === 'page1') {
+        document.body.classList.add('print-only-page1');
+      } else if (mode === 'page2') {
+        document.body.classList.add('print-only-page2');
+      }
+      window.print();
+    }
+
+    function generatePrintableDocument(data) {
+      var printContainer = document.getElementById('printableCoverSheet');
+      if (!printContainer) return;
+
+      var thaiDocNum = toThaiDigits(data.docNumber);
+      var thaiStartDate = toThaiDigits(data.startDate);
+      var thaiEndDate = toThaiDigits(data.endDate);
+      var thaiDays = toThaiDigits(data.totalDays);
+      var thaiAccumulated = toThaiDigits(data.accumulated);
+      var thaiQuotaThisYear = toThaiDigits(data.quotaThisYear);
+      var thaiTotalAllowance = toThaiDigits(data.totalAllowance);
+      var thaiUsedTotal = toThaiDigits(data.usedPrior + data.usedInSystem);
+
+      var currentDate = new Date();
+      var thaiCurrentDay = toThaiDigits(currentDate.getDate());
+      var thaiCurrentMonth = getThaiMonthName(currentDate.getMonth());
+      var thaiCurrentYear = toThaiDigits(currentDate.getFullYear() + 543);
+
+      var handoverNameText = (data.handoverName && data.handoverName !== '-') ? data.handoverName : '.........................................................';
+      var handoverPosText = (data.handoverPos && data.handoverPos !== '-') ? data.handoverPos : '.........................................................';
+
+      var garudaHtml = customGarudaBase64 ? 
+        '<img src="' + customGarudaBase64 + '" class="w-16 h-16 object-contain">' :
+        '<svg class="w-16 h-16" viewBox="0 0 100 100"><path fill="#000" d="M50 5 L60 30 L85 15 L70 40 L95 50 L70 60 L85 85 L60 70 L50 95 L40 70 L15 85 L30 60 L5 50 L30 40 L15 15 L40 30 Z"/></svg>';
+
+      var html = '';
+
+      // PAGE 1: บันทึกข้อความ (ตราครุฑ)
+      html += '<div class="print-page print-page-1 flex flex-col justify-between">';
+      html += '  <div>';
+      html += '    <div class="flex items-start justify-between border-b pb-2 mb-4">';
+      html += '      <div class="w-16 h-16 flex items-center justify-center font-bold text-lg">' + garudaHtml + '</div>';
+      html += '      <div class="text-center flex-grow pt-2">';
+      html += '        <h1 class="text-2xl font-bold tracking-wide">บันทึกข้อความ</h1>';
+      html += '      </div>';
+      html += '    </div>';
+      
+      html += '    <div class="space-y-2 text-sm leading-relaxed">';
+      html += '      <p><strong>ส่วนราชการ:</strong> โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง อำเภอยะรัง จังหวัดปัตตานี</p>';
+      html += '      <p><strong>ที่:</strong> ' + thaiDocNum + ' &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>วันที่:</strong> ' + thaiCurrentDay + ' ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '      <p><strong>เรื่อง:</strong> ขอ' + data.type + '</p>';
+      html += '      <p class="pt-2"><strong>เรียน:</strong> นายกองค์การบริหารส่วนจังหวัดปัตตานี (ผ่านผู้อำนวยการกองสาธารณสุข)</p>';
+      
+      html += '      <p class="pt-4 text-justify indent-8 leading-loose">';
+      html += '        ด้วย ' + data.name + ' ตำแหน่ง ' + data.position + ' สังกัด กองสาธารณสุข องค์การบริหารส่วนจังหวัดปัตตานี หน่วยงาน โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง อำเภอยะรัง ขอ' + data.type + ' ในระหว่างวันที่ ' + thaiStartDate + ' ถึงวันที่ ' + thaiEndDate + ' มีกำหนด ' + thaiDays + ' วันทำการ เห็นสมควรอนุญาตจึงนำส่งใบ' + data.type + 'ดังกล่าว รายละเอียดตามสิ่งที่ส่งมาด้วย';
+      html += '      </p>';
+      html += '      <p class="pt-4 text-justify indent-8">จึงเรียนมาเพื่อโปรดทราบและพิจารณาดำเนินการต่อไป</p>';
+      html += '    </div>';
+      html += '  </div>';
+
+      html += '  <div class="pt-12 text-center w-64 ml-auto space-y-1 text-sm">';
+      html += '    <p>(ลงชื่อ).....................................................</p>';
+      html += '    <p>(' + data.bossName + ')</p>';
+      html += '    <p>ตำแหน่ง ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</p>';
+      html += '  </div>';
+      html += '</div>';
+
+      // PAGE 2: แบบใบลาพักผ่อน / ป่วย / กิจ
+      html += '<div class="print-page print-page-2 flex flex-col justify-between pt-4">';
+      html += '  <div>';
+      html += '    <div class="text-center space-y-1 mb-3">';
+      html += '      <h2 class="text-xl font-bold">แบบใบ' + data.type + '</h2>';
+      html += '      <p class="text-xs text-right">เขียนที่ โรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</p>';
+      html += '      <p class="text-xs text-right">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '    </div>';
+
+      html += '    <div class="space-y-2 text-xs leading-relaxed">';
+      html += '      <p><strong>เรื่อง:</strong> ขอ' + data.type + '</p>';
+      html += '      <p><strong>เรียน:</strong> นายกองค์การบริหารส่วนจังหวัดปัตตานี</p>';
+
+      html += '      <p class="indent-8 text-justify leading-loose pt-1">';
+      html += '        ข้าพเจ้า ' + data.name + ' ตำแหน่ง ' + data.position + ' สังกัด กองสาธารณสุข องค์การบริหารส่วนจังหวัดปัตตานี มีวันลาพักผ่อนสะสม ' + thaiAccumulated + ' วันทำการ มีสิทธิลาพักผ่อนประจำปีนี้อีก ' + thaiQuotaThisYear + ' วันทำการ รวมเป็น ' + thaiTotalAllowance + ' วันทำการ ขอ' + data.type + ' ตั้งแต่วันที่ ' + thaiStartDate + ' ถึงวันที่ ' + thaiEndDate + ' มีกำหนด ' + thaiDays + ' วันทำการ ในระหว่างลาจะติดต่อข้าพเจ้าได้ที่ ' + toThaiDigits(data.address) + ' โทร ' + toThaiDigits(data.phone);
+      html += '      </p>';
+      html += '    </div>';
+
+      // Grid Layout for Page 2
+      html += '    <div class="grid grid-cols-2 gap-4 pt-4 text-xs">';
+      
+      // Top Left: Leave Statistics Table
+      html += '      <div class="space-y-4">';
+      html += '        <div class="border border-black p-2 rounded">';
+      html += '          <p class="font-bold text-center border-b border-black pb-1 mb-1">สถิติการลาในปีงบประมาณนี้</p>';
+      html += '          <div class="grid grid-cols-3 text-center text-[10px] border-b border-black pb-1 font-semibold">';
+      html += '            <span>ลามาแล้ว (วันทำการ)</span><span>ลาครั้งนี้ (วันทำการ)</span><span>รวมเป็น (วันทำการ)</span>';
+      html += '          </div>';
+      html += '          <div class="grid grid-cols-3 text-center pt-1 font-bold">';
+      html += '            <span>' + toThaiDigits(data.usedPrior + data.usedInSystem - data.totalDays) + '</span>';
+      html += '            <span>' + thaiDays + '</span>';
+      html += '            <span>' + thaiUsedTotal + '</span>';
+      html += '          </div>';
+      html += '        </div>';
+
+      // Left Column Signature Block: Document Inspector
+      html += '        <div class="space-y-1 text-center pt-2">';
+      html += '          <p>(ลงชื่อ).....................................................ผู้ตรวจสอบ</p>';
+      html += '          <p>(' + data.inspectorName + ')</p>';
+      html += '          <p class="text-[10px]">ตำแหน่ง นักสาธารณสุขชำนาญการ</p>';
+      html += '          <p class="text-[10px]">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '        </div>';
+
+      // Left Column Signature Block: Work Handover (Z)
+      html += '        <div class="border border-black p-2 rounded space-y-1 text-[11px]">';
+      html += '          <p><strong>หมายเหตุ:</strong> ในระหว่างลาได้มอบหมายงานให้ ' + handoverNameText + '</p>';
+      html += '          <div class="space-y-1 pt-1">';
+      html += '            <p>(ลงชื่อ).....................................................ผู้มอบ</p>';
+      html += '            <p class="text-center">(' + data.name + ')</p>';
+      html += '            <p class="text-center text-[10px]">ตำแหน่ง ' + data.position + '</p>';
+      html += '            <p class="text-center text-[10px]">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '          </div>';
+      html += '          <div class="space-y-1 pt-2 border-t border-slate-300">';
+      html += '            <p>(ลงชื่อ).....................................................ผู้รับมอบ</p>';
+      html += '            <p class="text-center">(' + handoverNameText + ')</p>';
+      html += '            <p class="text-center text-[10px]">ตำแหน่ง ' + handoverPosText + '</p>';
+      html += '            <p class="text-center text-[10px]">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '          </div>';
+      html += '        </div>';
+      html += '      </div>';
+
+      // Top Right & Right Column Layout
+      html += '      <div class="space-y-5 pt-1 text-xs">';
+      
+      // Top Right: Applicant Signature
+      html += '        <div class="text-center space-y-1">';
+      html += '          <p>ขอแสดงความนับถือ</p>';
+      html += '          <br>';
+      html += '          <p>(ลงชื่อ).....................................................</p>';
+      html += '          <p>(' + data.name + ')</p>';
+      html += '          <p>ตำแหน่ง ' + data.position + '</p>';
+      html += '        </div>';
+
+      // Boss Opinion Block
+      html += '        <div class="border-t border-black pt-2 space-y-1">';
+      html += '          <p><strong>ความเห็นผู้บังคับบัญชา:</strong> เห็นสมควรอนุญาต</p>';
+      html += '          <p>.......................................................................................................</p>';
+      html += '          <p class="text-center pt-1">(ลงชื่อ).....................................................</p>';
+      html += '          <p class="text-center">(' + data.bossName + ')</p>';
+      html += '          <p class="text-center text-[10px]">ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบลยะรัง</p>';
+      html += '          <p class="text-center text-[10px]">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '        </div>';
+
+      // Command Block
+      html += '        <div class="border-t border-black pt-2 space-y-1">';
+      html += '          <p><strong>คำสั่ง:</strong> [ &nbsp; ] อนุญาต &nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] ไม่อนุญาต</p>';
+      html += '          <p>.......................................................................................................</p>';
+      html += '          <p class="text-center pt-1">(ลงชื่อ).....................................................</p>';
+      html += '          <p class="text-center">(' + data.bossName + ')</p>';
+      html += '          <p class="text-center text-[10px]">ผอ.รพ.สต.ยะรัง ปฏิบัติราชการแทน ผอ.กองสาธารณสุข</p>';
+      html += '          <p class="text-center text-[10px]">วันที่ ' + thaiCurrentDay + ' เดือน ' + thaiCurrentMonth + ' พ.ศ. ' + thaiCurrentYear + '</p>';
+      html += '        </div>';
+      html += '      </div>';
+
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+
+      printContainer.innerHTML = html;
+      printContainer.classList.remove('hidden');
+    }
+
+    function renderManagementDashboard() {
+      var summaryBody = document.getElementById('managementSummaryTableBody');
+      var monthlyBody = document.getElementById('managementMonthlyTableBody');
+      if (!summaryBody || !monthlyBody) return;
+
+      // 1. Quota Summary Table
+      var sumHtml = '';
+      OFFICER_LIST.forEach(function(o) {
+        var maxAllowance = getOfficerMaxAllowance(o);
+        var totalUsed = getOfficerTotalUsed(o);
+        var remaining = getOfficerRemaining(o);
+
+        sumHtml += '<tr class="hover:bg-slate-50 transition">';
+        sumHtml += '  <td class="p-2.5 font-bold text-slate-800">' + o.name + ' <span class="text-indigo-600">(' + (o.nickname||'-') + ')</span></td>';
+        sumHtml += '  <td class="p-2.5 text-slate-600">' + (o.position || '-') + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center font-bold">' + (o.quotaThisYear || 20) + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center text-indigo-700 font-bold">' + (o.importedLastYear || 0) + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center font-bold text-slate-800">' + maxAllowance + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center text-amber-700">' + (o.usedPrior || 0) + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center text-indigo-700 font-bold">' + (o.usedInSystem || 0) + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center font-bold text-amber-600">' + totalUsed + '</td>';
+        sumHtml += '  <td class="p-2.5 text-center font-bold text-emerald-600 bg-emerald-50/50">' + remaining + ' วัน</td>';
+        sumHtml += '</tr>';
+      });
+      summaryBody.innerHTML = sumHtml;
+
+      // 2. 12-Month Breakdown Matrix
+      var monthHtml = '';
+      OFFICER_LIST.forEach(function(o) {
+        var monthlyDays = [0,0,0,0,0,0,0,0,0,0,0,0]; // Jan to Dec
+        var totalYearLeave = 0;
+
+        if (o.leaveHistory) {
+          o.leaveHistory.forEach(function(lh) {
+            if (lh.startDate) {
+              var mIdx = new Date(lh.startDate).getMonth(); // 0 to 11
+              monthlyDays[mIdx] += (lh.days || 1);
+              totalYearLeave += (lh.days || 1);
+            }
+          });
+        }
+
+        monthHtml += '<tr class="hover:bg-slate-50 transition">';
+        monthHtml += '  <td class="p-2 text-left font-bold text-slate-800 truncate max-w-[140px]" title="' + o.name + '">' + (o.nickname ? o.nickname + ' (' + o.name.split(' ')[0] + ')' : o.name.split(' ')[0]) + '</td>';
+        
+        for (var m = 0; m < 12; m++) {
+          var val = monthlyDays[m];
+          var cellClass = m === 7 ? 'bg-indigo-50 font-bold ' : '';
+          monthHtml += '  <td class="p-2 ' + cellClass + (val > 0 ? 'text-indigo-700 font-bold' : 'text-slate-300') + '">' + (val > 0 ? val : '-') + '</td>';
+        }
+
+        monthHtml += '  <td class="p-2 bg-amber-50 font-bold text-amber-800">' + totalYearLeave + '</td>';
+        monthHtml += '</tr>';
+      });
+
+      monthlyBody.innerHTML = monthHtml;
+    }
+
+    function renderCalendarSyncTracker() {
+      var container = document.getElementById('calendarSyncTrackerList');
+      var badge = document.getElementById('pendingSyncCountBadge');
+      if (!container) return;
+
+      var allHistoryEntries = [];
+      OFFICER_LIST.forEach(function(o) {
+        if (o.leaveHistory) {
+          o.leaveHistory.forEach(function(lh, idx) {
+            allHistoryEntries.push({ officerName: o.name, officerNickname: o.nickname, officerId: o.id, historyIdx: idx, leave: lh });
+          });
+        }
+      });
+
+      if (allHistoryEntries.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-center py-3 text-xs">ไม่มีรายการลาในระบบ</p>';
+        if (badge) badge.innerText = '0 รายการรอซิงค์';
+        return;
+      }
+
+      var pendingCount = allHistoryEntries.filter(function(e) { return !e.leave.syncedToGoogle; }).length;
+      if (badge) badge.innerText = pendingCount + ' รายการรอซิงค์';
+
+      var html = '';
+      allHistoryEntries.forEach(function(item) {
+        var lh = item.leave;
+        var isSynced = lh.syncedToGoogle;
+
+        html += '<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center text-xs">';
+        html += '  <div>';
+        html += '    <div class="font-bold text-slate-800">' + (item.officerNickname || item.officerName) + ' <span class="text-[10px] text-indigo-600">(' + lh.type + ')</span></div>';
+        html += '    <div class="text-[10px] text-slate-500">' + lh.dateRangeText + ' (' + lh.days + ' วัน)</div>';
+        html += '  </div>';
+        html += '  <div class="flex items-center gap-1.5 shrink-0">';
+        if (isSynced) {
+          html += '    <span class="text-[10px] text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-emerald-500"></i> ซิงค์แล้ว</span>';
+        } else {
+          html += '    <button onclick="pushToGoogleCalendar(' + item.historyIdx + ')" class="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold"><i class="fa-solid fa-arrow-up-right-from-square"></i> ซิงค์ Google</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function exportMasterSystemToExcel() {
+      try {
+        var wb = XLSX.utils.book_new();
+
+        // Sheet 1: Officers & Approvers (Complete User Profile Details)
+        var sheet1Data = OFFICER_LIST.map(function(o) {
+          return {
+            'ID_เจ้าหน้าที่': o.id,
+            'ชื่อ_นามสกุล': o.name,
+            'ชื่อเล่น': o.nickname || '',
+            'ตำแหน่ง': o.position || 'พยาบาลวิชาชีพชำนาญการ',
+            'ผู้รับมอบงานประจำ': o.defaultHandoverName || '',
+            'ตำแหน่งผู้รับมอบงานประจำ': o.defaultHandoverPos || '',
+            'ที่อยู่ติดต่อ': o.address || '',
+            'เบอร์โทรศัพท์': o.phone || '',
+            'สิทธิปีนี้_วัน': o.quotaThisYear || 20,
+            'ยกลาปีกลาย_วัน': o.importedLastYear || 0,
+            'ใช้ก่อนระบบ_มค_กค': o.usedPrior || 0,
+            'ใช้ในระบบ_วัน': o.usedInSystem || 0,
+            'ชื่อผู้อนุมัติ': o.approverName || lastSelectedBoss,
+            'ตำแหน่งผู้อนุมัติ': o.approverPos || 'ผอ.รพ.สต.ยะรัง',
+            'ผู้อนุมัติ_ใช้ได้ตั้งแต่วันที่': o.approverValidFrom || '2569-01-01',
+            'ผู้อนุมัติ_เกษียณ_หมดวาระวันที่': o.approverValidTo || '2569-09-30',
+            'ผู้อนุมัติสำรอง_คนใหม่': o.nextApproverName || 'นางสาววิไลวรรณ สุขประเสริฐ',
+            'ตำแหน่งผู้อนุมัติสำรอง': o.nextApproverPos || 'นักวิชาการสาธารณสุขชำนาญการ'
+          };
+        });
+        var ws1 = XLSX.utils.json_to_sheet(sheet1Data);
+        XLSX.utils.book_append_sheet(wb, ws1, "1_Officers_And_Approvers");
+
+        // Sheet 2: Leave Info Log
+        var sheet2Data = [];
+        OFFICER_LIST.forEach(function(o) {
+          if (o.leaveHistory && o.leaveHistory.length > 0) {
+            o.leaveHistory.forEach(function(lh, idx) {
+              sheet2Data.push({
+                'รหัสรายการ_Leave_ID': lh.id || ('LV-' + o.id + '-' + (idx + 1)),
+                'ชื่อผู้ขอลา': o.name,
+                'ประเภทการลา': lh.type,
+                'วันเริ่มลา': lh.startDate,
+                'วันสิ้นสุดการลา': lh.endDate,
+                'จำนวนวันลา_วันทำการ': lh.days,
+                'สถานะรายการ': lh.status || 'ยื่นคำขอปกติ',
+                'เลขที่หนังสือ': lh.docNumber || 'ปน ๕๑๐๐๖.๐๖๐๕/๘๗๕',
+                'ผู้รับมอบงาน': lh.handoverName || '-',
+                'ตำแหน่งผู้รับมอบงาน': lh.handoverPos || '-',
+                'ผู้อนุมัติ': lh.bossName || o.approverName || lastSelectedBoss,
+                'ผู้ตรวจสอบ': lh.inspectorName || lastSelectedInspector,
+                'เหตุผลการลา': lh.reason || '-',
+                'ที่อยู่ระหว่างลา': lh.contactAddress || o.address || '-',
+                'เบอร์โทรระหว่างลา': lh.contactPhone || o.phone || '-',
+                'ซิงค์ Google Calendar': lh.syncedToGoogle ? 'ซิงค์แล้ว' : 'ยังไม่ซิงค์',
+                'เวลาทำรายการ': lh.timestamp || new Date().toLocaleString('th-TH')
+              });
+            });
+          }
+        });
+
+        var ws2 = XLSX.utils.json_to_sheet(sheet2Data);
+        XLSX.utils.book_append_sheet(wb, ws2, "2_Leave_Log_Audit");
+
+        // Sheet 3: Holidays List
+        var sheet3Data = PUBLIC_HOLIDAYS.map(function(h) {
+          return {
+            'วันที่_YYYY_MM_DD': h.date,
+            'ชื่อวันหยุด': h.name,
+            'ประเภทวันหยุด': h.isDefault ? 'วันหยุดตามประเพณี' : 'วันหยุดเพิ่มเติม'
+          };
+        });
+        var ws3 = XLSX.utils.json_to_sheet(sheet3Data);
+        XLSX.utils.book_append_sheet(wb, ws3, "3_Holidays_List");
+
+        XLSX.writeFile(wb, "ระบบการลาเจ้าหน้าที่_3_ตาราง_Master.xlsx");
+        alert('ส่งออกข้อมูล 3 ตารางสำเร็จแล้ว!');
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการส่งออก Excel: ' + err.message);
+      }
+    }
+
+    function importMasterSystemFromExcel(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          var data = new Uint8Array(evt.target.result);
+          var workbook = XLSX.read(data, { type: 'array' });
+
+          if (workbook.SheetNames.includes("1_Officers_And_Approvers")) {
+            var ws1 = workbook.Sheets["1_Officers_And_Approvers"];
+            var rawOfficers = XLSX.utils.sheet_to_json(ws1);
+            if (rawOfficers.length > 0) {
+              OFFICER_LIST = rawOfficers.map(function(r, idx) {
+                return {
+                  id: r['ID_เจ้าหน้าที่'] || ('OFF-' + (idx + 1)),
+                  name: r['ชื่อ_นามสกุล'] || 'เจ้าหน้าที่',
+                  nickname: r['ชื่อเล่น'] || '',
+                  position: r['ตำแหน่ง'] || 'พยาบาลวิชาชีพชำนาญการ',
+                  defaultHandoverName: r['ผู้รับมอบงานประจำ'] || '',
+                  defaultHandoverPos: r['ตำแหน่งผู้รับมอบงานประจำ'] || '',
+                  address: r['ที่อยู่ติดต่อ'] || '',
+                  phone: r['เบอร์โทรศัพท์'] || '',
+                  quotaThisYear: parseInt(r['สิทธิปีนี้_วัน']) || 20,
+                  importedLastYear: parseInt(r['ยกลาปีกลาย_วัน']) || 0,
+                  usedPrior: parseInt(r['ใช้ก่อนระบบ_มค_กค']) || 0,
+                  usedInSystem: parseInt(r['ใช้ในระบบ_วัน']) || 0,
+                  approverName: r['ชื่อผู้อนุมัติ'] || lastSelectedBoss,
+                  approverPos: r['ตำแหน่งผู้อนุมัติ'] || 'ผอ.รพ.สต.ยะรัง',
+                  approverValidFrom: r['ผู้อนุมัติ_ใช้ได้ตั้งแต่วันที่'] || '2569-01-01',
+                  approverValidTo: r['ผู้อนุมัติ_เกษียณ_หมดวาระวันที่'] || '2569-09-30',
+                  nextApproverName: r['ผู้อนุมัติสำรอง_คนใหม่'] || '',
+                  nextApproverPos: r['ตำแหน่งผู้อนุมัติสำรอง'] || '',
+                  leaveHistory: []
+                };
+              });
+            }
+          }
+
+          if (workbook.SheetNames.includes("2_Leave_Log_Audit")) {
+            var ws2 = workbook.Sheets["2_Leave_Log_Audit"];
+            var rawLogs = XLSX.utils.sheet_to_json(ws2);
+            rawLogs.forEach(function(log) {
+              var officer = OFFICER_LIST.find(function(o) { return o.name === log['ชื่อผู้ขอลา']; });
+              if (officer) {
+                if (!officer.leaveHistory) officer.leaveHistory = [];
+                officer.leaveHistory.push({
+                  id: log['รหัสรายการ_Leave_ID'],
+                  type: log['ประเภทการลา'],
+                  startDate: log['วันเริ่มลา'],
+                  endDate: log['วันสิ้นสุดการลา'],
+                  dateRangeText: log['วันเริ่มลา'] + ' ถึง ' + log['วันสิ้นสุดการลา'],
+                  days: parseInt(log['จำนวนวันลา_วันทำการ']) || 1,
+                  reason: log['เหตุผลการลา'],
+                  docNumber: log['เลขที่หนังสือ'],
+                  handoverName: log['ผู้รับมอบงาน'],
+                  handoverPos: log['ตำแหน่งผู้รับมอบงาน'],
+                  bossName: log['ผู้อนุมัติ'],
+                  inspectorName: log['ผู้ตรวจสอบ'],
+                  contactAddress: log['ที่อยู่ระหว่างลา'],
+                  contactPhone: log['เบอร์โทรระหว่างลา'],
+                  status: log['สถานะรายการ'] || 'ยื่นคำขอปกติ',
+                  syncedToGoogle: log['ซิงค์ Google Calendar'] === 'ซิงค์แล้ว',
+                  timestamp: log['เวลาทำรายการ']
+                });
+              }
+            });
+          }
+
+          if (workbook.SheetNames.includes("3_Holidays_List")) {
+            var ws3 = workbook.Sheets["3_Holidays_List"];
+            var rawHolidays = XLSX.utils.sheet_to_json(ws3);
+            if (rawHolidays.length > 0) {
+              PUBLIC_HOLIDAYS = rawHolidays.map(function(h) {
+                return {
+                  date: h['วันที่_YYYY_MM_DD'],
+                  name: h['ชื่อวันหยุด'],
+                  isDefault: h['ประเภทวันหยุด'] === 'วันหยุดตามประเพณี'
+                };
+              });
+            }
+          }
+
+          saveOfficers();
+          saveHolidays();
+          renderOfficerDropdown();
+          populateRoleDropdowns();
+          handleOfficerChange();
+          renderHolidayList();
+          renderInteractiveCalendar();
+          alert('นำเข้าข้อมูลสำเร็จแล้วทั้ง 3 ตาราง!');
+        } catch (err) {
+          alert('เกิดข้อผิดพลาดในการนำเข้าไฟล์ Excel: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderInteractiveCalendar() {
+      var daysGrid = document.getElementById('calendarDaysGrid');
+      var monthYearText = document.getElementById('calendarMonthYearText');
+      if (!daysGrid) return;
+
+      monthYearText.innerText = getThaiMonthName(currentCalMonth) + ' ' + (currentCalYear + 543);
+
+      var firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+      var totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+
+      var html = '';
+
+      for (var i = 0; i < firstDay; i++) {
+        html += '<div class="calendar-cell bg-slate-50/50 rounded-lg border border-slate-100 p-1"></div>';
+      }
+
+      for (var day = 1; day <= totalDaysInMonth; day++) {
+        var dateObj = new Date(currentCalYear, currentCalMonth, day);
+        var dayOfWeek = dateObj.getDay();
+        var yyyy = dateObj.getFullYear();
+        var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        var dd = String(dateObj.getDate()).padStart(2, '0');
+        var dateStr = yyyy + '-' + mm + '-' + dd;
+
+        var isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        var holiday = PUBLIC_HOLIDAYS.find(function(h) { return h.date === dateStr; });
+
+        var cellClass = "calendar-cell rounded-lg border p-1 text-left flex flex-col justify-between transition ";
+        if (holiday || isWeekend) {
+          cellClass += "bg-red-50/60 border-red-100 ";
+        } else {
+          cellClass += "bg-white border-slate-200 ";
+        }
+
+        html += '<div class="' + cellClass + '">';
+        html += '  <div class="flex justify-between items-center">';
+        html += '    <span class="font-bold text-[11px] ' + (isWeekend || holiday ? 'text-red-600' : 'text-slate-700') + '">' + day + '</span>';
+        if (holiday) {
+          html += '    <span class="text-[9px] bg-red-600 text-white font-bold px-1 rounded truncate max-w-[50px]">' + holiday.name + '</span>';
+        }
+        html += '  </div>';
+
+        var leavesOnDate = [];
+        OFFICER_LIST.forEach(function(o) {
+          if (o.leaveHistory) {
+            o.leaveHistory.forEach(function(lh) {
+              if (dateStr >= lh.startDate && dateStr <= lh.endDate) {
+                leavesOnDate.push({ 
+                  officerName: o.name, 
+                  nickname: o.nickname || o.name.split(' ')[0], 
+                  type: lh.type,
+                  startDate: lh.startDate,
+                  endDate: lh.endDate,
+                  isStart: (dateStr === lh.startDate),
+                  isEnd: (dateStr === lh.endDate)
+                });
+              }
+            });
+          }
+        });
+
+        if (leavesOnDate.length > 0) {
+          html += '  <div class="space-y-1 mt-1 max-h-[50px] overflow-y-auto">';
+          leavesOnDate.forEach(function(l) {
+            var pillRounded = "rounded-md";
+            if (l.isStart && !l.isEnd) pillRounded = "rounded-l-md rounded-r-none";
+            else if (!l.isStart && l.isEnd) pillRounded = "rounded-r-md rounded-l-none";
+            else if (!l.isStart && !l.isEnd) pillRounded = "rounded-none";
+
+            var labelText = l.nickname;
+            if (l.isStart) labelText = l.nickname + ' (' + l.type + ')';
+
+            html += '    <div class="text-[9px] bg-indigo-600 text-white font-semibold py-0.5 px-1 ' + pillRounded + ' truncate shadow-sm" title="' + l.officerName + ' (' + l.type + ': ' + l.startDate + ' ถึง ' + l.endDate + ')">';
+            html += '      ' + labelText;
+            html += '    </div>';
+          });
+          html += '  </div>';
+        }
+
+        html += '</div>';
+      }
+
+      daysGrid.innerHTML = html;
+    }
+
+    function changeMonth(delta) {
+      currentCalMonth += delta;
+      if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+      } else if (currentCalMonth < 0) {
+        currentCalMonth = 11;
+        currentCalYear--;
+      }
+      renderInteractiveCalendar();
+    }
+
+    function switchCalendarView(view) {
+      var sysBtn = document.getElementById('btnSystemCal');
+      var googBtn = document.getElementById('btnGoogleCal');
+      var sysView = document.getElementById('systemCalendarView');
+      var googView = document.getElementById('googleCalendarView');
+
+      if (view === 'system') {
+        sysBtn.className = "px-3 py-1 rounded-lg bg-white shadow-sm text-indigo-900 transition";
+        googBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition";
+        sysView.classList.remove('hidden');
+        googView.classList.add('hidden');
+      } else {
+        googBtn.className = "px-3 py-1 rounded-lg bg-white shadow-sm text-indigo-900 transition";
+        sysBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition";
+        googView.classList.remove('hidden');
+        sysView.classList.add('hidden');
+      }
+    }
+
+    function updateGoogleIframe() {
+      var id = document.getElementById('calendarIdInput').value || DEFAULT_CALENDAR_ID;
+      var iframe = document.getElementById('googleCalendarIframe');
+      if (iframe) {
+        var encodedId = encodeURIComponent(id.trim());
+        iframe.src = "https://calendar.google.com/calendar/embed?src=" + encodedId + "&ctz=Asia%2FBangkok";
+      }
+    }
+
+    function saveCalendarId() {
+      var id = document.getElementById('calendarIdInput').value;
+      safeStorage.setItem('officer_team_calendar_id', id);
+      updateGoogleIframe();
+      closeModal('calendarModal');
+      alert('บันทึกรหัสปฏิทินสำเร็จแล้ว!');
+    }
+
+    function renderOfficerModalList() {
+      var container = document.getElementById('officerModalList');
+      if (!container) return;
+
+      if (OFFICER_LIST.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-center py-4">ไม่มีข้อมูลเจ้าหน้าที่</p>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < OFFICER_LIST.length; i++) {
+        var o = OFFICER_LIST[i];
+        var remaining = getOfficerRemaining(o);
+        var totalAllowance = getOfficerMaxAllowance(o);
+
+        html += '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">';
+        html += '  <div class="space-y-0.5">';
+        html += '    <div class="font-bold text-slate-800 text-sm flex items-center gap-2">' + o.name + ' <span class="text-xs text-indigo-600 font-semibold">(' + (o.nickname || '-') + ')</span> - <span class="text-xs font-normal text-slate-500">' + (o.position || "พยาบาลวิชาชีพชำนาญการ") + '</span></div>';
+        html += '    <div class="text-slate-600 text-[11px]">';
+        html += '      สิทธิปีนี้: <strong class="text-indigo-700">' + (o.quotaThisYear||0) + '</strong> วัน | ยกลาปีกลาย: <strong class="text-indigo-700">' + (o.importedLastYear||0) + '</strong> วัน | รวมสิทธิ: <strong class="text-indigo-700">' + totalAllowance + '</strong> วัน';
+        html += '    </div>';
+        html += '    <div class="text-slate-600 text-[11px]">';
+        html += '      ใช้ไปแล้ว: <strong class="text-amber-600">' + getOfficerTotalUsed(o) + '</strong> วัน | สิทธิคงเหลือ: <strong class="text-emerald-600">' + remaining + '</strong> วัน';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="flex items-center gap-1.5 shrink-0">';
+        html += '    <button onclick="openEditOfficerModal(' + i + ')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs transition flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>';
+        html += '    <button onclick="deleteOfficer(' + i + ')" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-xs transition flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> ลบ</button>';
+        html += '  </div>';
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function handleSaveOfficer(e) {
+      e.preventDefault();
+      var idx = parseInt(document.getElementById('modalOfficerEditIndex').value);
+      var name = document.getElementById('modalOffName').value;
+      var nickname = document.getElementById('modalOffNickname').value;
+      var pos = document.getElementById('modalOffPos').value;
+      var quota = parseInt(document.getElementById('modalOffQuota').value) || 20;
+      var imported = parseInt(document.getElementById('modalOffImported').value) || 0;
+      var prior = parseInt(document.getElementById('modalOffPrior').value) || 0;
+      var handover = document.getElementById('modalOffDefaultHandover').value;
+      var phone = document.getElementById('modalOffPhone').value;
+      var approverName = document.getElementById('modalOffApproverName').value;
+      var approverValidTo = document.getElementById('modalOffApproverValidTo').value;
+      var nextApproverName = document.getElementById('modalOffNextApproverName').value;
+      var nextApproverPos = document.getElementById('modalOffNextApproverPos').value;
+
+      var dataObj = {
+        id: idx >= 0 ? OFFICER_LIST[idx].id : ('OFF-' + Date.now()),
+        name: name,
+        nickname: nickname,
+        position: pos,
+        defaultHandoverName: handover,
+        phone: phone,
+        quotaThisYear: quota,
+        importedLastYear: imported,
+        usedPrior: prior,
+        usedInSystem: idx >= 0 ? (OFFICER_LIST[idx].usedInSystem || 0) : 0,
+        approverName: approverName,
+        approverValidTo: approverValidTo,
+        nextApproverName: nextApproverName,
+        nextApproverPos: nextApproverPos,
+        leaveHistory: idx >= 0 ? OFFICER_LIST[idx].leaveHistory : []
+      };
+
+      if (idx >= 0) {
+        OFFICER_LIST[idx] = dataObj;
+      } else {
+        OFFICER_LIST.push(dataObj);
+      }
+
+      saveOfficers();
+      resetOfficerModalForm();
+      renderOfficerDropdown();
+      populateRoleDropdowns();
+      handleOfficerChange();
+      renderOfficerModalList();
+      alert('บันทึกข้อมูลเจ้าหน้าที่เรียบร้อย!');
+    }
+
+    function openEditOfficerModal(i) {
+      var o = OFFICER_LIST[i];
+      if (!o) return;
+
+      document.getElementById('modalOfficerEditIndex').value = i;
+      document.getElementById('modalOffName').value = o.name || '';
+      document.getElementById('modalOffNickname').value = o.nickname || '';
+      document.getElementById('modalOffPos').value = o.position || '';
+      document.getElementById('modalOffQuota').value = o.quotaThisYear || 20;
+      document.getElementById('modalOffImported').value = o.importedLastYear || 0;
+      document.getElementById('modalOffPrior').value = o.usedPrior || 0;
+      document.getElementById('modalOffDefaultHandover').value = o.defaultHandoverName || '';
+      document.getElementById('modalOffPhone').value = o.phone || '';
+      document.getElementById('modalOffApproverName').value = o.approverName || lastSelectedBoss;
+      document.getElementById('modalOffApproverValidTo').value = o.approverValidTo || '2026-09-30';
+      document.getElementById('modalOffNextApproverName').value = o.nextApproverName || '';
+      document.getElementById('modalOffNextApproverPos').value = o.nextApproverPos || '';
+    }
+
+    function resetOfficerModalForm() {
+      document.getElementById('modalOfficerEditIndex').value = '-1';
+      document.getElementById('modalOffName').value = '';
+      document.getElementById('modalOffNickname').value = '';
+      document.getElementById('modalOffPos').value = '';
+      document.getElementById('modalOffQuota').value = 20;
+      document.getElementById('modalOffImported').value = 0;
+      document.getElementById('modalOffPrior').value = 0;
+      document.getElementById('modalOffDefaultHandover').value = '';
+      document.getElementById('modalOffPhone').value = '';
+    }
+
+    function deleteOfficer(i) {
+      if (confirm('คุณต้องการลบข้อมูลเจ้าหน้าที่ท่านนี้ใช่หรือไม่?')) {
+        OFFICER_LIST.splice(i, 1);
+        saveOfficers();
+        renderOfficerDropdown();
+        populateRoleDropdowns();
+        handleOfficerChange();
+        renderOfficerModalList();
+      }
+    }
+
+    function renderHolidayList() {
+      var container = document.getElementById('holidayListContainer');
+      if (!container) return;
+
+      var html = '';
+      PUBLIC_HOLIDAYS.sort(function(a, b) { return a.date.localeCompare(b.date); });
+
+      PUBLIC_HOLIDAYS.forEach(function(h, idx) {
+        html += '<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center text-xs">';
+        html += '  <div>';
+        html += '    <span class="font-mono font-bold text-red-600 me-2">' + h.date + '</span>';
+        html += '    <span class="font-bold text-slate-800">' + h.name + '</span>';
+        html += '  </div>';
+        html += '  <button onclick="deleteHoliday(' + idx + ')" class="text-red-500 hover:text-red-700 px-1.5 py-0.5"><i class="fa-solid fa-trash-can"></i></button>';
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function handleAddHoliday(e) {
+      e.preventDefault();
+      var date = document.getElementById('newHolidayDate').value;
+      var name = document.getElementById('newHolidayName').value;
+
+      if (!date || !name) return;
+
+      PUBLIC_HOLIDAYS.push({ date: date, name: name, isDefault: false });
+      saveHolidays();
+      renderHolidayList();
+      renderInteractiveCalendar();
+      document.getElementById('newHolidayName').value = '';
+      alert('เพิ่มวันหยุดเรียบร้อยแล้ว!');
+    }
+
+    function deleteHoliday(idx) {
+      PUBLIC_HOLIDAYS.splice(idx, 1);
+      saveHolidays();
+      renderHolidayList();
+      renderInteractiveCalendar();
+    }
+
+    function resetDefaultHolidays() {
+      if (confirm('คุณต้องการ คืนค่าวันหยุดประจำปีมาตรฐาน (18 วัน) ใช่หรือไม่?')) {
+        PUBLIC_HOLIDAYS = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
+        saveHolidays();
+        renderHolidayList();
+        renderInteractiveCalendar();
+      }
+    }
+
+    function openModal(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        if (id === 'officerModal') renderOfficerModalList();
+        if (id === 'managementModal') renderManagementDashboard();
+      }
+    }
+
+    function closeModal(id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
